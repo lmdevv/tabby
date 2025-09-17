@@ -7,13 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "**",
-      "!components/ui",
-      "!devbox.lock",
-      "!.devbox",
-      "!assets"
-    ]
+    "includes": ["**", "!components/ui", "!devbox.lock", "!.devbox", "!assets"]
   },
   "formatter": {
     "enabled": true,

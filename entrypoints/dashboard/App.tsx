@@ -1,5 +1,5 @@
-import { db } from "@/entrypoints/background/db";
 import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/entrypoints/background/db";
 
 function App() {
   const activeTabs = useLiveQuery(() => db.activeTabs.toArray());
