@@ -12,7 +12,10 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "check": "biome check .",
+    "check:unsafe": "biome check --write --unsafe .",
+    "check:write": "biome check --write ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
@@ -25,6 +28,7 @@
     "tailwindcss": "^4.1.13"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.2.4",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "@wxt-dev/module-react": "^1.1.3",
