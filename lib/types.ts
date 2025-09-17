@@ -48,4 +48,23 @@ export interface ResourceGroup {
   createdAt: number;
   updatedAt: number;
 }
+
+// Message types for runtime communication
+export interface OpenWorkspaceMessage {
+  type: "openWorkspace";
+  workspaceId: number;
+  skipTabSwitching?: boolean;
 }
+
+export interface CloseWorkspaceMessage {
+  type: "closeWorkspace";
+}
+
+export interface RefreshTabsMessage {
+  type: "refreshTabs";
+}
+
+export type RuntimeMessage =
+  | OpenWorkspaceMessage
+  | CloseWorkspaceMessage
+  | RefreshTabsMessage;
