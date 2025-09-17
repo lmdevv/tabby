@@ -1,0 +1,146 @@
+"use client";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+} from "@/components/ui/sidebar";
+import { db } from "@/entrypoints/background/db";
+import type { Workspace, WorkspaceGroup } from "@/lib/types";
+import { useLiveQuery } from "dexie-react-hooks";
+import { Minus, Plus } from "lucide-react";
+import { UndefinedWorkspaceItem } from "./undefined-workspace-item";
+import { WorkspaceItem } from "./workspace-item";
+
+interface WorkspacesProps {
+  previewWorkspaceId: number | null;
+  setPreviewWorkspaceId: (id: number | null) => void;
+}
+
+interface WorkspaceGroupItemProps {
+  group: WorkspaceGroup;
+  workspaces: Workspace[];
+  onPreview: (id: number) => void;
+  previewWorkspaceId: number | null;
+}
+
+function WorkspaceGroupItem({
+  group,
+  workspaces,
+  onPreview,
+  previewWorkspaceId,
+}: WorkspaceGroupItemProps) {
+  const handleOpenChange = async (open: boolean) => {
+    try {
+      await db.workspaceGroups.update(group.id, { collapsed: open ? 0 : 1 });
+    } catch (error) {
+      console.error("Failed to update workspace group collapsed state:", error);
+    }
+  };
+
+  return (
+    <Collapsible
+      open={group.collapsed === 0}
+      onOpenChange={handleOpenChange}
+      className="group/collapsible"
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton tooltip={group.name} className="relative">
+            {group.icon && <div>{group.icon}</div>}
+            <span className="flex-1">{group.name}</span>
+            <div className="-translate-y-1/2 absolute top-1/2 right-2">
+              <Plus className="h-4 w-4 group-data-[state=open]/collapsible:hidden" />
+              <Minus className="h-4 w-4 group-data-[state=closed]/collapsible:hidden" />
+            </div>
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {workspaces.map((workspace) => (
+              <WorkspaceItem
+                key={workspace.id}
+                workspace={workspace}
+                onPreview={onPreview}
+                isPreviewed={previewWorkspaceId === workspace.id}
+              />
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+export function Workspaces({
+  previewWorkspaceId,
+  setPreviewWorkspaceId,
+}: WorkspacesProps) {
+  const workspaceGroups = useLiveQuery(() => db.workspaceGroups.toArray());
+  const workspaces = useLiveQuery(() => db.workspaces.toArray());
+  const undefinedTabsCount = useLiveQuery(() =>
+    db.activeTabs.where("workspaceId").equals(-1).count(),
+  );
+  const activeWorkspace = useLiveQuery(() =>
+    db.workspaces.where("active").equals(1).first(),
+  );
+
+  const standaloneWorkspaces = workspaces?.filter((w) => !w.groupId) || [];
+  const groupedWorkspaces = new Map<number, Workspace[]>();
+
+  if (workspaces) {
+    for (const workspace of workspaces) {
+      if (workspace.groupId) {
+        if (!groupedWorkspaces.has(workspace.groupId)) {
+          groupedWorkspaces.set(workspace.groupId, []);
+        }
+        groupedWorkspaces.get(workspace.groupId)?.push(workspace);
+      }
+    }
+  }
+
+  // Show undefined workspace if there are tabs OR if no workspace is active (meaning undefined workspace is active)
+  const isUndefinedWorkspaceActive = !activeWorkspace;
+  const shouldShowUndefinedWorkspace =
+    typeof undefinedTabsCount === "number" &&
+    (undefinedTabsCount > 0 || isUndefinedWorkspaceActive);
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>Workspaces</SidebarGroupLabel>
+      <SidebarMenu>
+        {shouldShowUndefinedWorkspace && (
+          <UndefinedWorkspaceItem
+            tabsCount={undefinedTabsCount || 0}
+            onPreview={() => setPreviewWorkspaceId(-1)}
+            isPreviewed={previewWorkspaceId === -1}
+          />
+        )}
+        {workspaceGroups?.map((group) => (
+          <WorkspaceGroupItem
+            key={group.id}
+            group={group}
+            workspaces={groupedWorkspaces.get(group.id) || []}
+            onPreview={setPreviewWorkspaceId}
+            previewWorkspaceId={previewWorkspaceId}
+          />
+        ))}
+        {standaloneWorkspaces.map((workspace) => (
+          <WorkspaceItem
+            key={workspace.id}
+            workspace={workspace}
+            onPreview={setPreviewWorkspaceId}
+            isPreviewed={previewWorkspaceId === workspace.id}
+          />
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
