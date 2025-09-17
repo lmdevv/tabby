@@ -1,6 +1,6 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "Tabby",
+  "description": "Manage your tabs with Tabby",
   "private": true,
   "version": "0.0.0",
   "type": "module",
