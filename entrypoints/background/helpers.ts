@@ -26,6 +26,33 @@ export function isDashboardTab(tab: Browser.tabs.Tab): boolean {
   return false;
 }
 
+// Helper function to clean up empty tab groups
+export async function cleanupEmptyTabGroup(
+  groupId: number,
+  workspaceId: number,
+) {
+  try {
+    const remainingTabsInGroup = await db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((t) => t.groupId === groupId && t.tabStatus === "active")
+      .toArray();
+
+    if (remainingTabsInGroup.length === 0) {
+      const group = await db.tabGroups.get(groupId);
+      if (group && group.groupStatus === "active") {
+        await db.tabGroups.delete(groupId);
+        console.log(`🗑️ Cleaned up empty group: ${group.title || groupId}`);
+        return true; // Group was cleaned up
+      }
+    }
+    return false; // Group not cleaned up
+  } catch (error) {
+    console.error(`Error cleaning up group ${groupId}:`, error);
+    return false;
+  }
+}
+
 export async function refreshActiveTabs() {
   const liveTabs = await browser.tabs.query({});
   const activeWorkspace = await db.workspaces.where("active").equals(1).first();
@@ -264,6 +291,12 @@ export async function switchWorkspaceTabs(workspaceId: number) {
       .equals(workspaceId)
       .toArray();
 
+    // Get tab groups for the new workspace from the database (including archived ones)
+    const workspaceTabGroups = await db.tabGroups
+      .where("workspaceId")
+      .equals(workspaceId)
+      .toArray();
+
     // Group tabs by their original window IDs and sort by index within each window
     const tabsByWindow = new Map<number, Tab[]>();
     for (const tab of workspaceTabsToOpen) {
@@ -354,6 +387,9 @@ export async function switchWorkspaceTabs(workspaceId: number) {
       const tabsForWindow = tabsByWindow.get(originalWindowId);
       if (!tabsForWindow) continue;
 
+      // Map to track old tab ID to new tab ID for grouping
+      const tabIdMapping = new Map<number, number>();
+
       for (const tabData of tabsForWindow) {
         if (tabData.url) {
           try {
@@ -366,6 +402,10 @@ export async function switchWorkspaceTabs(workspaceId: number) {
 
             // Update the tab in the database with new browser IDs while preserving stableId
             if (newTab.id && newTab.windowId) {
+              if (tabData.id) {
+                tabIdMapping.set(tabData.id, newTab.id);
+              }
+
               await db.activeTabs.put({
                 ...tabData,
                 id: newTab.id,
@@ -383,6 +423,66 @@ export async function switchWorkspaceTabs(workspaceId: number) {
           }
         }
       }
+
+      // Now restore tab groups for this window
+      const groupsInWindow = workspaceTabGroups.filter(
+        (group) => group.windowId === originalWindowId,
+      );
+
+      for (const groupData of groupsInWindow) {
+        try {
+          // Find tabs that belong to this group and get their new IDs
+          const tabsInGroup = tabsForWindow.filter(
+            (tab) => tab.groupId === groupData.id,
+          );
+          const newTabIds = tabsInGroup
+            .map((tab) => (tab.id ? tabIdMapping.get(tab.id) : undefined))
+            .filter((id): id is number => id !== undefined);
+
+          if (newTabIds.length > 0) {
+            // Create the group with the tabs
+            const newGroupId = await browser.tabs.group({
+              tabIds: newTabIds,
+              createProperties: { windowId: targetWindowId },
+            });
+
+            // Update the group properties (title, color, collapsed state)
+            await browser.tabGroups.update(newGroupId, {
+              title: groupData.title,
+              color: groupData.color,
+              collapsed: groupData.collapsed,
+            });
+
+            // Update the group in the database with new browser ID while preserving stableId
+            // Also set status to "active" since we're restoring it
+            await db.tabGroups.put({
+              ...groupData,
+              id: newGroupId,
+              windowId: targetWindowId,
+              groupStatus: "active",
+              updatedAt: Date.now(),
+              // stableId is preserved from groupData
+            });
+
+            // Update all tabs in this group to have the new groupId
+            for (const newTabId of newTabIds) {
+              await db.activeTabs
+                .where("id")
+                .equals(newTabId)
+                .modify({ groupId: newGroupId, updatedAt: Date.now() });
+            }
+
+            console.log(
+              `✅ Restored group "${groupData.title}" with ${newTabIds.length} tabs`,
+            );
+          }
+        } catch (groupError) {
+          console.error(
+            `Failed to restore group "${groupData.title}":`,
+            groupError,
+          );
+        }
+      }
     }
 
     // Remove archived tabs from database
@@ -390,6 +490,19 @@ export async function switchWorkspaceTabs(workspaceId: number) {
       .where("workspaceId")
       .equals(workspaceId)
       .and((t) => t.tabStatus === "archived")
+      .delete();
+
+    // Remove archived tabs and groups from database
+    await db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((t) => t.tabStatus === "archived")
+      .delete();
+
+    await db.tabGroups
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((g) => g.groupStatus === "archived")
       .delete();
 
     // Focus the first window (dashboard window)

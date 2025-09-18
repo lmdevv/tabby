@@ -8,7 +8,8 @@ import {
   refreshActiveTabs,
   switchWorkspaceTabs,
 } from "./helpers";
-import { setupTabListeners } from "./tab-listeners";
+import { setupTabListeners, validateAllTabs } from "./tab-listeners";
+import { setupTabGroupListeners, syncAllTabGroups } from "./tabGroup-listeners";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;
@@ -79,6 +80,49 @@ export default defineBackground(() => {
 
   // Setup tab listeners
   setupTabListeners(() => activeWorkspace);
+
+  //
+  // Tab Groups
+  //
+  // Initial sync of all existing tab groups on startup
+  syncAllTabGroups(() => activeWorkspace);
+
+  // Setup tab group listeners
+  setupTabGroupListeners(() => activeWorkspace);
+
+  //
+  // Periodic operations
+  //
+
+  // Periodic reconciliation to ensure tab state stays fresh (every 2 minutes)
+  setInterval(
+    () => {
+      reconcileTabs().catch((err) => {
+        console.error("Periodic reconciliation failed:", err);
+      });
+    },
+    10 * 60 * 1000,
+  ); // 10 minutes
+
+  // Periodic tab validation to ensure windowId and other properties stay in sync (every 30 seconds)
+  setInterval(
+    () => {
+      validateAllTabs().catch((err) => {
+        console.error("Periodic tab validation failed:", err);
+      });
+    },
+    10 * 60 * 1000,
+  ); // 10 minutes
+
+  // Periodic tab group sync to ensure group state stays fresh (every minute)
+  setInterval(
+    () => {
+      syncAllTabGroups(() => activeWorkspace).catch((err) => {
+        console.error("Periodic tab group sync failed:", err);
+      });
+    },
+    10 * 60 * 1000,
+  ); // 10 minutes
 
   //
   // Messages
