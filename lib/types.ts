@@ -10,6 +10,14 @@ export interface Tab extends Browser.tabs.Tab {
   updatedAt: number;
 }
 
+export interface TabGroup extends Browser.tabGroups.TabGroup {
+  stableId: string;
+  workspaceId: number;
+  groupStatus: "active" | "archived";
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Workspace {
   id: number;
   groupId?: number;
