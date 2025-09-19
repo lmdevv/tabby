@@ -29,6 +29,7 @@ type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { browser } from "wxt/browser";
+import { ModeToggle } from "@/components/mode-toggle";
 
 type FilterType =
   | "all"
@@ -497,6 +498,7 @@ export default function App() {
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <ModeToggle />
             <Button variant="outline" onClick={handleRefresh}>
               Refresh
             </Button>
