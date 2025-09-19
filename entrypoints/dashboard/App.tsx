@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Browser } from "wxt/browser";
+import { GroupDialog } from "@/components/group-dialog";
 import { QuickActionsPanel } from "@/components/quick-actions-panel";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { TabsStats } from "@/components/tabs-stats";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { WindowComponent } from "@/components/window-component";
 import { db } from "@/entrypoints/background/db";
+import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 
 type TabGroup = Browser.tabGroups.TabGroup;
@@ -64,6 +66,12 @@ export default function App() {
   const [showUrls, setShowUrls] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
   const [minimizedWindows, setMinimizedWindows] = useState<number[]>([]);
+  const [groupDialog, setGroupDialog] = useState<{
+    open: boolean;
+    groupId?: number;
+  }>({
+    open: false,
+  });
 
   // Combine workspace queries to reduce re-renders
   const workspaceData = useLiveQuery(async () => {
@@ -429,9 +437,47 @@ export default function App() {
   }, []);
 
   const handleEditGroup = useCallback(async (groupId: number) => {
-    // For now, just log - you can implement a proper edit dialog later
-    console.log("Edit group:", groupId);
+    try {
+      setGroupDialog({
+        open: true,
+        groupId,
+      });
+    } catch (error) {
+      console.error("Failed to open edit group dialog:", error);
+    }
   }, []);
+
+  const handleEditGroupConfirm = useCallback(
+    async (name: string, color: string) => {
+      if (!groupDialog.groupId) {
+        console.error("No groupId in dialog state");
+        return;
+      }
+      try {
+        // Convert hex color to browser enum
+        const browserColor = hexToBrowserColor(color);
+
+        // Use message passing to background script (following the pattern of other operations)
+        await browser.runtime.sendMessage({
+          type: "updateTabGroup",
+          groupId: groupDialog.groupId,
+          title: name,
+          color: browserColor,
+        });
+
+        console.log(`✅ Updated group "${name}" with color ${color}`);
+      } catch (error) {
+        console.error("Failed to update group:", error);
+        // Log more detailed error information
+        if (error instanceof Error) {
+          console.error("Error name:", error.name);
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        }
+      }
+    },
+    [groupDialog.groupId],
+  );
 
   const handleToggleWindowMinimize = useCallback((windowId: number) => {
     setMinimizedWindows((prev) =>
@@ -577,7 +623,6 @@ export default function App() {
             <ScrollArea className="flex-1">
               <div className="space-y-6">
                 {windowGroups.map((windowGroup, index) => {
-                  console.log("Rendering window group:", windowGroup);
                   return (
                     <WindowComponent
                       key={windowGroup.windowId}
@@ -618,6 +663,16 @@ export default function App() {
           )}
         </div>
       </SidebarInset>
+
+      {/* Group Edit Dialog */}
+      <GroupDialog
+        open={groupDialog.open}
+        onOpenChange={(open) => setGroupDialog((prev) => ({ ...prev, open }))}
+        onConfirm={handleEditGroupConfirm}
+        groupId={groupDialog.groupId}
+        title="Edit Tab Group"
+        description="Edit the group name and color"
+      />
     </SidebarProvider>
   );
 }

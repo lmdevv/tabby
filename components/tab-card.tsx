@@ -1,5 +1,6 @@
 import { Archive, Star, Volume2, VolumeX, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ContextMenu,
@@ -69,10 +70,10 @@ export function TabCard({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           className={cn(
-            "flex w-full items-center rounded-md border border-transparent p-2 text-left",
+            "flex h-auto w-full items-center justify-start rounded-md border border-transparent p-2 text-left",
             "transition-all duration-200 hover:border-accent hover:bg-accent/50",
             "group relative",
             tabGroup ? "border-l-4" : "",
@@ -98,37 +99,19 @@ export function TabCard({
 
           <div className="flex w-full items-center gap-2">
             {/* Checkbox for multi-select */}
-            <button
-              type="button"
-              className="flex-shrink-0"
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => {
+                if (tab.id !== undefined) {
+                  onSelectChange(tab.id, checked === true);
+                }
+              }}
               onClick={(e) => {
                 e.stopPropagation();
-                if (tab.id !== undefined) {
-                  onSelectChange(tab.id, !isSelected);
-                }
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (tab.id !== undefined) {
-                    onSelectChange(tab.id, !isSelected);
-                  }
-                }
-              }}
-              aria-label="Select tab"
-            >
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => {
-                  if (tab.id !== undefined) {
-                    onSelectChange(tab.id, checked === true);
-                  }
-                }}
-                aria-label={`Select ${title}`}
-                className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-              />
-            </button>
+              aria-label={`Select ${title}`}
+              className="h-3.5 w-3.5 flex-shrink-0 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            />
 
             {/* Favicon */}
             <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
@@ -242,9 +225,9 @@ export function TabCard({
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="rounded-full p-0.5 opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (tab.id !== undefined) {
@@ -263,7 +246,7 @@ export function TabCard({
                       title="Close tab"
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Close tab</p>
@@ -272,7 +255,7 @@ export function TabCard({
               </TooltipProvider>
             </div>
           </div>
-        </button>
+        </Button>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem

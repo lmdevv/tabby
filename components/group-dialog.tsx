@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,46 +11,63 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { db } from "@/entrypoints/background/db";
+import {
+  browserColorToHex,
+  getDefaultTabGroupColor,
+  TAB_GROUP_COLORS,
+} from "@/lib/tab-group-colors";
 
 interface GroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (name: string, color: string) => void;
-  initialName?: string;
-  initialColor?: string;
+  groupId?: number;
   title: string;
   description: string;
 }
-
-const groupColors = [
-  { name: "Blue", value: "#0ea5e9" },
-  { name: "Green", value: "#16a34a" },
-  { name: "Orange", value: "#ea580c" },
-  { name: "Purple", value: "#9333ea" },
-  { name: "Red", value: "#dc2626" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Indigo", value: "#4f46e5" },
-  { name: "Teal", value: "#0d9488" },
-];
 
 export function GroupDialog({
   open,
   onOpenChange,
   onConfirm,
-  initialName = "",
-  initialColor = groupColors[0].value,
+  groupId,
   title,
   description,
 }: GroupDialogProps) {
+  // Fetch group data directly from database
+  const group = useLiveQuery(() => {
+    if (!groupId || !open) return undefined;
+    return db.tabGroups.get(groupId);
+  }, [groupId]);
+
+  // Initialize form values from database or defaults
+  const initialName = group?.title || "";
+  const initialColor = group?.color
+    ? browserColorToHex(group.color)
+    : getDefaultTabGroupColor().value;
+
   const [name, setName] = useState(initialName);
   const [selectedColor, setSelectedColor] = useState(initialColor);
+
+  // Sync form state when dialog opens or group data changes
+  useEffect(() => {
+    if (open && group) {
+      setName(group.title || "");
+      setSelectedColor(
+        group.color
+          ? browserColorToHex(group.color)
+          : getDefaultTabGroupColor().value,
+      );
+    }
+  }, [open, group]);
 
   const handleConfirm = () => {
     if (name.trim()) {
       onConfirm(name.trim(), selectedColor);
       onOpenChange(false);
       setName("");
-      setSelectedColor(groupColors[0].value);
+      setSelectedColor(getDefaultTabGroupColor().value);
     }
   };
 
@@ -89,7 +107,7 @@ export function GroupDialog({
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Color</Label>
             <div className="col-span-3 flex flex-wrap gap-2">
-              {groupColors.map((color) => (
+              {TAB_GROUP_COLORS.map((color) => (
                 <button
                   key={color.value}
                   type="button"

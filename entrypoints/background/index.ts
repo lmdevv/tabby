@@ -138,9 +138,34 @@ export default defineBackground(() => {
 
   // Maybe this could be done on dashboard? without relying on service worker? idk if that would be better or more reliable
   // TODO: Make one big ops for db for atomic updates
+  // NOTE: on the logs, this updatetabgroup is getting logged on application console, not service worker, so this message comm doesnt even need to be necessary then
   browser.runtime.onMessage.addListener(
     async (message: RuntimeMessage, _sender) => {
-      if (typeof message === "object" && message.type === "openWorkspace") {
+      if (typeof message === "object" && message.type === "updateTabGroup") {
+        console.log("Updating tab group", message.groupId, "with", {
+          title: message.title,
+          color: message.color,
+        });
+
+        try {
+          // Update the browser tab group using the background script's permissions
+          await browser.tabGroups.update(message.groupId, {
+            title: message.title,
+
+            color: message.color as Browser.tabGroups.ColorEnum,
+          });
+          return { success: true };
+        } catch (error) {
+          console.error("❌ Failed to update tab group:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      } else if (
+        typeof message === "object" &&
+        message.type === "openWorkspace"
+      ) {
         console.log("Opening workspace", message.workspaceId);
 
         // Get the current active workspace before switching

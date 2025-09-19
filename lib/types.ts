@@ -72,7 +72,15 @@ export interface RefreshTabsMessage {
   type: "refreshTabs";
 }
 
+export interface UpdateTabGroupMessage {
+  type: "updateTabGroup";
+  groupId: number;
+  title: string;
+  color: string;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
-  | RefreshTabsMessage;
+  | RefreshTabsMessage
+  | UpdateTabGroupMessage;
