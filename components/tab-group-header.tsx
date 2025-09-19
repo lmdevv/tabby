@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Browser } from "wxt/browser";
+import { useTheme } from "@/components/theme-provider";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -9,6 +10,20 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+
+const isDarkFromTheme = (theme: "light" | "dark" | "system"): boolean => {
+  if (theme === "dark") return true;
+  if (theme === "light") return false;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function"
+  ) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  return false;
+};
+
+import { browserColorToHex, withAlpha } from "@/lib/tab-group-colors";
 
 type TabGroup = Browser.tabGroups.TabGroup;
 
@@ -31,6 +46,14 @@ export function TabGroupHeader({
   onUngroupAll,
   onCloseAll,
 }: TabGroupHeaderProps) {
+  const { theme } = useTheme();
+  const accentHex =
+    (groupInfo.color?.toString?.().startsWith("#")
+      ? (groupInfo.color as string)
+      : browserColorToHex(groupInfo.color as Browser.tabGroups.ColorEnum)) ||
+    "#6b7280"; // fallback grey
+  const headerBg = withAlpha(accentHex, isDarkFromTheme(theme) ? 0.2 : 0.1);
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -45,24 +68,15 @@ export function TabGroupHeader({
             }
           }}
           aria-label={`${collapsed ? "Expand" : "Collapse"} group ${groupInfo.title || "Untitled"}`}
-          style={{ backgroundColor: `${groupInfo.color}10` }}
+          style={{ backgroundColor: headerBg }}
         >
           <div className="flex items-center gap-2">
             {collapsed ? (
-              <ChevronRight
-                className="h-4 w-4"
-                style={{ color: groupInfo.color }}
-              />
+              <ChevronRight className="h-4 w-4" style={{ color: accentHex }} />
             ) : (
-              <ChevronDown
-                className="h-4 w-4"
-                style={{ color: groupInfo.color }}
-              />
+              <ChevronDown className="h-4 w-4" style={{ color: accentHex }} />
             )}
-            <span
-              className="font-medium text-sm"
-              style={{ color: groupInfo.color }}
-            >
+            <span className="font-medium text-sm">
               {groupInfo.title || "Untitled"}
             </span>
           </div>

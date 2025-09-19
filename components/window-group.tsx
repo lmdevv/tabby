@@ -1,6 +1,8 @@
 "use client";
 
 import { Monitor } from "lucide-react";
+import type { Browser } from "wxt/browser";
+import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab, TabGroup } from "@/lib/types";
 import { TabCard } from "./tab-card";
 import { TabGroupHeader } from "./tab-group-header";
@@ -131,8 +133,12 @@ export function WindowGroup({
                       isSelected={selectedTabs.includes(tab.id)}
                       onSelectChange={onSelectTab}
                       tabGroup={{
-                        name: groupInfo.name,
-                        color: groupInfo.color,
+                        name: groupInfo.title ?? "Untitled",
+                        color: (groupInfo.color as string)?.startsWith?.("#")
+                          ? (groupInfo.color as string)
+                          : browserColorToHex(
+                              groupInfo.color as Browser.tabGroups.ColorEnum,
+                            ),
                       }}
                     />
                   ))}

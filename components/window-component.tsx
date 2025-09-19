@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2, Monitor, X } from "lucide-react";
 import type { Browser } from "wxt/browser";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 import { TabCard } from "./tab-card";
 import { TabGroupHeader } from "./tab-group-header";
@@ -238,7 +239,14 @@ export function WindowComponent({
                       onSelectChange={onSelectTab}
                       tabGroup={{
                         name: element.groupInfo?.title || "Untitled",
-                        color: element.groupInfo?.color || "grey",
+                        color: (
+                          element.groupInfo?.color as string
+                        )?.startsWith?.("#")
+                          ? (element.groupInfo?.color as string)
+                          : browserColorToHex(
+                              element.groupInfo
+                                ?.color as Browser.tabGroups.ColorEnum,
+                            ),
                       }}
                     />
                   </div>

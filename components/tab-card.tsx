@@ -15,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { withAlpha } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +78,6 @@ export function TabCard({
             "transition-all duration-200 hover:border-accent hover:bg-accent/50",
             "group relative",
             tabGroup ? "border-l-4" : "",
-            tabGroup ? `border-l-[${tabGroup.color}]` : "",
           )}
           onClick={onClick}
           onKeyDown={(e) => {
@@ -87,7 +87,14 @@ export function TabCard({
             }
           }}
           aria-label={`Switch to tab: ${title || "Untitled"}`}
-          style={tabGroup ? { borderLeftColor: tabGroup.color } : {}}
+          style={
+            tabGroup
+              ? {
+                  borderLeftColor: tabGroup.color,
+                  backgroundColor: withAlpha(tabGroup.color, 0.06),
+                }
+              : {}
+          }
         >
           {/* Add group indicator if tab is part of a group */}
           {tabGroup && (
