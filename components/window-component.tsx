@@ -48,7 +48,7 @@ export function WindowComponent({
   showUrls,
   onTabClick,
   onDeleteTab,
-  onPinTab,
+  onPinTab: _onPinTab,
   onMuteTab,
   onHighlightTab,
   onSelectTab,
@@ -173,7 +173,7 @@ export function WindowComponent({
       {!minimized && (
         <CardContent className="p-0">
           <div className="space-y-1 p-3">
-            {orderedElements.map((element, index) => {
+            {orderedElements.map((element, _index) => {
               if (
                 element.type === "groupHeader" &&
                 element.group &&

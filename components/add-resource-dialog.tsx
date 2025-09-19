@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +41,11 @@ export function AddResourceDialog({
   resourceGroups,
   title = "Add Resource",
 }: AddResourceDialogProps) {
+  const titleId = useId();
+  const urlId = useId();
+  const groupSelectId = useId();
+  const tagsId = useId();
+  const descriptionId = useId();
   const [resourceTitle, setResourceTitle] = useState("");
   const [url, setUrl] = useState("");
   const [groupId, setGroupId] = useState<string>("");
@@ -57,7 +62,7 @@ export function AddResourceDialog({
       onConfirm(
         resourceTitle.trim(),
         url.trim(),
-        Number.parseInt(groupId),
+        Number.parseInt(groupId, 10),
         description.trim(),
         tags,
       );
@@ -92,11 +97,11 @@ export function AddResourceDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
+            <Label htmlFor={titleId} className="text-right">
               Title
             </Label>
             <Input
-              id="title"
+              id={titleId}
               value={resourceTitle}
               onChange={(e) => setResourceTitle(e.target.value)}
               className="col-span-3"
@@ -104,11 +109,11 @@ export function AddResourceDialog({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="url" className="text-right">
+            <Label htmlFor={urlId} className="text-right">
               URL
             </Label>
             <Input
-              id="url"
+              id={urlId}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="col-span-3"
@@ -117,11 +122,11 @@ export function AddResourceDialog({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="group" className="text-right">
+            <Label htmlFor={groupSelectId} className="text-right">
               Group
             </Label>
             <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger id={groupSelectId} className="col-span-3">
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
@@ -134,11 +139,11 @@ export function AddResourceDialog({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tags" className="text-right">
+            <Label htmlFor={tagsId} className="text-right">
               Tags
             </Label>
             <Input
-              id="tags"
+              id={tagsId}
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               className="col-span-3"
@@ -146,11 +151,11 @@ export function AddResourceDialog({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
+            <Label htmlFor={descriptionId} className="text-right">
               Description
             </Label>
             <Textarea
-              id="description"
+              id={descriptionId}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="col-span-3"

@@ -1,7 +1,7 @@
 "use client";
 import { useLiveQuery } from "dexie-react-hooks";
 import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +40,10 @@ export function CreateWorkspace({
   trigger,
   showDefaultTrigger = true,
 }: CreateWorkspaceProps) {
+  const nameId = useId();
+  const descriptionId = useId();
+  const groupSelectId = useId();
+  const newGroupInputId = useId();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
@@ -144,11 +148,11 @@ export function CreateWorkspace({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">
+            <Label htmlFor={nameId}>
               Name<span className="text-destructive">*</span>
             </Label>
             <Input
-              id="name"
+              id={nameId}
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
               placeholder="My Workspace"
@@ -156,9 +160,9 @@ export function CreateWorkspace({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor={descriptionId}>Description</Label>
             <Textarea
-              id="description"
+              id={descriptionId}
               value={workspaceDescription}
               onChange={(e) => setWorkspaceDescription(e.target.value)}
               className="max-h-8 resize-none"
@@ -167,9 +171,9 @@ export function CreateWorkspace({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="group">Group</Label>
+            <Label htmlFor={groupSelectId}>Group</Label>
             <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-              <SelectTrigger id="group">
+              <SelectTrigger id={groupSelectId}>
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
@@ -191,13 +195,13 @@ export function CreateWorkspace({
           {selectedGroupId === "new" && (
             <div className="space-y-2">
               <Label
-                htmlFor="newGroup"
+                htmlFor={newGroupInputId}
                 className="after:ml-0.5 after:text-red-500 after:content-['*']"
               >
                 New Group Name
               </Label>
               <Input
-                id="newGroup"
+                id={newGroupInputId}
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="Group Name"

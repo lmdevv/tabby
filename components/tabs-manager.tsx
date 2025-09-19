@@ -182,7 +182,7 @@ export function TabsManager() {
     setSelectedTabs((prev) => prev.filter((tabId) => tabId !== id));
   };
 
-  const handlePinTab = (id: number, pinned: boolean) => {
+  const _handlePinTab = (_id: number, _pinned: boolean) => {
     // Pinned tabs feature removed
     console.log("Pinned tabs feature has been removed");
   };
@@ -213,7 +213,7 @@ export function TabsManager() {
     );
   };
 
-  const allPinned = false; // Pinned feature removed
+  const _allPinned = false; // Pinned feature removed
 
   const handleTogglePinTabs = () => {
     // Pinned tabs feature removed
@@ -262,7 +262,7 @@ export function TabsManager() {
     }
   };
 
-  const handleToggleGroupCollapse = (windowId: number, groupId: number) => {
+  const handleToggleGroupCollapse = (_windowId: number, groupId: number) => {
     setTabGroups((prevGroups) =>
       prevGroups.map((group) =>
         group.id === groupId

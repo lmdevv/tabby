@@ -37,7 +37,7 @@ export function TabCard({
   tab,
   onClick,
   onDelete = () => {},
-  onPin = () => {},
+  onPin: _onPin = () => {},
   onMute = () => {},
   onHighlight = () => {},
   showTags,
@@ -56,7 +56,6 @@ export function TabCard({
     highlighted,
     discarded,
     tags,
-    index,
   } = tab;
 
   // Format the URL for display

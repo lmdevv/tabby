@@ -4,7 +4,7 @@ import { db } from "./db";
 
 // Helper function to get the current workspace for tab groups
 async function getTabGroupWorkspace(
-  windowId: number,
+  _windowId: number,
   getActiveWorkspace: () => Workspace | undefined,
 ): Promise<number> {
   const activeWorkspace = getActiveWorkspace();

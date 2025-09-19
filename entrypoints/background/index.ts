@@ -40,11 +40,7 @@ export default defineBackground(() => {
       }
     } catch (err) {
       console.error("Error ensuring dashboard tab:", err);
-      if (
-        typeof browser !== "undefined" &&
-        browser.runtime &&
-        browser.runtime.lastError
-      ) {
+      if (browser?.runtime?.lastError) {
         console.error("Browser last error:", browser.runtime.lastError.message);
       }
     }

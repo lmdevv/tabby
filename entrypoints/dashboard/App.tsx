@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from "react";
-import type { Browser } from "wxt/browser";
 import { GroupDialog } from "@/components/group-dialog";
 import { QuickActionsPanel } from "@/components/quick-actions-panel";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
@@ -27,7 +26,7 @@ import { db } from "@/entrypoints/background/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 
-type TabGroup = Browser.tabGroups.TabGroup;
+// type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { browser } from "wxt/browser";
@@ -391,7 +390,7 @@ export default function App() {
   }, [filteredTabs, selectedTabs.length]);
 
   const handleToggleGroupCollapse = useCallback(
-    async (windowId: number, groupId: number) => {
+    async (_windowId: number, groupId: number) => {
       try {
         const group = tabGroups?.find((g) => g.id === groupId);
         if (group && typeof browser?.tabGroups?.update === "function") {

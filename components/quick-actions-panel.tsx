@@ -26,13 +26,13 @@ interface QuickActionsPanelProps {
 
 export function QuickActionsPanel({
   selectedTabsCount,
-  allPinned,
+  allPinned: _allPinned,
   allMuted,
   allHighlighted,
   canGroup,
   canUngroup,
   onCloseTabs,
-  onTogglePinTabs,
+  onTogglePinTabs: _onTogglePinTabs,
   onToggleMuteTabs,
   onToggleHighlightTabs,
   onGroupTabs,

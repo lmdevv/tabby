@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +35,7 @@ export function GroupDialog({
   title,
   description,
 }: GroupDialogProps) {
+  const nameId = useId();
   // Fetch group data directly from database
   const group = useLiveQuery(() => {
     if (!groupId || !open) return undefined;
@@ -88,11 +89,11 @@ export function GroupDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor={nameId} className="text-right">
               Name
             </Label>
             <Input
-              id="name"
+              id={nameId}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"

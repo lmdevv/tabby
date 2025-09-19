@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,8 @@ export function ResourceGroupDialog({
   title,
   description,
 }: ResourceGroupDialogProps) {
+  const nameId = useId();
+  const descriptionId = useId();
   const [name, setName] = useState(initialName);
   const [groupDescription, setGroupDescription] = useState(initialDescription);
 
@@ -62,11 +64,11 @@ export function ResourceGroupDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor={nameId} className="text-right">
               Name
             </Label>
             <Input
-              id="name"
+              id={nameId}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
@@ -79,11 +81,11 @@ export function ResourceGroupDialog({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
+            <Label htmlFor={descriptionId} className="text-right">
               Description
             </Label>
             <Textarea
-              id="description"
+              id={descriptionId}
               value={groupDescription}
               onChange={(e) => setGroupDescription(e.target.value)}
               className="col-span-3"
