@@ -1,7 +1,9 @@
-import { useLiveQuery } from "dexie-react-hooks";
 import { useCallback, useMemo, useState } from "react";
-import { browser } from "wxt/browser";
+import type { Browser } from "wxt/browser";
+import { QuickActionsPanel } from "@/components/quick-actions-panel";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { TabsStats } from "@/components/tabs-stats";
+import { TopToolbar } from "@/components/top-toolbar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -12,19 +14,55 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { WindowComponent } from "@/components/window-component";
 import { db } from "@/entrypoints/background/db";
 import type { Tab } from "@/lib/types";
+
+type TabGroup = Browser.tabGroups.TabGroup;
+
+import { useLiveQuery } from "dexie-react-hooks";
+import { browser } from "wxt/browser";
+
+type FilterType =
+  | "all"
+  | "pinned"
+  | "audible"
+  | "muted"
+  | "highlighted"
+  | "discarded";
+
+interface TabGroupInWindow {
+  groupId: number;
+  tabs: Tab[];
+  collapsed: boolean;
+}
+
+interface WindowGroupData {
+  windowId: number;
+  tabs: Tab[];
+  tabGroups: TabGroupInWindow[];
+  minimized: boolean;
+}
 
 export default function App() {
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(
     null,
   );
+
+  // UI state for the new tab management system
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTags, setShowTags] = useState(true);
+  const [showUrls, setShowUrls] = useState(true);
+  const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
+  const [minimizedWindows, setMinimizedWindows] = useState<number[]>([]);
 
   // Combine workspace queries to reduce re-renders
   const workspaceData = useLiveQuery(async () => {
@@ -71,6 +109,29 @@ export default function App() {
       .toArray();
   }, [shownWorkspaceId]);
 
+  // Query tab groups from the database instead of browser API
+  // For active workspace, only show active groups
+  // For non-active workspaces (preview), show all groups (active + archived) to display group info
+  const tabGroups = useLiveQuery(() => {
+    if (!shownWorkspaceId) return [];
+
+    const isActiveWorkspace =
+      shownWorkspaceId === workspaceData?.activeWorkspace?.id;
+
+    if (isActiveWorkspace) {
+      // For active workspace, only show active groups for this specific workspace
+      return db.tabGroups
+        .where("workspaceId")
+        .equals(shownWorkspaceId)
+        .and((g) => g.groupStatus === "active")
+        .toArray();
+    }
+
+    // For preview workspaces, show all groups (active + archived) for this specific workspace
+    // to display group properties correctly
+    return db.tabGroups.where("workspaceId").equals(shownWorkspaceId).toArray();
+  }, [shownWorkspaceId, workspaceData?.activeWorkspace?.id]);
+
   const handleRefresh = useCallback((): void => {
     browser.runtime.sendMessage({ type: "refreshTabs" });
   }, []);
@@ -106,21 +167,278 @@ export default function App() {
     }
   }, [workspaceData?.activeWorkspace]);
 
-  // Memoize the window tabs grouping to prevent recalculation on every render
-  const windowTabs = useMemo(() => {
+  // Get all unique tags from tabs
+  const allTags = useMemo(() => {
+    if (!shownTabs?.length) return [];
+    return Array.from(
+      new Set(shownTabs.flatMap((tab) => tab.tags || []).filter(Boolean)),
+    );
+  }, [shownTabs]);
+
+  // Filter tabs based on active filter and selected tags
+  const filteredTabs = useMemo(() => {
     if (!shownTabs?.length) return [];
 
-    return Object.entries(
-      shownTabs.reduce(
-        (acc, tab) => {
-          acc[tab.windowId] = acc[tab.windowId] || [];
-          acc[tab.windowId].push(tab);
-          return acc;
-        },
-        {} as Record<number, Tab[]>,
-      ),
-    ).sort(([aId], [bId]) => Number(aId) - Number(bId));
-  }, [shownTabs]);
+    return shownTabs
+      .filter((tab) => {
+        if (activeFilter === "pinned") return tab.pinned;
+        if (activeFilter === "audible") return tab.audible;
+        if (activeFilter === "muted") return tab.mutedInfo?.muted;
+        if (activeFilter === "discarded") return tab.discarded;
+        if (activeFilter === "highlighted") return tab.highlighted;
+        return true;
+      })
+      .filter((tab) => {
+        if (selectedTags.length === 0) return true;
+        return selectedTags.every((tag) => tab.tags?.includes(tag));
+      })
+      .sort((a, b) => {
+        // First sort by window ID
+        if (a.windowId !== b.windowId) {
+          return a.windowId - b.windowId;
+        }
+        // Then sort by browser tab index within the same window
+        return a.index - b.index;
+      });
+  }, [shownTabs, activeFilter, selectedTags]);
+
+  // Create an improved window grouping that maintains browser tab order
+  const windowGroups: WindowGroupData[] = useMemo(() => {
+    if (!filteredTabs.length) return [];
+
+    // Group tabs by window first
+    const tabsByWindow = filteredTabs.reduce(
+      (windows, tab) => {
+        if (!windows[tab.windowId]) {
+          windows[tab.windowId] = [];
+        }
+        windows[tab.windowId].push(tab);
+        return windows;
+      },
+      {} as Record<number, Tab[]>,
+    );
+
+    return Object.entries(tabsByWindow)
+      .map(([windowIdStr, tabs]) => {
+        const windowId = Number(windowIdStr);
+
+        // Sort tabs by their index to maintain browser order
+        const sortedTabs = tabs.sort((a, b) => a.index - b.index);
+
+        // Create tab groups while preserving order
+        const windowTabGroups: TabGroupInWindow[] = [];
+        const processedGroupIds = new Set<number>();
+
+        // Find all unique group IDs in this window
+        for (const tab of sortedTabs) {
+          if (
+            tab.groupId &&
+            tab.groupId !== -1 &&
+            !processedGroupIds.has(tab.groupId)
+          ) {
+            processedGroupIds.add(tab.groupId);
+
+            const groupTabs = sortedTabs.filter(
+              (t) => t.groupId === tab.groupId,
+            );
+            const groupInfo = tabGroups?.find((g) => g.id === tab.groupId);
+
+            windowTabGroups.push({
+              groupId: tab.groupId,
+              tabs: groupTabs,
+              collapsed: groupInfo?.collapsed || false,
+            });
+          }
+        }
+
+        return {
+          windowId,
+          tabs: sortedTabs,
+          tabGroups: windowTabGroups,
+          minimized: minimizedWindows.includes(windowId),
+        };
+      })
+      .sort((a, b) => a.windowId - b.windowId);
+  }, [filteredTabs, minimizedWindows, tabGroups]);
+
+  // Get the selected tab objects
+  const selectedTabObjects = useMemo(() => {
+    if (!shownTabs?.length) return [];
+    return shownTabs.filter(
+      (tab) => tab.id !== undefined && selectedTabs.includes(tab.id),
+    );
+  }, [shownTabs, selectedTabs]);
+
+  // Determine the state of selected tabs
+  const allMuted =
+    selectedTabObjects.length > 0 &&
+    selectedTabObjects.every((tab) => tab.mutedInfo?.muted);
+  const allHighlighted =
+    selectedTabObjects.length > 0 &&
+    selectedTabObjects.every((tab) => tab.highlighted);
+
+  // Check if selected tabs can be grouped/ungrouped
+  const selectedTabsInSameGroup =
+    selectedTabObjects.length > 0 &&
+    selectedTabObjects[0].groupId !== undefined &&
+    selectedTabObjects[0].groupId !== -1 &&
+    selectedTabObjects.every(
+      (tab) => tab.groupId === selectedTabObjects[0].groupId,
+    );
+
+  const someSelectedTabsHaveGroup = selectedTabObjects.some(
+    (tab) => tab.groupId !== undefined && tab.groupId !== -1,
+  );
+  const canGroup = selectedTabs.length > 1 && !selectedTabsInSameGroup;
+  const canUngroup = someSelectedTabsHaveGroup;
+
+  // Event handlers for tab management
+  const handleTabClick = useCallback(async (tab: Tab) => {
+    try {
+      if (tab.id !== undefined) {
+        await browser.tabs.update(tab.id, { active: true });
+        if (typeof tab.windowId === "number") {
+          await browser.windows.update(tab.windowId, { focused: true });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to switch to tab:", error);
+    }
+  }, []);
+
+  const handleDeleteTab = useCallback(async (id: number) => {
+    try {
+      await browser.tabs.remove(id);
+      setSelectedTabs((prev) => prev.filter((tabId) => tabId !== id));
+    } catch (error) {
+      console.error("Failed to close tab:", error);
+    }
+  }, []);
+
+  const handleMuteTab = useCallback(async (id: number, muted: boolean) => {
+    try {
+      await browser.tabs.update(id, { muted });
+    } catch (error) {
+      console.error("Failed to mute/unmute tab:", error);
+    }
+  }, []);
+
+  const handleHighlightTab = useCallback(
+    async (id: number, highlighted: boolean) => {
+      try {
+        await browser.tabs.update(id, { highlighted });
+      } catch (error) {
+        console.error("Failed to highlight/unhighlight tab:", error);
+      }
+    },
+    [],
+  );
+
+  const handleSelectTab = useCallback((id: number, selected: boolean) => {
+    setSelectedTabs((prev) =>
+      selected ? [...prev, id] : prev.filter((tabId) => tabId !== id),
+    );
+  }, []);
+
+  const handleToggleMuteTabs = useCallback(async () => {
+    const setMuted = !allMuted;
+    try {
+      await Promise.all(
+        selectedTabs.map((id) => browser.tabs.update(id, { muted: setMuted })),
+      );
+    } catch (error) {
+      console.error("Failed to toggle mute tabs:", error);
+    }
+  }, [selectedTabs, allMuted]);
+
+  const handleToggleHighlightTabs = useCallback(async () => {
+    const setHighlighted = !allHighlighted;
+    try {
+      await Promise.all(
+        selectedTabs.map((id) =>
+          browser.tabs.update(id, { highlighted: setHighlighted }),
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to toggle highlight tabs:", error);
+    }
+  }, [selectedTabs, allHighlighted]);
+
+  const handleCloseTabs = useCallback(async () => {
+    try {
+      await browser.tabs.remove(selectedTabs);
+      setSelectedTabs([]);
+    } catch (error) {
+      console.error("Failed to close selected tabs:", error);
+    }
+  }, [selectedTabs]);
+
+  const handleSelectAll = useCallback(() => {
+    if (!filteredTabs?.length) return;
+    const allTabIds = filteredTabs
+      .map((tab) => tab.id)
+      .filter((id): id is number => id !== undefined);
+    setSelectedTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
+  }, [filteredTabs, selectedTabs.length]);
+
+  const handleToggleGroupCollapse = useCallback(
+    async (windowId: number, groupId: number) => {
+      try {
+        const group = tabGroups?.find((g) => g.id === groupId);
+        if (group && typeof browser?.tabGroups?.update === "function") {
+          await browser.tabGroups.update(groupId, {
+            collapsed: !group.collapsed,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to toggle group collapse:", error);
+      }
+    },
+    [tabGroups],
+  );
+
+  const handleGroupTabs = useCallback(async () => {
+    if (!canGroup) return;
+    try {
+      if (typeof browser?.tabs?.group === "function") {
+        await browser.tabs.group({ tabIds: selectedTabs });
+        setSelectedTabs([]);
+      }
+    } catch (error) {
+      console.error("Failed to group tabs:", error);
+    }
+  }, [canGroup, selectedTabs]);
+
+  const handleUngroupTabs = useCallback(async (tabIds: number[]) => {
+    try {
+      if (typeof browser?.tabs?.ungroup === "function") {
+        await browser.tabs.ungroup(tabIds);
+      }
+    } catch (error) {
+      console.error("Failed to ungroup tabs:", error);
+    }
+  }, []);
+
+  const handleCloseTabsById = useCallback(async (tabIds: number[]) => {
+    try {
+      await browser.tabs.remove(tabIds);
+    } catch (error) {
+      console.error("Failed to close tabs:", error);
+    }
+  }, []);
+
+  const handleEditGroup = useCallback(async (groupId: number) => {
+    // For now, just log - you can implement a proper edit dialog later
+    console.log("Edit group:", groupId);
+  }, []);
+
+  const handleToggleWindowMinimize = useCallback((windowId: number) => {
+    setMinimizedWindows((prev) =>
+      prev.includes(windowId)
+        ? prev.filter((id) => id !== windowId)
+        : [...prev, windowId],
+    );
+  }, []);
 
   return (
     <SidebarProvider>
@@ -175,7 +493,9 @@ export default function App() {
             )}
           </div>
         </header>
+
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleRefresh}>
               Refresh
@@ -202,62 +522,90 @@ export default function App() {
               )}
           </div>
 
-          {windowTabs.length > 0 ? (
-            <div>
-              {windowTabs.map(([windowId, windowTabs]) => (
-                <div key={windowId} className="mb-8">
-                  <h3 className="font-semibold text-lg">Window {windowId}</h3>
-                  <hr className="my-4 border-t" />
-                  <ol className="space-y-2">
-                    {windowTabs
-                      .sort((a, b) => a.index - b.index)
-                      .map((tab) => (
-                        <li
-                          key={tab.id}
-                          className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent"
-                        >
-                          {tab.favIconUrl && (
-                            <img
-                              src={tab.favIconUrl}
-                              className="h-4 w-4"
-                              alt=""
-                            />
-                          )}
-                          <span className="font-medium">{tab.title}</span>
-                          <a
-                            href={tab.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="max-w-[200px] truncate text-primary transition-colors hover:text-primary/80"
-                            title={tab.url}
-                          >
-                            {tab.url?.slice(0, 40)}
-                          </a>
-                          <div className="ml-auto flex items-center gap-3">
-                            <span className="text-muted-foreground text-sm">
-                              Index: {tab.index}
-                            </span>
-                            <span className="text-sm" title="Pinned">
-                              {tab.pinned ? "✅" : "❌"}
-                            </span>
-                            <span
-                              className={`rounded px-2 py-1 text-sm ${
-                                tab.status === "complete"
-                                  ? "bg-success/20 text-success-foreground"
-                                  : "bg-warning/20 text-warning-foreground"
-                              }`}
-                            >
-                              {tab.status}
-                            </span>
-                          </div>
-                        </li>
-                      ))}
-                  </ol>
-                </div>
-              ))}
-            </div>
+          {/* Top Toolbar */}
+          <TopToolbar
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            allTags={allTags}
+            selectedTags={selectedTags}
+            onToggleTag={(tag: string) => {
+              setSelectedTags((prev) =>
+                prev.includes(tag)
+                  ? prev.filter((t) => t !== tag)
+                  : [...prev, tag],
+              );
+            }}
+            showTags={showTags}
+            onToggleShowTags={() => setShowTags(!showTags)}
+            showUrls={showUrls}
+            onToggleShowUrls={() => setShowUrls(!showUrls)}
+            selectedTabsCount={selectedTabs.length}
+            filteredTabsCount={filteredTabs.length}
+            onSelectAll={handleSelectAll}
+          />
+
+          {/* Tab Stats */}
+          <TabsStats
+            filteredTabsCount={filteredTabs.length}
+            totalTabsCount={shownTabs?.length || 0}
+            activeFilter={activeFilter}
+            selectedTags={selectedTags}
+          />
+
+          {/* Quick Actions Panel */}
+          {selectedTabs.length > 0 && (
+            <QuickActionsPanel
+              selectedTabsCount={selectedTabs.length}
+              canGroup={canGroup}
+              canUngroup={canUngroup}
+              allMuted={allMuted}
+              allHighlighted={allHighlighted}
+              allPinned={false} // Pin functionality removed
+              onCloseTabs={handleCloseTabs}
+              onTogglePinTabs={() => {}} // Pin functionality removed
+              onToggleMuteTabs={handleToggleMuteTabs}
+              onToggleHighlightTabs={handleToggleHighlightTabs}
+              onGroupTabs={handleGroupTabs}
+              onUngroupTabs={() => handleUngroupTabs(selectedTabs)}
+            />
+          )}
+
+          {/* Main content area */}
+          {windowGroups.length > 0 ? (
+            <ScrollArea className="flex-1">
+              <div className="space-y-6">
+                {windowGroups.map((windowGroup, index) => {
+                  console.log("Rendering window group:", windowGroup);
+                  return (
+                    <WindowComponent
+                      key={windowGroup.windowId}
+                      windowId={windowGroup.windowId}
+                      windowIndex={index}
+                      tabs={windowGroup.tabs}
+                      tabGroups={windowGroup.tabGroups}
+                      allTabGroups={tabGroups || []}
+                      selectedTabs={selectedTabs}
+                      showTags={showTags}
+                      showUrls={showUrls}
+                      onTabClick={handleTabClick}
+                      onDeleteTab={handleDeleteTab}
+                      onPinTab={() => {}} // Pin functionality removed
+                      onMuteTab={handleMuteTab}
+                      onHighlightTab={handleHighlightTab}
+                      onSelectTab={handleSelectTab}
+                      onToggleGroupCollapse={handleToggleGroupCollapse}
+                      onEditGroup={handleEditGroup}
+                      onUngroupTabs={handleUngroupTabs}
+                      onCloseTabs={handleCloseTabsById}
+                      minimized={windowGroup.minimized}
+                      onToggleMinimize={handleToggleWindowMinimize}
+                    />
+                  );
+                })}
+              </div>
+            </ScrollArea>
           ) : (
-            <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+            <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
               <div className="text-center">
                 <h2 className="font-semibold text-2xl">No Tabs</h2>
                 <p className="mt-2 text-muted-foreground">
