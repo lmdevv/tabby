@@ -1,3 +1,6 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { useCallback, useMemo, useState } from "react";
+import { browser } from "wxt/browser";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,12 +18,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useCallback, useMemo, useState } from "react";
-
 import { db } from "@/entrypoints/background/db";
 import type { Tab } from "@/lib/types";
-import { useLiveQuery } from "dexie-react-hooks";
-import { browser } from "wxt/browser";
 
 export default function App() {
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(

@@ -1,6 +1,6 @@
-import type { RuntimeMessage, Workspace } from "@/lib/types";
 import { liveQuery } from "dexie";
 import { browser } from "wxt/browser";
+import type { RuntimeMessage, Workspace } from "@/lib/types";
 import { db } from "./db";
 import {
   isDashboardTab,

@@ -1,3 +1,4 @@
+import Dexie, { type EntityTable } from "dexie";
 import type {
   Resource,
   ResourceGroup,
@@ -6,7 +7,6 @@ import type {
   Workspace,
   WorkspaceGroup,
 } from "@/lib/types";
-import Dexie, { type EntityTable } from "dexie";
 
 class TabManagerDB extends Dexie {
   workspaceGroups!: EntityTable<WorkspaceGroup, "id">;

@@ -1,4 +1,7 @@
 "use client";
+import { CirclePlus, MoreHorizontal, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { browser } from "wxt/browser";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,9 +24,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { db } from "@/entrypoints/background/db";
-import { CirclePlus, MoreHorizontal, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { browser } from "wxt/browser";
 import { CreateWorkspace } from "./create-workspace";
 
 interface UndefinedWorkspaceItemProps {

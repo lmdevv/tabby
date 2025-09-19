@@ -1,5 +1,6 @@
 "use client";
 
+import { Folder, MoreHorizontal, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 import { db } from "@/entrypoints/background/db";
 import type { Workspace } from "@/lib/types";
-import { Folder, MoreHorizontal, Trash2 } from "lucide-react";
 
 interface WorkspaceItemProps {
   workspace: Workspace;

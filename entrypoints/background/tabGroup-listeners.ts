@@ -1,5 +1,5 @@
-import type { TabGroup, Workspace } from "@/lib/types";
 import { browser } from "wxt/browser";
+import type { TabGroup, Workspace } from "@/lib/types";
 import { db } from "./db";
 
 // Helper function to get the current workspace for tab groups

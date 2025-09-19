@@ -1,3 +1,5 @@
+import { Settings } from "lucide-react";
+import type * as React from "react";
 import { Workspaces } from "@/components/sidebar/workspaces";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,8 +8,6 @@ import {
   SidebarFooter,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Settings } from "lucide-react";
-import type * as React from "react";
 import { CreateWorkspace } from "./create-workspace";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {

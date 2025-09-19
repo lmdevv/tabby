@@ -1,5 +1,5 @@
-import type { Tab, Workspace } from "@/lib/types";
 import { browser } from "wxt/browser";
+import type { Tab, Workspace } from "@/lib/types";
 import { db } from "./db";
 import { cleanupEmptyTabGroup, isDashboardTab, shiftIndices } from "./helpers";
 

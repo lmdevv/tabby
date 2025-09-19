@@ -1,4 +1,7 @@
 "use client";
+import { useLiveQuery } from "dexie-react-hooks";
+import { PlusCircle } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,9 +24,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { db } from "@/entrypoints/background/db";
 import type { Workspace } from "@/lib/types";
-import { useLiveQuery } from "dexie-react-hooks";
-import { PlusCircle } from "lucide-react";
-import { useState } from "react";
 
 interface CreateWorkspaceProps {
   open?: boolean;

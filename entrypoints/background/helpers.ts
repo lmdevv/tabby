@@ -1,5 +1,5 @@
-import type { Tab } from "@/lib/types";
 import { browser } from "wxt/browser";
+import type { Tab } from "@/lib/types";
 import { db } from "./db";
 
 // Helper function to reliably identify dashboard tabs
