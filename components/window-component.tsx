@@ -171,7 +171,7 @@ export function WindowComponent({
       </CardHeader>
 
       {!minimized && (
-        <CardContent className="p-0 flex-1 overflow-y-auto">
+        <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-none">
           <div className="space-y-1 p-3">
             {orderedElements.map((element, _index) => {
               if (
