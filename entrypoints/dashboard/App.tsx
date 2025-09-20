@@ -29,6 +29,7 @@ import type { Tab } from "@/lib/types";
 // type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
+import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ModeToggle } from "@/components/mode-toggle";
 
@@ -372,6 +373,34 @@ export default function App() {
     }
   }, [selectedTabs, allHighlighted]);
 
+  const handleCopySelectedLinks = useCallback(async () => {
+    try {
+      const urls = selectedTabObjects
+        .map((tab) => tab.url)
+        .filter((u): u is string => Boolean(u));
+      if (urls.length === 0) return;
+      const text = urls.join("\n");
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast.success(
+        urls.length === 1
+          ? "Link copied to clipboard"
+          : `Copied ${urls.length} links`,
+      );
+    } catch (error) {
+      console.error("Failed to copy links:", error);
+      toast.error("Failed to copy links");
+    }
+  }, [selectedTabObjects]);
+
   const handleCloseTabs = useCallback(async () => {
     try {
       await browser.tabs.remove(selectedTabs);
@@ -614,6 +643,7 @@ export default function App() {
               onToggleHighlightTabs={handleToggleHighlightTabs}
               onGroupTabs={handleGroupTabs}
               onUngroupTabs={() => handleUngroupTabs(selectedTabs)}
+              onCopyLinks={handleCopySelectedLinks}
             />
           )}
 

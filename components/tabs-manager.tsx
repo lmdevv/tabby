@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { mockTabs } from "@/lib/mock-data";
 import { mockResourceGroups, mockResources } from "@/lib/mock-resources";
@@ -248,6 +249,35 @@ export function TabsManager() {
     );
   };
 
+  const handleCopyLinks = () => {
+    const urls = tabs
+      .filter((t) => selectedTabs.includes(t.id))
+      .map((t) => t.url)
+      .filter((u): u is string => Boolean(u));
+    if (urls.length === 0) return;
+    const text = urls.join("\n");
+    try {
+      if (navigator?.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast.success(
+        urls.length === 1
+          ? "Link copied to clipboard"
+          : `Copied ${urls.length} links`,
+      );
+    } catch (error) {
+      console.error("Failed to copy links:", error);
+      toast.error("Failed to copy links");
+    }
+  };
+
   const handleCloseTabs = () => {
     setTabs((prev) => prev.filter((tab) => !selectedTabs.includes(tab.id)));
     setSelectedTabs([]);
@@ -403,6 +433,7 @@ export function TabsManager() {
           onToggleHighlightTabs={handleToggleHighlightTabs}
           onGroupTabs={handleGroupTabs}
           onUngroupTabs={() => handleUngroupTabs(selectedTabs)}
+          onCopyLinks={handleCopyLinks}
         />
       </div>
 

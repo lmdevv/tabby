@@ -131,7 +131,7 @@ export function WindowComponent({
   }
 
   return (
-    <Card className="gap-0 overflow-hidden border py-0 shadow-sm">
+    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 overflow-hidden border py-0 shadow-sm flex flex-col max-h-[70vh] min-h-[220px]">
       <CardHeader className="m-0 flex flex-row items-center justify-between border-b bg-muted/50 px-4 pt-3 pb-0">
         <div className="flex items-center gap-2">
           <Monitor className="h-4 w-4 text-muted-foreground" />
@@ -171,7 +171,7 @@ export function WindowComponent({
       </CardHeader>
 
       {!minimized && (
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-1 overflow-y-auto">
           <div className="space-y-1 p-3">
             {orderedElements.map((element, _index) => {
               if (

@@ -1,4 +1,5 @@
 import { Archive, Star, Volume2, VolumeX, X } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,6 +63,18 @@ export function TabCard({
   const displayUrl = url
     ? url.replace(/^https?:\/\//, "").replace(/^www\./, "")
     : "No URL";
+
+  // Clamp text lengths for better layout stability
+  const MAX_TITLE_CHARS = 90;
+  const MAX_URL_CHARS = 80;
+  const displayTitleTruncated =
+    (title || "Untitled").length > MAX_TITLE_CHARS
+      ? `${(title || "Untitled").slice(0, MAX_TITLE_CHARS)}…`
+      : title || "Untitled";
+  const displayUrlTruncated =
+    displayUrl.length > MAX_URL_CHARS
+      ? `${displayUrl.slice(0, MAX_URL_CHARS)}…`
+      : displayUrl;
 
   // Determine the domain for a fallback icon
   const domain = url ? new URL(url).hostname : "";
@@ -154,7 +167,7 @@ export function TabCard({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <h3 className="truncate font-medium text-sm" title={title}>
-                    {title}
+                    {displayTitleTruncated}
                   </h3>
                   {showTags && tags && tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -175,7 +188,7 @@ export function TabCard({
                     className="mt-0.5 truncate text-muted-foreground text-xs"
                     title={url}
                   >
-                    {displayUrl}
+                    {displayUrlTruncated}
                   </p>
                 )}
               </div>
@@ -284,6 +297,30 @@ export function TabCard({
           }
         >
           {highlighted ? "Remove Highlight" : "Highlight"} Tab
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={() => {
+            if (!url) return;
+            try {
+              if (navigator?.clipboard?.writeText) {
+                void navigator.clipboard.writeText(url);
+              } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+              }
+              toast.success("Link copied to clipboard");
+            } catch (error) {
+              console.error("Failed to copy link:", error);
+              toast.error("Failed to copy link");
+            }
+          }}
+        >
+          Copy Link
         </ContextMenuItem>
 
         <ContextMenuSeparator />

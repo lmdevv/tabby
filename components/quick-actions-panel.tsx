@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, Star, Volume2, VolumeX, X } from "lucide-react";
+import { Copy, Layers, Star, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -22,6 +22,7 @@ interface QuickActionsPanelProps {
   onToggleHighlightTabs: () => void;
   onGroupTabs: () => void;
   onUngroupTabs: () => void;
+  onCopyLinks: () => void;
 }
 
 export function QuickActionsPanel({
@@ -37,6 +38,7 @@ export function QuickActionsPanel({
   onToggleHighlightTabs,
   onGroupTabs,
   onUngroupTabs,
+  onCopyLinks,
 }: QuickActionsPanelProps) {
   if (selectedTabsCount === 0) return null;
 
@@ -44,6 +46,22 @@ export function QuickActionsPanel({
     <div className="-translate-x-1/2 fixed bottom-8 left-1/2 z-10 rounded-full border border-border/40 bg-background/90 p-2 shadow-lg backdrop-blur-sm">
       <div className="flex items-center gap-2 px-2">
         <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                onClick={onCopyLinks}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Copy Link{selectedTabsCount > 1 ? "s" : ""}
+            </TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
