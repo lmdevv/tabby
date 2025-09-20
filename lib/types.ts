@@ -57,6 +57,39 @@ export interface ResourceGroup {
   updatedAt: number;
 }
 
+// Snapshot types
+export interface WorkspaceSnapshot {
+  id: number;
+  workspaceId: number;
+  createdAt: number; // epoch ms
+  reason: "interval" | "manual" | "event";
+}
+
+export interface SnapshotTab {
+  id: number;
+  snapshotId: number;
+  url?: string;
+  title?: string;
+  favIconUrl?: string;
+  pinned?: boolean;
+  index?: number;
+  description?: string;
+  tags?: string[];
+  windowIndex: number; // stable within the snapshot
+  groupStableId?: string; // reference to SnapshotTabGroup.stableId
+}
+
+export interface SnapshotTabGroup {
+  id: number;
+  snapshotId: number;
+  stableId: string; // copied from TabGroup.stableId at snapshot time
+  title?: string;
+  color?: Browser.tabGroups.Color | string;
+  collapsed?: boolean;
+  windowIndex: number;
+  createdAt: number;
+}
+
 // Message types for runtime communication
 export interface OpenWorkspaceMessage {
   type: "openWorkspace";
@@ -79,8 +112,28 @@ export interface UpdateTabGroupMessage {
   color: string;
 }
 
+export interface CreateSnapshotMessage {
+  type: "createSnapshot";
+  workspaceId?: number;
+  reason?: WorkspaceSnapshot["reason"];
+}
+
+export interface RestoreSnapshotMessage {
+  type: "restoreSnapshot";
+  snapshotId: number;
+  mode?: "replace" | "append";
+}
+
+export interface DeleteSnapshotMessage {
+  type: "deleteSnapshot";
+  snapshotId: number;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
   | RefreshTabsMessage
-  | UpdateTabGroupMessage;
+  | UpdateTabGroupMessage
+  | CreateSnapshotMessage
+  | RestoreSnapshotMessage
+  | DeleteSnapshotMessage;

@@ -8,6 +8,12 @@ import {
   refreshActiveTabs,
   switchWorkspaceTabs,
 } from "./helpers";
+import {
+  createWorkspaceSnapshot,
+  deleteSnapshot,
+  restoreSnapshot,
+  startSnapshotScheduler,
+} from "./snapshots";
 import { setupTabListeners, validateAllTabs } from "./tab-listeners";
 import { setupTabGroupListeners, syncAllTabGroups } from "./tabGroup-listeners";
 
@@ -68,6 +74,13 @@ export default defineBackground(() => {
     },
     error: (error) => console.error(error),
   });
+
+  // Start background snapshot scheduler (checks every minute, snapshots at min interval)
+  try {
+    startSnapshotScheduler(() => activeWorkspace);
+  } catch (e) {
+    console.error(e);
+  }
 
   //
   // Tabs
@@ -148,7 +161,7 @@ export default defineBackground(() => {
           await browser.tabGroups.update(message.groupId, {
             title: message.title,
 
-            color: message.color as Browser.tabGroups.ColorEnum,
+            color: message.color as Browser.tabGroups.Color,
           });
           return { success: true };
         } catch (error) {
@@ -239,6 +252,32 @@ export default defineBackground(() => {
             await browser.tabs.remove(nonDashboardTabIdsToClose);
           }
         }
+      } else if (
+        typeof message === "object" &&
+        message.type === "createSnapshot"
+      ) {
+        const ws = message.workspaceId ?? activeWorkspace?.id;
+        if (!ws) return { success: false, error: "No workspace" } as const;
+        const id = await createWorkspaceSnapshot(
+          ws,
+          message.reason ?? "manual",
+        );
+        return { success: id > 0, snapshotId: id } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "restoreSnapshot"
+      ) {
+        const res = await restoreSnapshot(
+          message.snapshotId,
+          message.mode ?? "replace",
+        );
+        return res;
+      } else if (
+        typeof message === "object" &&
+        message.type === "deleteSnapshot"
+      ) {
+        await deleteSnapshot(message.snapshotId);
+        return { success: true } as const;
       }
     },
   );
