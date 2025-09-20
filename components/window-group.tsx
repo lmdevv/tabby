@@ -86,7 +86,7 @@ export function WindowGroup({
               onHighlight={onHighlightTab}
               showTags={showTags}
               showUrl={showUrls}
-              isSelected={selectedTabs.includes(tab.id)}
+              isSelected={tab.id !== undefined && selectedTabs.includes(tab.id)}
               onSelectChange={onSelectTab}
               tabGroup={undefined}
             />
@@ -109,10 +109,18 @@ export function WindowGroup({
                 }
                 onEditGroup={() => onEditGroup(tabGroup.groupId)}
                 onUngroupAll={() =>
-                  onUngroupTabs(tabGroup.tabs.map((tab) => tab.id))
+                  onUngroupTabs(
+                    tabGroup.tabs
+                      .map((tab) => tab.id)
+                      .filter((id): id is number => id !== undefined),
+                  )
                 }
                 onCloseAll={() =>
-                  onCloseTabs(tabGroup.tabs.map((tab) => tab.id))
+                  onCloseTabs(
+                    tabGroup.tabs
+                      .map((tab) => tab.id)
+                      .filter((id): id is number => id !== undefined),
+                  )
                 }
               />
 
@@ -130,14 +138,16 @@ export function WindowGroup({
                       onHighlight={onHighlightTab}
                       showTags={showTags}
                       showUrl={showUrls}
-                      isSelected={selectedTabs.includes(tab.id)}
+                      isSelected={
+                        tab.id !== undefined && selectedTabs.includes(tab.id)
+                      }
                       onSelectChange={onSelectTab}
                       tabGroup={{
                         name: groupInfo.title ?? "Untitled",
                         color: (groupInfo.color as string)?.startsWith?.("#")
                           ? (groupInfo.color as string)
                           : browserColorToHex(
-                              groupInfo.color as Browser.tabGroups.ColorEnum,
+                              groupInfo.color as `${Browser.tabGroups.Color}`,
                             ),
                       }}
                     />

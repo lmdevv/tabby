@@ -48,9 +48,7 @@ export function TabGroupHeader({
 }: TabGroupHeaderProps) {
   const { theme } = useTheme();
   const accentHex =
-    (groupInfo.color?.toString?.().startsWith("#")
-      ? (groupInfo.color as string)
-      : browserColorToHex(groupInfo.color as Browser.tabGroups.ColorEnum)) ||
+    browserColorToHex(groupInfo.color as `${Browser.tabGroups.Color}`) ||
     "#6b7280"; // fallback grey
   const headerBg = withAlpha(accentHex, isDarkFromTheme(theme) ? 0.2 : 0.1);
 

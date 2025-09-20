@@ -1,10 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockTabs } from "@/lib/mock-data";
-import { mockResourceGroups, mockResources } from "@/lib/mock-resources";
-import { mockTabGroups } from "@/lib/mock-tab-groups";
-import { mockWorkspaceGroups } from "@/lib/mock-workspaces";
 import type { Resource, ResourceGroup, Tab, TabGroup } from "@/lib/types";
 import { GroupDialog } from "./group-dialog";
 import { QuickActionsPanel } from "./quick-actions-panel";
@@ -39,8 +35,8 @@ export function TabsManager() {
   // State for tabs and tab groups
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [tabGroups, setTabGroups] = useState<TabGroup[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [resourceGroups, setResourceGroups] = useState<ResourceGroup[]>([]);
+  const [resources, _setResources] = useState<Resource[]>([]);
+  const [_resourceGroups, _setResourceGroups] = useState<ResourceGroup[]>([]);
 
   // UI state
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
@@ -62,25 +58,11 @@ export function TabsManager() {
     mode: "create",
   });
 
-  // Load data
-  useEffect(() => {
-    setTabs(mockTabs);
-    setTabGroups(mockTabGroups);
-    setResources(mockResources);
-    setResourceGroups(mockResourceGroups);
-  }, []);
-
-  // Get active workspace
-  const activeWorkspace = mockWorkspaceGroups
-    .flatMap((group) => group.workspaces)
-    .find((workspace) => workspace.active === 1);
-
   // Get resource groups for active workspace
-  const activeWorkspaceResourceGroups = activeWorkspace
-    ? resourceGroups.filter((group) =>
-        activeWorkspace.resourceGroupIds.includes(group.id),
-      )
-    : [];
+  const activeWorkspaceResourceGroups: ResourceGroup[] = [];
+
+  // Placeholder to avoid accessing properties on a constant undefined
+  const activeWorkspaceName: string | undefined = undefined;
 
   // Get all unique tags from tabs
   const allTags = Array.from(
@@ -124,11 +106,11 @@ export function TabsManager() {
 
       windowGroup.tabs.push(tab);
 
-      if (tab.groupId) {
+      if (typeof tab.groupId === "number" && tab.groupId !== -1) {
         let tabGroup = windowGroup.tabGroups.find(
           (group) => group.groupId === tab.groupId,
         );
-        if (!tabGroup && tab.groupId) {
+        if (!tabGroup) {
           const groupInfo = tabGroups.find((g) => g.id === tab.groupId);
           tabGroup = {
             groupId: tab.groupId,
@@ -137,7 +119,9 @@ export function TabsManager() {
           };
           windowGroup.tabGroups.push(tabGroup);
         }
-        tabGroup.tabs.push(tab);
+        if (tabGroup) {
+          tabGroup.tabs.push(tab);
+        }
       }
 
       return groups;
@@ -146,8 +130,9 @@ export function TabsManager() {
   );
 
   // Get the selected tab objects
-  const selectedTabObjects = tabs.filter((tab) =>
-    selectedTabs.includes(tab.id),
+  const selectedTabObjects = tabs.filter(
+    (tab): tab is Tab & { id: number } =>
+      typeof tab.id === "number" && selectedTabs.includes(tab.id),
   );
 
   // Determine the state of selected tabs
@@ -161,13 +146,14 @@ export function TabsManager() {
   // Check if selected tabs can be grouped/ungrouped
   const selectedTabsInSameGroup =
     selectedTabObjects.length > 0 &&
-    selectedTabObjects[0].groupId !== undefined &&
+    typeof selectedTabObjects[0].groupId === "number" &&
+    selectedTabObjects[0].groupId !== -1 &&
     selectedTabObjects.every(
       (tab) => tab.groupId === selectedTabObjects[0].groupId,
     );
 
   const someSelectedTabsHaveGroup = selectedTabObjects.some(
-    (tab) => tab.groupId !== undefined,
+    (tab) => typeof tab.groupId === "number" && tab.groupId !== -1,
   );
   const canGroup = selectedTabs.length > 1 && !selectedTabsInSameGroup;
   const canUngroup = someSelectedTabsHaveGroup;
@@ -224,11 +210,12 @@ export function TabsManager() {
   const handleToggleMuteTabs = () => {
     const setMuted = !allMuted;
     setTabs((prev) =>
-      prev.map((tab) =>
-        selectedTabs.includes(tab.id)
+      prev.map((tab) => {
+        const id = tab.id;
+        return typeof id === "number" && selectedTabs.includes(id)
           ? { ...tab, mutedInfo: { ...tab.mutedInfo, muted: setMuted } }
-          : tab,
-      ),
+          : tab;
+      }),
     );
     console.log(
       `${setMuted ? "Muting" : "Unmuting"} ${selectedTabs.length} tabs`,
@@ -238,11 +225,12 @@ export function TabsManager() {
   const handleToggleHighlightTabs = () => {
     const setHighlighted = !allHighlighted;
     setTabs((prev) =>
-      prev.map((tab) =>
-        selectedTabs.includes(tab.id)
+      prev.map((tab) => {
+        const id = tab.id;
+        return typeof id === "number" && selectedTabs.includes(id)
           ? { ...tab, highlighted: setHighlighted }
-          : tab,
-      ),
+          : tab;
+      }),
     );
     console.log(
       `${setHighlighted ? "Highlighting" : "Unhighlighting"} ${selectedTabs.length} tabs`,
@@ -251,7 +239,12 @@ export function TabsManager() {
 
   const handleCopyLinks = () => {
     const urls = tabs
-      .filter((t) => selectedTabs.includes(t.id))
+      .filter(
+        (t): t is Tab & { id: number; url: string } =>
+          typeof t.id === "number" &&
+          typeof t.url === "string" &&
+          selectedTabs.includes(t.id),
+      )
       .map((t) => t.url)
       .filter((u): u is string => Boolean(u));
     if (urls.length === 0) return;
@@ -279,7 +272,11 @@ export function TabsManager() {
   };
 
   const handleCloseTabs = () => {
-    setTabs((prev) => prev.filter((tab) => !selectedTabs.includes(tab.id)));
+    setTabs((prev) =>
+      prev.filter((tab) =>
+        typeof tab.id === "number" ? !selectedTabs.includes(tab.id) : true,
+      ),
+    );
     setSelectedTabs([]);
     console.log(`Closing ${selectedTabs.length} tabs`);
   };
@@ -288,7 +285,11 @@ export function TabsManager() {
     if (selectedTabs.length === filteredTabs.length) {
       setSelectedTabs([]);
     } else {
-      setSelectedTabs(filteredTabs.map((tab) => tab.id));
+      setSelectedTabs(
+        filteredTabs
+          .map((tab) => tab.id)
+          .filter((id): id is number => id !== undefined),
+      );
     }
   };
 
@@ -312,7 +313,9 @@ export function TabsManager() {
   const handleUngroupTabs = (tabIds: number[]) => {
     setTabs((prev) =>
       prev.map((tab) =>
-        tabIds.includes(tab.id) ? { ...tab, groupId: undefined } : tab,
+        tab.id !== undefined && tabIds.includes(tab.id)
+          ? { ...tab, groupId: -1 }
+          : tab,
       ),
     );
     if (tabIds === selectedTabs) {
@@ -322,7 +325,11 @@ export function TabsManager() {
   };
 
   const handleCloseTabsById = (tabIds: number[]) => {
-    setTabs((prev) => prev.filter((tab) => !tabIds.includes(tab.id)));
+    setTabs((prev) =>
+      prev.filter((tab) =>
+        typeof tab.id === "number" ? !tabIds.includes(tab.id) : true,
+      ),
+    );
     setSelectedTabs((prev) => prev.filter((tabId) => !tabIds.includes(tabId)));
   };
 
@@ -333,36 +340,49 @@ export function TabsManager() {
         open: true,
         mode: "edit",
         groupId,
-        initialName: group.name,
-        initialColor: group.color,
+        initialName: group.title ?? "",
+        initialColor:
+          typeof group.color === "string" && group.color.startsWith("#")
+            ? group.color
+            : "#6b7280",
       });
     }
   };
 
-  const handleCreateGroup = (name: string, color: string) => {
+  const handleCreateGroup = (name: string, _color: string) => {
     const newGroupId = Math.max(...tabGroups.map((g) => g.id), 0) + 1;
-    const newGroup = {
+    const now = Date.now();
+    const newGroup: TabGroup = {
       id: newGroupId,
-      name,
-      color,
+      title: name,
+      color: "grey",
       collapsed: false,
-    };
+      windowId: tabs[0]?.windowId ?? 0,
+      shared: false,
+      stableId: crypto.randomUUID(),
+      workspaceId: -1,
+      groupStatus: "active",
+      createdAt: now,
+      updatedAt: now,
+    } as unknown as TabGroup;
 
-    setTabGroups((prev) => [...prev, newGroup]);
+    setTabGroups((prev) => [...prev, newGroup as TabGroup]);
     setTabs((prev) =>
       prev.map((tab) =>
-        selectedTabs.includes(tab.id) ? { ...tab, groupId: newGroupId } : tab,
+        typeof tab.id === "number" && selectedTabs.includes(tab.id)
+          ? { ...tab, groupId: newGroupId }
+          : tab,
       ),
     );
     setSelectedTabs([]);
     console.log(`Created group "${name}" with ${selectedTabs.length} tabs`);
   };
 
-  const handleEditGroupConfirm = (name: string, color: string) => {
+  const handleEditGroupConfirm = (name: string, _color: string) => {
     if (groupDialog.groupId) {
       setTabGroups((prev) =>
         prev.map((group) =>
-          group.id === groupDialog.groupId ? { ...group, name, color } : group,
+          group.id === groupDialog.groupId ? { ...group, title: name } : group,
         ),
       );
       console.log(`Updated group "${name}"`);
@@ -382,10 +402,10 @@ export function TabsManager() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-bold text-3xl tracking-tight">Tabs Manager</h1>
-          {activeWorkspace && (
+          {activeWorkspaceName && (
             <p className="text-muted-foreground text-sm">
               Workspace:{" "}
-              <span className="font-medium">{activeWorkspace.name}</span>
+              <span className="font-medium">{activeWorkspaceName}</span>
             </p>
           )}
         </div>
@@ -499,8 +519,7 @@ export function TabsManager() {
             ? handleCreateGroup
             : handleEditGroupConfirm
         }
-        initialName={groupDialog.initialName}
-        initialColor={groupDialog.initialColor}
+        groupId={groupDialog.groupId}
         title={
           groupDialog.mode === "create" ? "Create Tab Group" : "Edit Tab Group"
         }

@@ -440,7 +440,9 @@ export default function App() {
     if (!canGroup) return;
     try {
       if (typeof browser?.tabs?.group === "function") {
-        await browser.tabs.group({ tabIds: selectedTabs });
+        await browser.tabs.group({
+          tabIds: selectedTabs as [number, ...number[]],
+        });
         setSelectedTabs([]);
       }
     } catch (error) {
@@ -451,7 +453,7 @@ export default function App() {
   const handleUngroupTabs = useCallback(async (tabIds: number[]) => {
     try {
       if (typeof browser?.tabs?.ungroup === "function") {
-        await browser.tabs.ungroup(tabIds);
+        await browser.tabs.ungroup(tabIds as [number, ...number[]]);
       }
     } catch (error) {
       console.error("Failed to ungroup tabs:", error);

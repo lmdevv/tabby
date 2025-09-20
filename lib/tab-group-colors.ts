@@ -1,7 +1,7 @@
 import type { Browser } from "wxt/browser";
 
-// Browser supported tab group colors
-export type BrowserTabGroupColor = Browser.tabGroups.ColorEnum;
+// Browser supported tab group color value type (string union of enum values)
+export type BrowserTabGroupColor = `${Browser.tabGroups.Color}`;
 
 // Our UI color definitions that map to browser colors
 export interface TabGroupColor {

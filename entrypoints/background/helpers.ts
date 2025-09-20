@@ -442,7 +442,7 @@ export async function switchWorkspaceTabs(workspaceId: number) {
           if (newTabIds.length > 0) {
             // Create the group with the tabs
             const newGroupId = await browser.tabs.group({
-              tabIds: newTabIds,
+              tabIds: newTabIds as [number, ...number[]],
               createProperties: { windowId: targetWindowId },
             });
 

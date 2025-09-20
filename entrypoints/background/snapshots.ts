@@ -286,10 +286,12 @@ export async function restoreSnapshot(
     for (const g of groups) {
       const ids = groupStableToNewTabIds.get(g.stableId) ?? [];
       if (ids.length === 0) continue;
-      const newGroupId = await browser.tabs.group({ tabIds: ids });
+      const newGroupId = await browser.tabs.group({
+        tabIds: ids as [number, ...number[]],
+      });
       await browser.tabGroups.update(newGroupId, {
         title: g.title,
-        color: g.color as Browser.tabGroups.ColorEnum,
+        color: g.color as Browser.tabGroups.TabGroup["color"],
         collapsed: g.collapsed,
       });
     }

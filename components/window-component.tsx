@@ -25,7 +25,7 @@ interface WindowComponentProps {
   showUrls: boolean;
   onTabClick: (tab: Tab) => void;
   onDeleteTab: (id: number) => void;
-  onPinTab: (id: number, pinned: boolean) => void;
+  onPinTab?: (id: number, pinned: boolean) => void;
   onMuteTab: (id: number, muted: boolean) => void;
   onHighlightTab: (id: number, highlighted: boolean) => void;
   onSelectTab: (id: number, selected: boolean) => void;
@@ -100,6 +100,7 @@ export function WindowComponent({
             color: "grey" as const,
             collapsed: group.collapsed,
             windowId: windowId,
+            shared: false,
           };
 
           orderedElements.push({
@@ -245,7 +246,7 @@ export function WindowComponent({
                           ? (element.groupInfo?.color as string)
                           : browserColorToHex(
                               element.groupInfo
-                                ?.color as Browser.tabGroups.ColorEnum,
+                                ?.color as `${Browser.tabGroups.Color}`,
                             ),
                       }}
                     />

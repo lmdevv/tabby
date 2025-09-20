@@ -80,6 +80,7 @@ export function CreateWorkspace({
       createdAt: Date.now(),
       lastOpened: Date.now(),
       active: 0,
+      resourceGroupIds: [],
     });
   };
 
