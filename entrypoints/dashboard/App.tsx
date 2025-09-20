@@ -32,6 +32,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ModeToggle } from "@/components/mode-toggle";
+import { HistoryDialog } from "@/components/snapshots/history-dialog";
 
 type FilterType =
   | "all"
@@ -55,6 +56,7 @@ interface WindowGroupData {
 }
 
 export default function App() {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(
     null,
   );
@@ -576,6 +578,9 @@ export default function App() {
             <Button variant="outline" onClick={handleRefresh}>
               Refresh
             </Button>
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              History
+            </Button>
             {previewWorkspaceId !== null &&
               previewWorkspaceId !== workspaceData?.activeWorkspace?.id &&
               previewWorkspaceId !== -1 && (
@@ -701,6 +706,13 @@ export default function App() {
         groupId={groupDialog.groupId}
         title="Edit Tab Group"
         description="Edit the group name and color"
+      />
+
+      {/* History Dialog */}
+      <HistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        workspaceId={shownWorkspaceId ?? -1}
       />
     </SidebarProvider>
   );
