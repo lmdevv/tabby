@@ -140,24 +140,28 @@ export function TabCard({
 
               {/* Favicon */}
               <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                {favIconUrl ? (
-                  <img
-                    src={favIconUrl || "/placeholder.svg"}
-                    alt=""
-                    className="h-full w-full object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const nextSibling =
-                        target.nextElementSibling as HTMLElement;
-                      if (nextSibling) {
-                        nextSibling.style.display = "flex";
+                <img
+                  src={favIconUrl || ""}
+                  alt=""
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = parent.querySelector(
+                        ".favicon-fallback",
+                      ) as HTMLElement;
+                      if (fallback) {
+                        fallback.style.display = "flex";
                       }
-                    }}
-                  />
-                ) : null}
+                    }
+                  }}
+                  style={{ display: favIconUrl ? "block" : "none" }}
+                />
                 <div
-                  className={`flex h-full w-full items-center justify-center bg-primary/10 font-semibold text-primary text-xs ${favIconUrl ? "hidden" : ""}`}
+                  className="favicon-fallback flex h-full w-full items-center justify-center bg-primary/10 font-semibold text-primary text-xs"
+                  style={{ display: favIconUrl ? "none" : "flex" }}
                 >
                   {domainInitial}
                 </div>

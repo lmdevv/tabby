@@ -1,6 +1,5 @@
-import { Maximize2, Minimize2, Monitor, X } from "lucide-react";
 import type { Browser } from "wxt/browser";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 import { TabCard } from "./tab-card";
@@ -16,7 +15,6 @@ interface TabGroupInWindow {
 
 interface WindowComponentProps {
   windowId: number;
-  windowIndex: number;
   tabs: Tab[];
   tabGroups: TabGroupInWindow[];
   allTabGroups: TabGroup[];
@@ -33,13 +31,10 @@ interface WindowComponentProps {
   onEditGroup: (groupId: number) => void;
   onUngroupTabs: (tabIds: number[]) => void;
   onCloseTabs: (tabIds: number[]) => void;
-  minimized?: boolean;
-  onToggleMinimize?: (windowId: number) => void;
 }
 
 export function WindowComponent({
   windowId,
-  windowIndex,
   tabs,
   tabGroups,
   allTabGroups,
@@ -56,8 +51,6 @@ export function WindowComponent({
   onEditGroup,
   onUngroupTabs,
   onCloseTabs,
-  minimized = false,
-  onToggleMinimize = () => {},
 }: WindowComponentProps) {
   const getTabGroupInfo = (groupId?: number) => {
     if (!groupId) return undefined;
@@ -132,132 +125,57 @@ export function WindowComponent({
   }
 
   return (
-    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 overflow-hidden border py-0 shadow-sm flex flex-col max-h-[70vh] min-h-[220px]">
-      <CardHeader className="m-0 flex flex-row items-center justify-between border-b bg-muted/50 px-4 pt-3 pb-0">
-        <div className="flex items-center gap-2">
-          <Monitor className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-medium text-sm">Window {windowIndex + 1}</h2>
-          <span className="ml-1 text-muted-foreground text-xs">
-            ({tabs.length} tabs)
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onToggleMinimize(windowId)}
-            className="rounded-sm p-1 hover:bg-accent/50"
-            title={minimized ? "Expand window" : "Minimize window"}
-          >
-            {minimized ? (
-              <Maximize2 className="h-3 w-3" />
-            ) : (
-              <Minimize2 className="h-3 w-3" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              onCloseTabs(
-                tabs
-                  .map((tab) => tab.id)
-                  .filter((id): id is number => id !== undefined),
-              )
+    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 overflow-hidden border py-0 shadow-sm flex flex-col max-h-[80vh] min-h-[220px]">
+      <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-none">
+        <div className="space-y-1 p-3">
+          {orderedElements.map((element, _index) => {
+            if (
+              element.type === "groupHeader" &&
+              element.group &&
+              element.groupInfo
+            ) {
+              return (
+                <div key={`group-${element.group.groupId}`}>
+                  <TabGroupHeader
+                    groupInfo={element.groupInfo}
+                    tabCount={element.group.tabs.length}
+                    collapsed={element.groupInfo.collapsed}
+                    onToggleCollapse={() =>
+                      element.group?.groupId !== undefined &&
+                      onToggleGroupCollapse(windowId, element.group.groupId)
+                    }
+                    onEditGroup={() =>
+                      element.group?.groupId !== undefined &&
+                      onEditGroup(element.group.groupId)
+                    }
+                    onUngroupAll={() =>
+                      element.group?.tabs &&
+                      onUngroupTabs(
+                        element.group.tabs
+                          .map((tab) => tab.id)
+                          .filter((id): id is number => id !== undefined),
+                      )
+                    }
+                    onCloseAll={() =>
+                      element.group?.tabs &&
+                      onCloseTabs(
+                        element.group.tabs
+                          .map((tab) => tab.id)
+                          .filter((id): id is number => id !== undefined),
+                      )
+                    }
+                  />
+                </div>
+              );
             }
-            className="rounded-sm p-1 hover:bg-accent/50"
-            title="Close all tabs in window"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      </CardHeader>
 
-      {!minimized && (
-        <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-none">
-          <div className="space-y-1 p-3">
-            {orderedElements.map((element, _index) => {
-              if (
-                element.type === "groupHeader" &&
-                element.group &&
-                element.groupInfo
-              ) {
-                return (
-                  <div key={`group-${element.group.groupId}`}>
-                    <TabGroupHeader
-                      groupInfo={element.groupInfo}
-                      tabCount={element.group.tabs.length}
-                      collapsed={element.groupInfo.collapsed}
-                      onToggleCollapse={() =>
-                        element.group?.groupId !== undefined &&
-                        onToggleGroupCollapse(windowId, element.group.groupId)
-                      }
-                      onEditGroup={() =>
-                        element.group?.groupId !== undefined &&
-                        onEditGroup(element.group.groupId)
-                      }
-                      onUngroupAll={() =>
-                        element.group?.tabs &&
-                        onUngroupTabs(
-                          element.group.tabs
-                            .map((tab) => tab.id)
-                            .filter((id): id is number => id !== undefined),
-                        )
-                      }
-                      onCloseAll={() =>
-                        element.group?.tabs &&
-                        onCloseTabs(
-                          element.group.tabs
-                            .map((tab) => tab.id)
-                            .filter((id): id is number => id !== undefined),
-                        )
-                      }
-                    />
-                  </div>
-                );
-              }
+            if (element.type === "groupedTab" && element.tab && element.group) {
+              // Only render grouped tabs if the group is not collapsed
+              if (element.groupInfo?.collapsed) return null;
 
-              if (
-                element.type === "groupedTab" &&
-                element.tab &&
-                element.group
-              ) {
-                // Only render grouped tabs if the group is not collapsed
-                if (element.groupInfo?.collapsed) return null;
-
-                return (
-                  <div key={`tab-${element.tab.id}`} className="ml-6">
-                    <TabCard
-                      tab={element.tab}
-                      onClick={() => element.tab && onTabClick(element.tab)}
-                      onDelete={onDeleteTab}
-                      onMute={onMuteTab}
-                      onHighlight={onHighlightTab}
-                      showTags={showTags}
-                      showUrl={showUrls}
-                      isSelected={
-                        element.tab.id !== undefined &&
-                        selectedTabs.includes(element.tab.id)
-                      }
-                      onSelectChange={onSelectTab}
-                      tabGroup={{
-                        name: element.groupInfo?.title || "Untitled",
-                        color: (
-                          element.groupInfo?.color as string
-                        )?.startsWith?.("#")
-                          ? (element.groupInfo?.color as string)
-                          : browserColorToHex(
-                              element.groupInfo
-                                ?.color as `${Browser.tabGroups.Color}`,
-                            ),
-                      }}
-                    />
-                  </div>
-                );
-              }
-
-              if (element.type === "tab" && element.tab) {
-                return (
+              return (
+                <div key={`tab-${element.tab.id}`} className="ml-6">
                   <TabCard
-                    key={`tab-${element.tab.id}`}
                     tab={element.tab}
                     onClick={() => element.tab && onTabClick(element.tab)}
                     onDelete={onDeleteTab}
@@ -270,16 +188,47 @@ export function WindowComponent({
                       selectedTabs.includes(element.tab.id)
                     }
                     onSelectChange={onSelectTab}
-                    tabGroup={undefined}
+                    tabGroup={{
+                      name: element.groupInfo?.title || "Untitled",
+                      color: (element.groupInfo?.color as string)?.startsWith?.(
+                        "#",
+                      )
+                        ? (element.groupInfo?.color as string)
+                        : browserColorToHex(
+                            element.groupInfo
+                              ?.color as `${Browser.tabGroups.Color}`,
+                          ),
+                    }}
                   />
-                );
-              }
+                </div>
+              );
+            }
 
-              return null;
-            })}
-          </div>
-        </CardContent>
-      )}
+            if (element.type === "tab" && element.tab) {
+              return (
+                <TabCard
+                  key={`tab-${element.tab.id}`}
+                  tab={element.tab}
+                  onClick={() => element.tab && onTabClick(element.tab)}
+                  onDelete={onDeleteTab}
+                  onMute={onMuteTab}
+                  onHighlight={onHighlightTab}
+                  showTags={showTags}
+                  showUrl={showUrls}
+                  isSelected={
+                    element.tab.id !== undefined &&
+                    selectedTabs.includes(element.tab.id)
+                  }
+                  onSelectChange={onSelectTab}
+                  tabGroup={undefined}
+                />
+              );
+            }
+
+            return null;
+          })}
+        </div>
+      </CardContent>
     </Card>
   );
 }
