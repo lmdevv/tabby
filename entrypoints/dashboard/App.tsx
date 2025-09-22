@@ -22,7 +22,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { WindowComponent } from "@/components/window-component";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 

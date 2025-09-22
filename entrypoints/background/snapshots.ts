@@ -5,13 +5,13 @@
 // Maybe add notes and titles to snapshots
 // Diff-based snapshot restoration
 import { browser } from "wxt/browser";
+import { db } from "@/lib/db";
 import type {
   SnapshotTab,
   SnapshotTabGroup,
   Workspace,
   WorkspaceSnapshot,
 } from "@/lib/types";
-import { db } from "./db";
 import { isDashboardTab } from "./helpers";
 
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes

@@ -23,7 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import { CreateWorkspace } from "./create-workspace";
 
 interface UndefinedWorkspaceItemProps {

@@ -1,6 +1,6 @@
 import { browser } from "wxt/browser";
+import { db } from "@/lib/db";
 import type { Tab } from "@/lib/types";
-import { db } from "./db";
 
 // Helper function to reliably identify dashboard tabs
 export function isDashboardTab(tab: { url?: string; title?: string }): boolean {

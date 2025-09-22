@@ -1,6 +1,6 @@
 import { browser } from "wxt/browser";
+import { db } from "@/lib/db";
 import type { Tab, Workspace } from "@/lib/types";
-import { db } from "./db";
 import { cleanupEmptyTabGroup, isDashboardTab, shiftIndices } from "./helpers";
 
 // Helper function to validate and correct tab state with current browser state

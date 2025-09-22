@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import {
   browserColorToHex,
   getDefaultTabGroupColor,

@@ -1,7 +1,7 @@
 import { liveQuery } from "dexie";
 import { browser } from "wxt/browser";
+import { db } from "@/lib/db";
 import type { RuntimeMessage, Workspace } from "@/lib/types";
-import { db } from "./db";
 import {
   isDashboardTab,
   reconcileTabs,

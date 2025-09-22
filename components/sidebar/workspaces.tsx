@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from "@/components/ui/sidebar";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import type { Workspace, WorkspaceGroup } from "@/lib/types";
 import { UndefinedWorkspaceItem } from "./undefined-workspace-item";
 import { WorkspaceItem } from "./workspace-item";

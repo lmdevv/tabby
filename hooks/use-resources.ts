@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import { createResource, normalizeUrl } from "@/lib/resource-helpers";
 import type { Resource, ResourceGroup, Tab } from "@/lib/types";
 

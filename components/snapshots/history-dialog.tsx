@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { db } from "@/entrypoints/background/db";
+import { db } from "@/lib/db";
 import type { SnapshotTab, WorkspaceSnapshot } from "@/lib/types";
 
 export function HistoryDialog({
