@@ -1,5 +1,8 @@
 import type { Browser } from "wxt/browser";
 
+//
+// Database types
+//
 export interface Tab extends Browser.tabs.Tab {
   stableId: string;
   workspaceId: number;
@@ -37,12 +40,10 @@ export interface WorkspaceGroup {
 }
 
 export type Resource = Pick<
-  Browser.tabs.Tab,
-  "url" | "title" | "favIconUrl"
+  Tab,
+  "url" | "title" | "favIconUrl" | "tags" | "description"
 > & {
   id: number;
-  tags?: string[];
-  description?: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -89,6 +90,10 @@ export interface SnapshotTabGroup {
   windowIndex: number;
   createdAt: number;
 }
+
+//
+// Message types
+//
 
 // Message types for runtime communication
 export interface OpenWorkspaceMessage {

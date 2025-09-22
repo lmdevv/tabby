@@ -1,4 +1,4 @@
-import { Archive, Star, Volume2, VolumeX, X } from "lucide-react";
+import { Archive, BookmarkPlus, Star, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,23 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { EnrichedResourceGroup } from "@/hooks/use-resources";
+import { useTabIsResource } from "@/hooks/use-resources";
 import { withAlpha } from "@/lib/tab-group-colors";
-import type { Tab } from "@/lib/types";
+import type { ResourceGroup, Tab } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TabCardProps {
@@ -27,6 +37,8 @@ interface TabCardProps {
   onPin?: (id: number, pinned: boolean) => void;
   onMute?: (id: number, muted: boolean) => void;
   onHighlight?: (id: number, highlighted: boolean) => void;
+  onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
+  resourceGroups?: EnrichedResourceGroup[];
   showTags: boolean;
   showUrl: boolean;
   isSelected?: boolean;
@@ -41,12 +53,16 @@ export function TabCard({
   onPin: _onPin = () => {},
   onMute = () => {},
   onHighlight = () => {},
+  onAddToResourceGroup = () => {},
+  resourceGroups = [],
   showTags,
   showUrl,
   isSelected = false,
   onSelectChange = () => {},
   tabGroup,
 }: TabCardProps) {
+  const { getResourceGroupsForTab } = useTabIsResource();
+
   const {
     title,
     url,
@@ -58,6 +74,13 @@ export function TabCard({
     discarded,
     tags,
   } = tab;
+
+  const resourceGroupsForTab =
+    getResourceGroupsForTab({
+      title: title || "",
+      url: url || "",
+    }) || [];
+  const hasResourceGroups = resourceGroupsForTab.length > 0;
 
   // Format the URL for display
   const displayUrl = url
@@ -88,16 +111,25 @@ export function TabCard({
           variant="ghost"
           className={cn(
             "flex h-auto w-full items-center justify-start rounded-md border border-transparent p-2 text-left",
-            "transition-all duration-200 hover:border-accent hover:bg-accent/50",
+            "[max-width:min(1200px,92vw)]",
+            "transition-all duration-200 hover:border-accent",
             "group relative cursor-pointer select-none",
             tabGroup ? "border-l-4" : "",
           )}
+          style={
+            tabGroup
+              ? {
+                  borderLeftColor: tabGroup.color,
+                  backgroundColor: withAlpha(tabGroup.color, 0.06),
+                }
+              : {}
+          }
         >
-          {/* biome-ignore lint/a11y/useSemanticElements: Non-button wrapper avoids nested buttons */}
+          {/* biome-ignore lint/a11y/useSemanticElements: Button wrapper requires div for proper styling */}
           <div
+            onClick={onClick}
             role="button"
             tabIndex={0}
-            onClick={onClick}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -105,14 +137,6 @@ export function TabCard({
               }
             }}
             aria-label={`Switch to tab: ${title || "Untitled"}`}
-            style={
-              tabGroup
-                ? {
-                    borderLeftColor: tabGroup.color,
-                    backgroundColor: withAlpha(tabGroup.color, 0.06),
-                  }
-                : {}
-            }
           >
             {/* Add group indicator if tab is part of a group */}
             {tabGroup && (
@@ -140,28 +164,28 @@ export function TabCard({
 
               {/* Favicon */}
               <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                <img
-                  src={favIconUrl || ""}
-                  alt=""
-                  className="h-full w-full object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                    const parent = target.parentElement;
-                    if (parent) {
-                      const fallback = parent.querySelector(
-                        ".favicon-fallback",
-                      ) as HTMLElement;
-                      if (fallback) {
-                        fallback.style.display = "flex";
+                {favIconUrl && (
+                  <img
+                    src={favIconUrl}
+                    alt=""
+                    className="h-full w-full object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent) {
+                        const fallback = parent.querySelector(
+                          ".favicon-fallback",
+                        ) as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = "flex";
+                        }
                       }
-                    }
-                  }}
-                  style={{ display: favIconUrl ? "block" : "none" }}
-                />
+                    }}
+                  />
+                )}
                 <div
-                  className="favicon-fallback flex h-full w-full items-center justify-center bg-primary/10 font-semibold text-primary text-xs"
-                  style={{ display: favIconUrl ? "none" : "flex" }}
+                  className={`favicon-fallback flex h-full w-full items-center justify-center bg-primary/10 font-semibold text-primary text-xs ${favIconUrl ? "hidden" : ""}`}
                 >
                   {domainInitial}
                 </div>
@@ -169,7 +193,7 @@ export function TabCard({
 
               {/* Tab info */}
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1">
                   <h3 className="truncate font-medium text-sm" title={title}>
                     {displayTitleTruncated}
                   </h3>
@@ -189,7 +213,7 @@ export function TabCard({
                 </div>
                 {showUrl && (
                   <p
-                    className="mt-0.5 truncate text-muted-foreground text-xs"
+                    className="mt-0 truncate text-muted-foreground text-xs"
                     title={url}
                   >
                     {displayUrlTruncated}
@@ -252,6 +276,100 @@ export function TabCard({
                     </Tooltip>
                   )}
 
+                  {resourceGroups.length > 0 ? (
+                    <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title={
+                                hasResourceGroups
+                                  ? "Already saved as resource"
+                                  : "Add to resource group"
+                              }
+                              className={
+                                hasResourceGroups
+                                  ? "text-primary hover:text-primary/80"
+                                  : ""
+                              }
+                            >
+                              <BookmarkPlus
+                                className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
+                              />
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {(() => {
+                              return hasResourceGroups
+                                ? `Saved in: ${resourceGroupsForTab.map((g: ResourceGroup) => g.name).join(", ")}`
+                                : "Add to resource group";
+                            })()}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>
+                          {hasResourceGroups
+                            ? "Manage resource"
+                            : "Add to resource group"}
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {resourceGroups.map((group) => (
+                          <DropdownMenuItem
+                            key={group.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddToResourceGroup?.(tab, group.id);
+                            }}
+                          >
+                            {group.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast.info("No resource groups available");
+                          }}
+                          title={
+                            hasResourceGroups
+                              ? "Already saved as resource"
+                              : "Add to resource group"
+                          }
+                          className={
+                            hasResourceGroups
+                              ? "text-primary hover:text-primary/80"
+                              : ""
+                          }
+                        >
+                          <BookmarkPlus
+                            className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {(() => {
+                            return hasResourceGroups
+                              ? `Saved in: ${resourceGroupsForTab.map((g) => g.name).join(", ")}`
+                              : "Add to resource group";
+                          })()}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -261,15 +379,6 @@ export function TabCard({
                           e.stopPropagation();
                           if (tab.id !== undefined) {
                             onDelete(tab.id);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (tab.id !== undefined) {
-                              onDelete(tab.id);
-                            }
                           }
                         }}
                         title="Close tab"

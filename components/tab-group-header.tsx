@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Browser } from "wxt/browser";
 import { useTheme } from "@/components/theme-provider";
+import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -55,16 +56,10 @@ export function TabGroupHeader({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex w-full items-center justify-between rounded-md border-transparent p-2 transition-all duration-200 hover:border-accent hover:bg-accent/50"
+        <Button
+          variant="ghost"
+          className="flex w-full items-center justify-between rounded-md p-2 h-auto"
           onClick={onToggleCollapse}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onToggleCollapse();
-            }
-          }}
           aria-label={`${collapsed ? "Expand" : "Collapse"} group ${groupInfo.title || "Untitled"}`}
           style={{ backgroundColor: headerBg }}
         >
@@ -81,7 +76,7 @@ export function TabGroupHeader({
           <span className="text-muted-foreground text-xs">
             {tabCount} {tabCount === 1 ? "tab" : "tabs"}
           </span>
-        </button>
+        </Button>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onClick={onEditGroup}>Edit Group</ContextMenuItem>

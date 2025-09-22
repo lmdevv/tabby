@@ -1,5 +1,6 @@
 import type { Browser } from "wxt/browser";
 import { Card, CardContent } from "@/components/ui/card";
+import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 import { TabCard } from "./tab-card";
@@ -26,6 +27,8 @@ interface WindowComponentProps {
   onPinTab?: (id: number, pinned: boolean) => void;
   onMuteTab: (id: number, muted: boolean) => void;
   onHighlightTab: (id: number, highlighted: boolean) => void;
+  onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
+  resourceGroups?: EnrichedResourceGroup[];
   onSelectTab: (id: number, selected: boolean) => void;
   onToggleGroupCollapse: (windowId: number, groupId: number) => void;
   onEditGroup: (groupId: number) => void;
@@ -46,6 +49,8 @@ export function WindowComponent({
   onPinTab: _onPinTab,
   onMuteTab,
   onHighlightTab,
+  onAddToResourceGroup,
+  resourceGroups,
   onSelectTab,
   onToggleGroupCollapse,
   onEditGroup,
@@ -181,6 +186,8 @@ export function WindowComponent({
                     onDelete={onDeleteTab}
                     onMute={onMuteTab}
                     onHighlight={onHighlightTab}
+                    onAddToResourceGroup={onAddToResourceGroup}
+                    resourceGroups={resourceGroups}
                     showTags={showTags}
                     showUrl={showUrls}
                     isSelected={
@@ -213,6 +220,8 @@ export function WindowComponent({
                   onDelete={onDeleteTab}
                   onMute={onMuteTab}
                   onHighlight={onHighlightTab}
+                  onAddToResourceGroup={onAddToResourceGroup}
+                  resourceGroups={resourceGroups}
                   showTags={showTags}
                   showUrl={showUrls}
                   isSelected={

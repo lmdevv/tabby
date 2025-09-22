@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import type { Resource, ResourceGroup, Tab, TabGroup } from "@/lib/types";
 import { GroupDialog } from "./group-dialog";
 import { QuickActionsPanel } from "./quick-actions-panel";
-import { ResourcesPanel } from "./resources-panel";
+import { ResourcesPanel } from "./resources/resources-panel";
 import { TabsStats } from "./tabs-stats";
 import { TopToolbar } from "./top-toolbar";
 import { WindowComponent } from "./window-component";
@@ -44,7 +45,7 @@ export function TabsManager() {
   const [showTags, setShowTags] = useState(true);
   const [showUrls, setShowUrls] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
-  const [minimizedWindows, setMinimizedWindows] = useState<number[]>([]);
+  const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
 
   // Dialog state
   const [groupDialog, setGroupDialog] = useState<{
@@ -59,7 +60,7 @@ export function TabsManager() {
   });
 
   // Get resource groups for active workspace
-  const activeWorkspaceResourceGroups: ResourceGroup[] = [];
+  const activeWorkspaceResourceGroups: EnrichedResourceGroup[] = [];
 
   // Placeholder to avoid accessing properties on a constant undefined
   const activeWorkspaceName: string | undefined = undefined;
@@ -389,14 +390,6 @@ export function TabsManager() {
     }
   };
 
-  const handleToggleWindowMinimize = (windowId: number) => {
-    setMinimizedWindows((prev) =>
-      prev.includes(windowId)
-        ? prev.filter((id) => id !== windowId)
-        : [...prev, windowId],
-    );
-  };
-
   return (
     <div className="container mx-auto px-4 py-6 md:px-6">
       <div className="mb-6 flex items-center justify-between">
@@ -464,17 +457,17 @@ export function TabsManager() {
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-[calc(100vh-300px)]">
               {windowGroups.length > 0 ? (
-                windowGroups.map((windowGroup, windowIndex) => (
+                windowGroups.map((windowGroup, _windowIndex) => (
                   <WindowComponent
                     key={windowGroup.windowId}
                     windowId={windowGroup.windowId}
-                    windowIndex={windowIndex}
                     tabs={windowGroup.tabs}
                     tabGroups={windowGroup.tabGroups}
                     allTabGroups={tabGroups}
                     selectedTabs={selectedTabs}
                     showTags={showTags}
                     showUrls={showUrls}
+                    resourceGroups={activeWorkspaceResourceGroups}
                     onTabClick={handleTabClick}
                     onDeleteTab={handleDeleteTab}
                     onMuteTab={handleMuteTab}
@@ -484,8 +477,6 @@ export function TabsManager() {
                     onEditGroup={handleEditGroup}
                     onUngroupTabs={handleUngroupTabs}
                     onCloseTabs={handleCloseTabsById}
-                    minimized={windowGroup.minimized}
-                    onToggleMinimize={handleToggleWindowMinimize}
                   />
                 ))
               ) : (

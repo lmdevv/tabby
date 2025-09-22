@@ -37,7 +37,7 @@ class TabManagerDB extends Dexie {
           "++id, windowId, workspaceId, title, color, collapsed, createdAt, updatedAt, stableId, groupStatus",
         resourceGroups:
           "++id, name, collapsed, resourceIds, createdAt, updatedAt",
-        resources: "++id, url, title, createdAt, updatedAt, stableId",
+        resources: "++id, url, title, favIconUrl, createdAt, updatedAt",
       })
       .upgrade(async (tx) => {
         // Migration: Set default groupStatus for existing tab groups
@@ -63,7 +63,7 @@ class TabManagerDB extends Dexie {
           "++id, windowId, workspaceId, title, color, collapsed, createdAt, updatedAt, stableId, groupStatus",
         resourceGroups:
           "++id, name, collapsed, resourceIds, createdAt, updatedAt",
-        resources: "++id, url, title, createdAt, updatedAt, stableId",
+        resources: "++id, url, title, favIconUrl, createdAt, updatedAt",
         // NEW snapshot tables
         workspaceSnapshots: "++id, workspaceId, createdAt",
         snapshotTabs: "++id, snapshotId, windowIndex, groupStableId",
@@ -93,7 +93,7 @@ class TabManagerDB extends Dexie {
           "++id, windowId, workspaceId, title, color, collapsed, createdAt, updatedAt, stableId, groupStatus",
         resourceGroups:
           "++id, name, collapsed, resourceIds, createdAt, updatedAt",
-        resources: "++id, url, title, createdAt, updatedAt, stableId",
+        resources: "++id, url, title, favIconUrl, createdAt, updatedAt",
         workspaceSnapshots: "++id, workspaceId, createdAt",
         snapshotTabs: "++id, snapshotId, windowIndex, groupStableId",
         snapshotTabGroups: "++id, snapshotId, stableId",

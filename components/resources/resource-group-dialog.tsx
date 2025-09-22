@@ -1,5 +1,6 @@
 "use client";
 
+import { BookmarkPlus } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,49 +58,71 @@ export function ResourceGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <BookmarkPlus className="h-4 w-4 text-primary" />
+            </div>
+            {title}
+          </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={nameId} className="text-right">
-              Name
+        <div className="grid gap-6 py-4">
+          <div className="space-y-2">
+            <Label htmlFor={nameId} className="text-sm font-medium">
+              Group Name *
             </Label>
             <Input
               id={nameId}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter group name"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleConfirm();
-                }
-              }}
+              placeholder="e.g., Work Projects, Research, Personal"
+              className="w-full"
+              autoFocus
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={descriptionId} className="text-right">
+          <div className="space-y-2">
+            <Label htmlFor={descriptionId} className="text-sm font-medium">
               Description
             </Label>
             <Textarea
               id={descriptionId}
               value={groupDescription}
               onChange={(e) => setGroupDescription(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter group description (optional)"
+              placeholder="Briefly describe what this group is for (optional)"
+              className="w-full resize-none"
               rows={3}
             />
+            <p className="text-xs text-muted-foreground">
+              Help others understand the purpose of this resource group
+            </p>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            className="gap-2"
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()}>
-            {title.includes("Edit") ? "Save Changes" : "Create Group"}
+          <Button
+            onClick={handleConfirm}
+            disabled={!name.trim()}
+            className="gap-2"
+          >
+            {title.includes("Edit") ? (
+              <>
+                <BookmarkPlus className="h-4 w-4" />
+                Save Changes
+              </>
+            ) : (
+              <>
+                <BookmarkPlus className="h-4 w-4" />
+                Create Group
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

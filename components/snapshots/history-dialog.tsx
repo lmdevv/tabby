@@ -119,9 +119,9 @@ export function HistoryDialog({
                   className="flex flex-col gap-2 rounded border p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <button
-                      type="button"
-                      className="min-w-0 text-left w-full"
+                    <Button
+                      variant="ghost"
+                      className="min-w-0 text-left w-full justify-start p-0 h-auto"
                       onClick={() =>
                         setExpandedId((prev) => (prev === s.id ? null : s.id))
                       }
@@ -159,7 +159,7 @@ export function HistoryDialog({
                           ))}
                         </div>
                       )}
-                    </button>
+                    </Button>
                     <div className="shrink-0 flex items-center gap-1">
                       <Button
                         variant="ghost"

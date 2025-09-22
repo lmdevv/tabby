@@ -32,7 +32,13 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
+import {
+  useAddTabToResourceGroup,
+  useResourceGroups,
+  useResources,
+} from "@/hooks/use-resources";
 
 type FilterType =
   | "all"
@@ -67,13 +73,17 @@ export default function App() {
   const [showTags, setShowTags] = useState(true);
   const [showUrls, setShowUrls] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
-  const [minimizedWindows, setMinimizedWindows] = useState<number[]>([]);
+  const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
     groupId?: number;
   }>({
     open: false,
   });
+
+  const { addTabToResourceGroup } = useAddTabToResourceGroup();
+  const resourceGroups = useResourceGroups();
+  const resources = useResources();
 
   // Combine workspace queries to reduce re-renders
   const workspaceData = useLiveQuery(async () => {
@@ -101,6 +111,15 @@ export default function App() {
       shownWorkspaceId,
     };
   }, [previewWorkspaceId]);
+
+  // Get active tabs for resource status indicators
+  const activeTabs = useLiveQuery(async () => {
+    if (!workspaceData?.activeWorkspace) return [];
+    return db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceData.activeWorkspace.id)
+      .toArray();
+  }, [workspaceData?.activeWorkspace]);
 
   // Memoize the shown workspace ID to prevent unnecessary re-renders
   const shownWorkspaceId = useMemo(
@@ -511,13 +530,23 @@ export default function App() {
     [groupDialog.groupId],
   );
 
-  const handleToggleWindowMinimize = useCallback((windowId: number) => {
-    setMinimizedWindows((prev) =>
-      prev.includes(windowId)
-        ? prev.filter((id) => id !== windowId)
-        : [...prev, windowId],
-    );
-  }, []);
+  const handleAddToResourceGroup = useCallback(
+    async (tab: Tab, groupId: number) => {
+      try {
+        await addTabToResourceGroup(
+          {
+            title: tab.title || "Untitled",
+            url: tab.url || "",
+            favIconUrl: tab.favIconUrl,
+          },
+          groupId,
+        );
+      } catch (error) {
+        console.error("Failed to add tab to resource group:", error);
+      }
+    },
+    [addTabToResourceGroup],
+  );
 
   return (
     <SidebarProvider>
@@ -654,49 +683,67 @@ export default function App() {
             />
           )}
 
-          {/* Main content area */}
-          {windowGroups.length > 0 ? (
-            <ScrollArea className="flex-1">
-              <div className="space-y-6">
-                {windowGroups.map((windowGroup, index) => {
-                  return (
-                    <WindowComponent
-                      key={windowGroup.windowId}
-                      windowId={windowGroup.windowId}
-                      windowIndex={index}
-                      tabs={windowGroup.tabs}
-                      tabGroups={windowGroup.tabGroups}
-                      allTabGroups={tabGroups || []}
-                      selectedTabs={selectedTabs}
-                      showTags={showTags}
-                      showUrls={showUrls}
-                      onTabClick={handleTabClick}
-                      onDeleteTab={handleDeleteTab}
-                      onPinTab={() => {}} // Pin functionality removed
-                      onMuteTab={handleMuteTab}
-                      onHighlightTab={handleHighlightTab}
-                      onSelectTab={handleSelectTab}
-                      onToggleGroupCollapse={handleToggleGroupCollapse}
-                      onEditGroup={handleEditGroup}
-                      onUngroupTabs={handleUngroupTabs}
-                      onCloseTabs={handleCloseTabsById}
-                      minimized={windowGroup.minimized}
-                      onToggleMinimize={handleToggleWindowMinimize}
-                    />
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          ) : (
-            <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
-              <div className="text-center">
-                <h2 className="font-semibold text-2xl">No Tabs</h2>
-                <p className="mt-2 text-muted-foreground">
-                  Select a workspace from the sidebar to view its tabs
-                </p>
+          {/* Main content area - Split Layout */}
+          <div className="flex-1 grid grid-cols-2 gap-4 h-full">
+            {/* Active Tabs Panel */}
+            <div className="flex flex-col">
+              <h2 className="font-semibold text-lg mb-4">Active Tabs</h2>
+              {windowGroups.length > 0 ? (
+                <ScrollArea className="flex-1">
+                  <div className="space-y-6 p-4">
+                    {windowGroups.map((windowGroup, _index) => {
+                      return (
+                        <WindowComponent
+                          key={windowGroup.windowId}
+                          windowId={windowGroup.windowId}
+                          tabs={windowGroup.tabs}
+                          tabGroups={windowGroup.tabGroups}
+                          allTabGroups={tabGroups || []}
+                          selectedTabs={selectedTabs}
+                          showTags={showTags}
+                          showUrls={showUrls}
+                          resourceGroups={resourceGroups}
+                          onTabClick={handleTabClick}
+                          onDeleteTab={handleDeleteTab}
+                          onPinTab={() => {}} // Pin functionality removed
+                          onMuteTab={handleMuteTab}
+                          onHighlightTab={handleHighlightTab}
+                          onAddToResourceGroup={handleAddToResourceGroup}
+                          onSelectTab={handleSelectTab}
+                          onToggleGroupCollapse={handleToggleGroupCollapse}
+                          onEditGroup={handleEditGroup}
+                          onUngroupTabs={handleUngroupTabs}
+                          onCloseTabs={handleCloseTabsById}
+                        />
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <h2 className="font-semibold text-2xl">No Tabs</h2>
+                    <p className="mt-2 text-muted-foreground">
+                      Select a workspace from the sidebar to view its tabs
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Resources Panel */}
+            <div className="flex flex-col">
+              <div className="flex-1">
+                <ResourcesPanel
+                  resourceGroups={resourceGroups}
+                  resources={resources}
+                  showTags={showTags}
+                  showUrls={showUrls}
+                  activeTabs={activeTabs || []}
+                />
               </div>
             </div>
-          )}
+          </div>
         </div>
       </SidebarInset>
 
