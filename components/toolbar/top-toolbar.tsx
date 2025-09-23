@@ -38,7 +38,7 @@ export function TopToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={showTags ? "default" : "outline"}
+              variant={showTags ? "default" : "ghost"}
               size="icon"
               onClick={onToggleShowTags}
             >
@@ -55,7 +55,7 @@ export function TopToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={showUrls ? "default" : "outline"}
+              variant={showUrls ? "default" : "ghost"}
               size="icon"
               onClick={onToggleShowUrls}
             >
@@ -71,7 +71,7 @@ export function TopToolbar({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="icon" onClick={onSelectAll}>
+            <Button variant="ghost" size="icon" onClick={onSelectAll}>
               <CheckSquare className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
