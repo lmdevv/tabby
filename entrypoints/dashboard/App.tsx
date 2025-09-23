@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { TabsStats } from "@/components/tabs/tabs-stats";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
@@ -22,6 +21,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
@@ -29,6 +33,7 @@ import type { Tab } from "@/lib/types";
 // type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
+import { History, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
@@ -162,8 +167,14 @@ export default function App() {
     return db.tabGroups.where("workspaceId").equals(shownWorkspaceId).toArray();
   }, [shownWorkspaceId, workspaceData?.activeWorkspace?.id]);
 
-  const handleRefresh = useCallback((): void => {
-    browser.runtime.sendMessage({ type: "refreshTabs" });
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    try {
+      await browser.runtime.sendMessage({ type: "refreshTabs" });
+      toast.success("Tabs refreshed successfully");
+    } catch (error) {
+      console.error("Failed to refresh tabs:", error);
+      toast.error("Failed to refresh tabs");
+    }
   }, []);
 
   const handleOpenWorkspace = useCallback(async () => {
@@ -183,19 +194,6 @@ export default function App() {
       }
     }
   }, [shownWorkspaceId, workspaceData?.activeWorkspace?.id]);
-
-  const handleCloseWorkspace = useCallback(async () => {
-    if (workspaceData?.activeWorkspace) {
-      try {
-        await browser.runtime.sendMessage({
-          type: "closeWorkspace",
-        });
-        setPreviewWorkspaceId(null);
-      } catch (error) {
-        console.error("Failed to close workspace:", error);
-      }
-    }
-  }, [workspaceData?.activeWorkspace]);
 
   // Get all unique tags from tabs
   const allTags = useMemo(() => {
@@ -555,7 +553,7 @@ export default function App() {
         setPreviewWorkspaceId={setPreviewWorkspaceId}
       />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 p-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -592,6 +590,18 @@ export default function App() {
                         )}
                     </span>
                   </BreadcrumbItem>
+                  {previewWorkspaceId !== null &&
+                    previewWorkspaceId !== workspaceData?.activeWorkspace?.id &&
+                    previewWorkspaceId !== -1 && (
+                      <BreadcrumbItem>
+                        <Button
+                          size="sm"
+                          onClick={handleOpenWorkspace}
+                        >
+                          Open
+                        </Button>
+                      </BreadcrumbItem>
+                    )}
                 </BreadcrumbList>
               </Breadcrumb>
             ) : (
@@ -600,70 +610,12 @@ export default function App() {
               </span>
             )}
           </div>
+          <div className="flex items-center gap-2 p-4">
+            <ModeToggle />
+          </div>
         </header>
 
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <ModeToggle />
-            <Button variant="outline" onClick={handleRefresh}>
-              Refresh
-            </Button>
-            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
-              History
-            </Button>
-            {previewWorkspaceId !== null &&
-              previewWorkspaceId !== workspaceData?.activeWorkspace?.id &&
-              previewWorkspaceId !== -1 && (
-                <Button variant="default" onClick={handleOpenWorkspace}>
-                  Open
-                </Button>
-              )}
-            {/* Close workspace button - only show if there's an active workspace and we're not previewing */}
-            {workspaceData?.activeWorkspace &&
-              previewWorkspaceId === null &&
-              shownWorkspaceId !== -1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCloseWorkspace}
-                  title="Close workspace and switch to undefined workspace"
-                >
-                  Close Workspace
-                </Button>
-              )}
-          </div>
-
-          {/* Top Toolbar */}
-          <TopToolbar
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            allTags={allTags}
-            selectedTags={selectedTags}
-            onToggleTag={(tag: string) => {
-              setSelectedTags((prev) =>
-                prev.includes(tag)
-                  ? prev.filter((t) => t !== tag)
-                  : [...prev, tag],
-              );
-            }}
-            showTags={showTags}
-            onToggleShowTags={() => setShowTags(!showTags)}
-            showUrls={showUrls}
-            onToggleShowUrls={() => setShowUrls(!showUrls)}
-            selectedTabsCount={selectedTabs.length}
-            filteredTabsCount={filteredTabs.length}
-            onSelectAll={handleSelectAll}
-          />
-
-          {/* Tab Stats */}
-          <TabsStats
-            filteredTabsCount={filteredTabs.length}
-            totalTabsCount={shownTabs?.length || 0}
-            activeFilter={activeFilter}
-            selectedTags={selectedTags}
-          />
-
           {/* Quick Actions Panel */}
           {selectedTabs.length > 0 && (
             <QuickActionsPanel
@@ -687,7 +639,56 @@ export default function App() {
           <div className="flex-1 grid grid-cols-2 gap-4 h-full">
             {/* Active Tabs Panel */}
             <div className="flex flex-col">
-              <h2 className="font-semibold text-lg mb-4">Active Tabs</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-lg">Active Tabs</h2>
+                {/* Integrated Toolbar */}
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setHistoryOpen(true)}
+                      >
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View tab history</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={handleRefresh}>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Refresh tabs</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <TopToolbar
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                    allTags={allTags}
+                    selectedTags={selectedTags}
+                    onToggleTag={(tag: string) => {
+                      setSelectedTags((prev) =>
+                        prev.includes(tag)
+                          ? prev.filter((t) => t !== tag)
+                          : [...prev, tag],
+                      );
+                    }}
+                    showTags={showTags}
+                    onToggleShowTags={() => setShowTags(!showTags)}
+                    showUrls={showUrls}
+                    onToggleShowUrls={() => setShowUrls(!showUrls)}
+                    selectedTabsCount={selectedTabs.length}
+                    filteredTabsCount={filteredTabs.length}
+                    onSelectAll={handleSelectAll}
+                  />
+                </div>
+              </div>
               {windowGroups.length > 0 ? (
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] scrollbar-none">
