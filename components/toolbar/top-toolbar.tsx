@@ -1,7 +1,6 @@
 "use client";
 
-import { CheckSquare, Link2, Tag } from "lucide-react";
-import { FilterDropdown } from "@/components/toolbar/filter-dropdown";
+import { CheckSquare, History, Link2, RefreshCw, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -10,42 +9,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type FilterType =
-  | "all"
-  | "pinned"
-  | "audible"
-  | "muted"
-  | "highlighted"
-  | "discarded";
-
 interface TopToolbarProps {
   showTags: boolean;
   showUrls: boolean;
   selectedTabsCount: number;
-  filteredTabsCount: number;
-  activeFilter: FilterType;
-  selectedTags: string[];
-  allTags: string[];
+  tabsCount: number;
   onToggleShowTags: () => void;
   onToggleShowUrls: () => void;
   onSelectAll: () => void;
-  onFilterChange: (filter: FilterType) => void;
-  onToggleTag: (tag: string) => void;
+  onRefresh: () => void;
+  onHistory: () => void;
 }
 
 export function TopToolbar({
   showTags,
   showUrls,
   selectedTabsCount,
-  filteredTabsCount,
-  activeFilter,
-  selectedTags,
-  allTags,
+  tabsCount,
   onToggleShowTags,
   onToggleShowUrls,
   onSelectAll,
-  onFilterChange,
-  onToggleTag,
+  onRefresh,
+  onHistory,
 }: TopToolbarProps) {
   return (
     <div className="flex gap-2">
@@ -91,20 +76,36 @@ export function TopToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {selectedTabsCount === filteredTabsCount
-              ? "Deselect All"
-              : "Select All"}
+            {selectedTabsCount === tabsCount ? "Deselect All" : "Select All"}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
-      <FilterDropdown
-        activeFilter={activeFilter}
-        selectedTags={selectedTags}
-        allTags={allTags}
-        onFilterChange={onFilterChange}
-        onToggleTag={onToggleTag}
-      />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={onHistory}>
+              <History className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>View tab history</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Refresh tabs</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

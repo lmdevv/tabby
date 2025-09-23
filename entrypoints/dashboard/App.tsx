@@ -21,11 +21,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
@@ -33,7 +28,6 @@ import type { Tab } from "@/lib/types";
 // type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { History, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
@@ -44,14 +38,6 @@ import {
   useResourceGroups,
   useResources,
 } from "@/hooks/use-resources";
-
-type FilterType =
-  | "all"
-  | "pinned"
-  | "audible"
-  | "muted"
-  | "highlighted"
-  | "discarded";
 
 interface TabGroupInWindow {
   groupId: number;
@@ -73,8 +59,6 @@ export default function App() {
   );
 
   // UI state for the new tab management system
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showTags, setShowTags] = useState(true);
   const [showUrls, setShowUrls] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
@@ -195,47 +179,12 @@ export default function App() {
     }
   }, [shownWorkspaceId, workspaceData?.activeWorkspace?.id]);
 
-  // Get all unique tags from tabs
-  const allTags = useMemo(() => {
-    if (!shownTabs?.length) return [];
-    return Array.from(
-      new Set(shownTabs.flatMap((tab) => tab.tags || []).filter(Boolean)),
-    );
-  }, [shownTabs]);
-
-  // Filter tabs based on active filter and selected tags
-  const filteredTabs = useMemo(() => {
-    if (!shownTabs?.length) return [];
-
-    return shownTabs
-      .filter((tab) => {
-        if (activeFilter === "pinned") return tab.pinned;
-        if (activeFilter === "audible") return tab.audible;
-        if (activeFilter === "muted") return tab.mutedInfo?.muted;
-        if (activeFilter === "discarded") return tab.discarded;
-        if (activeFilter === "highlighted") return tab.highlighted;
-        return true;
-      })
-      .filter((tab) => {
-        if (selectedTags.length === 0) return true;
-        return selectedTags.every((tag) => tab.tags?.includes(tag));
-      })
-      .sort((a, b) => {
-        // First sort by window ID
-        if (a.windowId !== b.windowId) {
-          return a.windowId - b.windowId;
-        }
-        // Then sort by browser tab index within the same window
-        return a.index - b.index;
-      });
-  }, [shownTabs, activeFilter, selectedTags]);
-
   // Create an improved window grouping that maintains browser tab order
   const windowGroups: WindowGroupData[] = useMemo(() => {
-    if (!filteredTabs.length) return [];
+    if (!shownTabs?.length) return [];
 
     // Group tabs by window first
-    const tabsByWindow = filteredTabs.reduce(
+    const tabsByWindow = shownTabs.reduce(
       (windows, tab) => {
         if (!windows[tab.windowId]) {
           windows[tab.windowId] = [];
@@ -287,7 +236,7 @@ export default function App() {
         };
       })
       .sort((a, b) => a.windowId - b.windowId);
-  }, [filteredTabs, minimizedWindows, tabGroups]);
+  }, [shownTabs, minimizedWindows, tabGroups]);
 
   // Get the selected tab objects
   const selectedTabObjects = useMemo(() => {
@@ -430,12 +379,12 @@ export default function App() {
   }, [selectedTabs]);
 
   const handleSelectAll = useCallback(() => {
-    if (!filteredTabs?.length) return;
-    const allTabIds = filteredTabs
+    if (!shownTabs?.length) return;
+    const allTabIds = shownTabs
       .map((tab) => tab.id)
       .filter((id): id is number => id !== undefined);
     setSelectedTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
-  }, [filteredTabs, selectedTabs.length]);
+  }, [shownTabs, selectedTabs.length]);
 
   const handleToggleGroupCollapse = useCallback(
     async (_windowId: number, groupId: number) => {
@@ -594,10 +543,7 @@ export default function App() {
                     previewWorkspaceId !== workspaceData?.activeWorkspace?.id &&
                     previewWorkspaceId !== -1 && (
                       <BreadcrumbItem>
-                        <Button
-                          size="sm"
-                          onClick={handleOpenWorkspace}
-                        >
+                        <Button size="sm" onClick={handleOpenWorkspace}>
                           Open
                         </Button>
                       </BreadcrumbItem>
@@ -643,49 +589,16 @@ export default function App() {
                 <h2 className="font-semibold text-lg">Active Tabs</h2>
                 {/* Integrated Toolbar */}
                 <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setHistoryOpen(true)}
-                      >
-                        <History className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>View tab history</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={handleRefresh}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Refresh tabs</p>
-                    </TooltipContent>
-                  </Tooltip>
                   <TopToolbar
-                    activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
-                    allTags={allTags}
-                    selectedTags={selectedTags}
-                    onToggleTag={(tag: string) => {
-                      setSelectedTags((prev) =>
-                        prev.includes(tag)
-                          ? prev.filter((t) => t !== tag)
-                          : [...prev, tag],
-                      );
-                    }}
                     showTags={showTags}
                     onToggleShowTags={() => setShowTags(!showTags)}
                     showUrls={showUrls}
                     onToggleShowUrls={() => setShowUrls(!showUrls)}
                     selectedTabsCount={selectedTabs.length}
-                    filteredTabsCount={filteredTabs.length}
+                    tabsCount={shownTabs?.length || 0}
                     onSelectAll={handleSelectAll}
+                    onRefresh={handleRefresh}
+                    onHistory={() => setHistoryOpen(true)}
                   />
                 </div>
               </div>
