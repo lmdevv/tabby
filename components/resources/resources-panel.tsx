@@ -40,6 +40,15 @@ export function ResourcesPanel({
   showUrls,
   activeTabs = [],
 }: ResourcesPanelProps) {
+  // Handle toggle for individual groups
+  const handleToggleGroup = (groupId: number) => {
+    const group = resourceGroups?.find((g) => g.id === groupId);
+    if (group) {
+      updateResourceGroup(groupId, {
+        collapsed: group.collapsed === 1 ? 0 : 1,
+      });
+    }
+  };
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
     mode: "create" | "edit";
@@ -94,15 +103,6 @@ export function ResourcesPanel({
       `${starred ? "Starring" : "Unstarring"} resource with id: ${id}`,
     );
     toast.info(starred ? "Resource starred" : "Resource unstarred");
-  };
-
-  const handleToggleGroupCollapse = (groupId: number) => {
-    const group = resourceGroups?.find((g) => g.id === groupId);
-    if (group) {
-      updateResourceGroup(groupId, {
-        collapsed: group.collapsed === 1 ? 0 : 1,
-      });
-    }
   };
 
   const handleOpenCreateGroupDialog = () => {
@@ -205,7 +205,8 @@ export function ResourcesPanel({
                       handleOpenDeleteResourceDialog(id, gId)
                     }
                     onStarResource={handleStarResource}
-                    onToggleCollapse={handleToggleGroupCollapse}
+                    isOpen={group.collapsed === 0}
+                    onToggle={handleToggleGroup}
                     activeTabs={activeTabs}
                   />
                 );
