@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import App from "./App.tsx";
+import App from "@/entrypoints/dashboard/App.tsx";
 import "@/assets/tailwind.css";
 import { Toaster } from "sonner";
 

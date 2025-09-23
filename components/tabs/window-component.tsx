@@ -1,10 +1,10 @@
 import type { Browser } from "wxt/browser";
+import { TabCard } from "@/components/tabs/tab-card";
+import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
-import { TabCard } from "./tab-card";
-import { TabGroupHeader } from "./tab-group-header";
 
 type TabGroup = Browser.tabGroups.TabGroup;
 

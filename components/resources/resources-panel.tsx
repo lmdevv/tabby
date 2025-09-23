@@ -3,6 +3,8 @@
 import { BookmarkPlus, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ResourceGroupComponent } from "@/components/resources/resource-group";
+import { ResourceGroupDialog } from "@/components/resources/resource-group-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +25,6 @@ import {
   updateResourceGroup,
 } from "@/lib/resource-helpers";
 import type { Resource, Tab } from "@/lib/types";
-import { ResourceGroupComponent } from "./resource-group";
-import { ResourceGroupDialog } from "./resource-group-dialog";
 
 interface ResourcesPanelProps {
   resourceGroups?: EnrichedResourceGroup[];

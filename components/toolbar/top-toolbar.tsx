@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckSquare, Link2, Tag } from "lucide-react";
+import { FilterDropdown } from "@/components/toolbar/filter-dropdown";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FilterDropdown } from "./filter-dropdown";
 
 type FilterType =
   | "all"

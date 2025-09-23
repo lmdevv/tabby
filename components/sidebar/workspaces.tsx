@@ -1,6 +1,8 @@
 "use client";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Minus, Plus } from "lucide-react";
+import { UndefinedWorkspaceItem } from "@/components/sidebar/undefined-workspace-item";
+import { WorkspaceItem } from "@/components/sidebar/workspace-item";
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,8 +18,6 @@ import {
 } from "@/components/ui/sidebar";
 import { db } from "@/lib/db";
 import type { Workspace, WorkspaceGroup } from "@/lib/types";
-import { UndefinedWorkspaceItem } from "./undefined-workspace-item";
-import { WorkspaceItem } from "./workspace-item";
 
 interface WorkspacesProps {
   previewWorkspaceId: number | null;

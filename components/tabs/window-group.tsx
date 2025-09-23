@@ -2,10 +2,10 @@
 
 import { Monitor } from "lucide-react";
 import type { Browser } from "wxt/browser";
+import { TabCard } from "@/components/tabs/tab-card";
+import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab, TabGroup } from "@/lib/types";
-import { TabCard } from "./tab-card";
-import { TabGroupHeader } from "./tab-group-header";
 
 interface TabGroupInWindow {
   groupId: number;

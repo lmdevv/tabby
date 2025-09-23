@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { GroupDialog } from "@/components/dialogs/group-dialog";
+import { ResourcesPanel } from "@/components/resources/resources-panel";
+import { TabsStats } from "@/components/tabs/tabs-stats";
+import { WindowComponent } from "@/components/tabs/window-component";
+import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
+import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import type { Resource, ResourceGroup, Tab, TabGroup } from "@/lib/types";
-import { GroupDialog } from "../dialogs/group-dialog";
-import { ResourcesPanel } from "../resources/resources-panel";
-import { QuickActionsPanel } from "../toolbar/quick-actions-panel";
-import { TopToolbar } from "../toolbar/top-toolbar";
-import { TabsStats } from "./tabs-stats";
-import { WindowComponent } from "./window-component";
 
 // Add a new interface for tab groups in a window
 interface TabGroupInWindow {

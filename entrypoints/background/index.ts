@@ -1,21 +1,27 @@
 import { liveQuery } from "dexie";
 import { browser } from "wxt/browser";
-import { db } from "@/lib/db";
-import type { RuntimeMessage, Workspace } from "@/lib/types";
 import {
   isDashboardTab,
   reconcileTabs,
   refreshActiveTabs,
   switchWorkspaceTabs,
-} from "./helpers";
+} from "@/entrypoints/background/helpers";
 import {
   createWorkspaceSnapshot,
   deleteSnapshot,
   restoreSnapshot,
   startSnapshotScheduler,
-} from "./snapshots";
-import { setupTabListeners, validateAllTabs } from "./tab-listeners";
-import { setupTabGroupListeners, syncAllTabGroups } from "./tabGroup-listeners";
+} from "@/entrypoints/background/snapshots";
+import {
+  setupTabListeners,
+  validateAllTabs,
+} from "@/entrypoints/background/tab-listeners";
+import {
+  setupTabGroupListeners,
+  syncAllTabGroups,
+} from "@/entrypoints/background/tabGroup-listeners";
+import { db } from "@/lib/db";
+import type { RuntimeMessage, Workspace } from "@/lib/types";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;

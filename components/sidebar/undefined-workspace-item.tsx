@@ -2,6 +2,7 @@
 import { CirclePlus, MoreHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { browser } from "wxt/browser";
+import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,7 +25,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { db } from "@/lib/db";
-import { CreateWorkspace } from "./create-workspace";
 
 interface UndefinedWorkspaceItemProps {
   tabsCount: number;

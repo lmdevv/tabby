@@ -1,6 +1,7 @@
 "use client";
 
 import { BookmarkPlus } from "lucide-react";
+import { ResourceCard } from "@/components/resources/resource-card";
 import {
   Accordion,
   AccordionContent,
@@ -10,7 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { normalizeUrl } from "@/lib/resource-helpers";
 import type { Resource, ResourceGroup, Tab } from "@/lib/types";
-import { ResourceCard } from "./resource-card";
 
 interface ResourceGroupProps {
   group: ResourceGroup;
