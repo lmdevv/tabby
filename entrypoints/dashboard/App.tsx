@@ -556,7 +556,7 @@ export default function App() {
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center gap-2 p-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             {shownWorkspaceId === -1 ? (
@@ -689,36 +689,38 @@ export default function App() {
             <div className="flex flex-col">
               <h2 className="font-semibold text-lg mb-4">Active Tabs</h2>
               {windowGroups.length > 0 ? (
-                <ScrollArea className="flex-1">
-                  <div className="space-y-6 p-4">
-                    {windowGroups.map((windowGroup, _index) => {
-                      return (
-                        <WindowComponent
-                          key={windowGroup.windowId}
-                          windowId={windowGroup.windowId}
-                          tabs={windowGroup.tabs}
-                          tabGroups={windowGroup.tabGroups}
-                          allTabGroups={tabGroups || []}
-                          selectedTabs={selectedTabs}
-                          showTags={showTags}
-                          showUrls={showUrls}
-                          resourceGroups={resourceGroups}
-                          onTabClick={handleTabClick}
-                          onDeleteTab={handleDeleteTab}
-                          onPinTab={() => {}} // Pin functionality removed
-                          onMuteTab={handleMuteTab}
-                          onHighlightTab={handleHighlightTab}
-                          onAddToResourceGroup={handleAddToResourceGroup}
-                          onSelectTab={handleSelectTab}
-                          onToggleGroupCollapse={handleToggleGroupCollapse}
-                          onEditGroup={handleEditGroup}
-                          onUngroupTabs={handleUngroupTabs}
-                          onCloseTabs={handleCloseTabsById}
-                        />
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] scrollbar-none">
+                    <div className="space-y-6 px-6 py-2">
+                      {windowGroups.map((windowGroup, _index) => {
+                        return (
+                          <WindowComponent
+                            key={windowGroup.windowId}
+                            windowId={windowGroup.windowId}
+                            tabs={windowGroup.tabs}
+                            tabGroups={windowGroup.tabGroups}
+                            allTabGroups={tabGroups || []}
+                            selectedTabs={selectedTabs}
+                            showTags={showTags}
+                            showUrls={showUrls}
+                            resourceGroups={resourceGroups}
+                            onTabClick={handleTabClick}
+                            onDeleteTab={handleDeleteTab}
+                            onPinTab={() => {}} // Pin functionality removed
+                            onMuteTab={handleMuteTab}
+                            onHighlightTab={handleHighlightTab}
+                            onAddToResourceGroup={handleAddToResourceGroup}
+                            onSelectTab={handleSelectTab}
+                            onToggleGroupCollapse={handleToggleGroupCollapse}
+                            onEditGroup={handleEditGroup}
+                            onUngroupTabs={handleUngroupTabs}
+                            onCloseTabs={handleCloseTabsById}
+                          />
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">

@@ -130,8 +130,8 @@ export function WindowComponent({
   }
 
   return (
-    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 overflow-hidden border py-0 shadow-sm flex flex-col max-h-[80vh] min-h-[220px]">
-      <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-none">
+    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1">
+      <CardContent className="p-0 flex-1">
         <div className="space-y-1 p-3">
           {orderedElements.map((element, _index) => {
             if (
