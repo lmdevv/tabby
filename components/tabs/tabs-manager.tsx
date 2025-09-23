@@ -3,11 +3,11 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import type { Resource, ResourceGroup, Tab, TabGroup } from "@/lib/types";
-import { GroupDialog } from "./group-dialog";
-import { QuickActionsPanel } from "./quick-actions-panel";
-import { ResourcesPanel } from "./resources/resources-panel";
+import { GroupDialog } from "../dialogs/group-dialog";
+import { ResourcesPanel } from "../resources/resources-panel";
+import { QuickActionsPanel } from "../toolbar/quick-actions-panel";
+import { TopToolbar } from "../toolbar/top-toolbar";
 import { TabsStats } from "./tabs-stats";
-import { TopToolbar } from "./top-toolbar";
 import { WindowComponent } from "./window-component";
 
 // Add a new interface for tab groups in a window

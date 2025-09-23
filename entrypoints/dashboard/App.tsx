@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import { GroupDialog } from "@/components/group-dialog";
-import { QuickActionsPanel } from "@/components/quick-actions-panel";
+import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { TabsStats } from "@/components/tabs-stats";
-import { TopToolbar } from "@/components/top-toolbar";
+import { TabsStats } from "@/components/tabs/tabs-stats";
+import { WindowComponent } from "@/components/tabs/window-component";
+import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
+import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -21,7 +22,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { WindowComponent } from "@/components/window-component";
 import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
@@ -31,9 +31,9 @@ import type { Tab } from "@/lib/types";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
-import { ModeToggle } from "@/components/mode-toggle";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
+import { ModeToggle } from "@/components/theme/mode-toggle";
 import {
   useAddTabToResourceGroup,
   useResourceGroups,
