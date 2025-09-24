@@ -604,7 +604,7 @@ export default function App() {
               </div>
               {windowGroups.length > 0 ? (
                 <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] scrollbar-none">
+                  <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2">
                       {windowGroups.map((windowGroup, _index) => {
                         return (

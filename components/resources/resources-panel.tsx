@@ -188,7 +188,7 @@ export function ResourcesPanel({
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)]">
+        <ScrollArea className="h-[calc(100vh-140px)]">
           {resourceGroups && resourceGroups.length > 0 ? (
             <div className="space-y-3">
               {resourceGroups.map((group) => {
