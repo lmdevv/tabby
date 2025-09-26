@@ -28,11 +28,18 @@ import type { Tab } from "@/lib/types";
 // type TabGroup = Browser.tabGroups.TabGroup;
 
 import { useLiveQuery } from "dexie-react-hooks";
+import { Columns2 } from "lucide-react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
 import { ModeToggle } from "@/components/theme/mode-toggle";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   useAddTabToResourceGroup,
   useResourceGroups,
@@ -61,6 +68,7 @@ export default function App() {
   // UI state for the new tab management system
   const [showTags, setShowTags] = useState(true);
   const [showUrls, setShowUrls] = useState(true);
+  const [showResources, setShowResources] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
   const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
   const [groupDialog, setGroupDialog] = useState<{
@@ -557,6 +565,30 @@ export default function App() {
             )}
           </div>
           <div className="flex items-center gap-2 p-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={showResources ? "default" : "ghost"}
+                    size="icon"
+                    onClick={() => setShowResources(!showResources)}
+                    className={showResources ? "" : "hover:bg-accent"}
+                  >
+                    <Columns2 className="h-[1.2rem] w-[1.2rem]" />
+                    <span className="sr-only">
+                      {showResources ? "Hide Resources" : "Show Resources"}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {showResources
+                      ? "Hide Resources Panel"
+                      : "Show Resources Panel"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <ModeToggle />
           </div>
         </header>
@@ -581,84 +613,177 @@ export default function App() {
             />
           )}
 
-          {/* Main content area - Split Layout */}
-          <div className="flex-1 grid grid-cols-2 gap-4 h-full">
-            {/* Active Tabs Panel */}
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">Active Tabs</h2>
-                {/* Integrated Toolbar */}
-                <div className="flex items-center gap-2">
-                  <TopToolbar
-                    showTags={showTags}
-                    onToggleShowTags={() => setShowTags(!showTags)}
-                    showUrls={showUrls}
-                    onToggleShowUrls={() => setShowUrls(!showUrls)}
-                    selectedTabsCount={selectedTabs.length}
-                    tabsCount={shownTabs?.length || 0}
-                    onSelectAll={handleSelectAll}
-                    onRefresh={handleRefresh}
-                    onHistory={() => setHistoryOpen(true)}
-                  />
-                </div>
-              </div>
-              {windowGroups.length > 0 ? (
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                    <div className="space-y-6 px-6 py-2">
-                      {windowGroups.map((windowGroup, _index) => {
-                        return (
-                          <WindowComponent
-                            key={windowGroup.windowId}
-                            windowId={windowGroup.windowId}
-                            tabs={windowGroup.tabs}
-                            tabGroups={windowGroup.tabGroups}
-                            allTabGroups={tabGroups || []}
-                            selectedTabs={selectedTabs}
-                            showTags={showTags}
-                            showUrls={showUrls}
-                            resourceGroups={resourceGroups}
-                            onTabClick={handleTabClick}
-                            onDeleteTab={handleDeleteTab}
-                            onPinTab={() => {}} // Pin functionality removed
-                            onMuteTab={handleMuteTab}
-                            onHighlightTab={handleHighlightTab}
-                            onAddToResourceGroup={handleAddToResourceGroup}
-                            onSelectTab={handleSelectTab}
-                            onToggleGroupCollapse={handleToggleGroupCollapse}
-                            onEditGroup={handleEditGroup}
-                            onUngroupTabs={handleUngroupTabs}
-                            onCloseTabs={handleCloseTabsById}
-                          />
-                        );
-                      })}
+          {/* Main content area - Conditional Layout */}
+          <div className="flex-1 h-full">
+            {showResources ? (
+              /* Split Layout - Both panels */
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {/* Active Tabs Panel */}
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-lg">Active Tabs</h2>
+                    {/* Integrated Toolbar - moved per window */}
+                  </div>
+                  {windowGroups.length > 0 ? (
+                    <div className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                        <div className="space-y-6 px-6 py-2">
+                          {windowGroups.map((windowGroup, _index) => {
+                            return (
+                              <div key={windowGroup.windowId}>
+                                {/* Per-window toolbar */}
+                                <div className="flex items-center justify-end mb-2">
+                                  <TopToolbar
+                                    showTags={showTags}
+                                    onToggleShowTags={() =>
+                                      setShowTags(!showTags)
+                                    }
+                                    showUrls={showUrls}
+                                    onToggleShowUrls={() =>
+                                      setShowUrls(!showUrls)
+                                    }
+                                    selectedTabsCount={selectedTabs.length}
+                                    tabsCount={windowGroup.tabs.length}
+                                    onSelectAll={handleSelectAll}
+                                    onRefresh={handleRefresh}
+                                    onHistory={() => setHistoryOpen(true)}
+                                    windowId={windowGroup.windowId}
+                                  />
+                                </div>
+                                <WindowComponent
+                                  windowId={windowGroup.windowId}
+                                  tabs={windowGroup.tabs}
+                                  tabGroups={windowGroup.tabGroups}
+                                  allTabGroups={tabGroups || []}
+                                  selectedTabs={selectedTabs}
+                                  showTags={showTags}
+                                  showUrls={showUrls}
+                                  resourceGroups={resourceGroups}
+                                  onTabClick={handleTabClick}
+                                  onDeleteTab={handleDeleteTab}
+                                  onPinTab={() => {}} // Pin functionality removed
+                                  onMuteTab={handleMuteTab}
+                                  onHighlightTab={handleHighlightTab}
+                                  onAddToResourceGroup={
+                                    handleAddToResourceGroup
+                                  }
+                                  onSelectTab={handleSelectTab}
+                                  onToggleGroupCollapse={
+                                    handleToggleGroupCollapse
+                                  }
+                                  onEditGroup={handleEditGroup}
+                                  onUngroupTabs={handleUngroupTabs}
+                                  onCloseTabs={handleCloseTabsById}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
                     </div>
-                  </ScrollArea>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="text-center">
+                        <h2 className="font-semibold text-2xl">No Tabs</h2>
+                        <p className="mt-2 text-muted-foreground">
+                          Select a workspace from the sidebar to view its tabs
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <h2 className="font-semibold text-2xl">No Tabs</h2>
-                    <p className="mt-2 text-muted-foreground">
-                      Select a workspace from the sidebar to view its tabs
-                    </p>
+
+                {/* Resources Panel */}
+                <div className="flex flex-col">
+                  <div className="flex-1">
+                    <ResourcesPanel
+                      resourceGroups={resourceGroups}
+                      resources={resources}
+                      showTags={showTags}
+                      showUrls={showUrls}
+                      activeTabs={activeTabs || []}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Resources Panel */}
-            <div className="flex flex-col">
-              <div className="flex-1">
-                <ResourcesPanel
-                  resourceGroups={resourceGroups}
-                  resources={resources}
-                  showTags={showTags}
-                  showUrls={showUrls}
-                  activeTabs={activeTabs || []}
-                />
               </div>
-            </div>
+            ) : (
+              /* Single Layout - Only active tabs, centered */
+              <div className="h-full flex items-center justify-center">
+                <div className="w-full max-w-4xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-lg">Active Tabs</h2>
+                    {/* Integrated Toolbar - moved per window */}
+                  </div>
+                  {windowGroups.length > 0 ? (
+                    <div className="overflow-hidden">
+                      <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                        <div className="space-y-6 px-6 py-2">
+                          {windowGroups.map((windowGroup, _index) => {
+                            return (
+                              <div key={windowGroup.windowId}>
+                                {/* Per-window toolbar */}
+                                <div className="flex items-center justify-end mb-2">
+                                  <TopToolbar
+                                    showTags={showTags}
+                                    onToggleShowTags={() =>
+                                      setShowTags(!showTags)
+                                    }
+                                    showUrls={showUrls}
+                                    onToggleShowUrls={() =>
+                                      setShowUrls(!showUrls)
+                                    }
+                                    selectedTabsCount={selectedTabs.length}
+                                    tabsCount={windowGroup.tabs.length}
+                                    onSelectAll={handleSelectAll}
+                                    onRefresh={handleRefresh}
+                                    onHistory={() => setHistoryOpen(true)}
+                                    windowId={windowGroup.windowId}
+                                  />
+                                </div>
+                                <WindowComponent
+                                  windowId={windowGroup.windowId}
+                                  tabs={windowGroup.tabs}
+                                  tabGroups={windowGroup.tabGroups}
+                                  allTabGroups={tabGroups || []}
+                                  selectedTabs={selectedTabs}
+                                  showTags={showTags}
+                                  showUrls={showUrls}
+                                  resourceGroups={resourceGroups}
+                                  onTabClick={handleTabClick}
+                                  onDeleteTab={handleDeleteTab}
+                                  onPinTab={() => {}} // Pin functionality removed
+                                  onMuteTab={handleMuteTab}
+                                  onHighlightTab={handleHighlightTab}
+                                  onAddToResourceGroup={
+                                    handleAddToResourceGroup
+                                  }
+                                  onSelectTab={handleSelectTab}
+                                  onToggleGroupCollapse={
+                                    handleToggleGroupCollapse
+                                  }
+                                  onEditGroup={handleEditGroup}
+                                  onUngroupTabs={handleUngroupTabs}
+                                  onCloseTabs={handleCloseTabsById}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="text-center">
+                        <h2 className="font-semibold text-2xl">No Tabs</h2>
+                        <p className="mt-2 text-muted-foreground">
+                          Select a workspace from the sidebar to view its tabs
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </SidebarInset>
