@@ -21,7 +21,7 @@ import {
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
 import { db } from "@/lib/db";
-import type { RuntimeMessage, Workspace } from "@/lib/types";
+import type { RuntimeMessage, SortTabsMessage, Workspace } from "@/lib/types";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;
@@ -138,6 +138,75 @@ export default defineBackground(() => {
     },
     10 * 60 * 1000,
   ); // 10 minutes
+
+  //
+  // Helper functions
+  //
+  function getDomainFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch {
+      return "";
+    }
+  }
+
+  async function sortTabsInWindow(
+    windowId: number,
+    sortType: "title" | "domain" | "recency",
+  ) {
+    try {
+      // Get all tabs in the specified window
+      const tabs = await browser.tabs.query({ windowId });
+
+      // Filter out dashboard tabs
+      const nonDashboardTabs = tabs.filter((tab) => {
+        const ourExtensionBaseURL = browser.runtime.getURL("");
+        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        return (
+          tab.url !== specificDashboardURL &&
+          !tab.url?.startsWith(ourExtensionBaseURL)
+        );
+      });
+
+      if (nonDashboardTabs.length <= 1) return; // Nothing to sort
+
+      // Sort the tabs based on the specified criteria
+      const sortedTabs = [...nonDashboardTabs].sort((a, b) => {
+        switch (sortType) {
+          case "title":
+            return (a.title || "").localeCompare(b.title || "");
+          case "domain": {
+            const domainA = getDomainFromUrl(a.url || "");
+            const domainB = getDomainFromUrl(b.url || "");
+            return domainA.localeCompare(domainB);
+          }
+          case "recency":
+            // For recency, we need to get creation time from the database
+            // Since we don't have direct access to creation time in browser tabs,
+            // we'll sort by index for now (assuming newer tabs have higher indices)
+            return (b.index || 0) - (a.index || 0);
+          default:
+            return 0;
+        }
+      });
+
+      // Update the index of each tab to reflect the new order
+      for (let i = 0; i < sortedTabs.length; i++) {
+        const tab = sortedTabs[i];
+        if (tab.id !== undefined) {
+          await browser.tabs.move(tab.id, { index: i });
+        }
+      }
+
+      console.log(
+        `✅ Sorted ${sortedTabs.length} tabs in window ${windowId} by ${sortType}`,
+      );
+    } catch (error) {
+      console.error(`❌ Failed to sort tabs in window ${windowId}:`, error);
+      throw error;
+    }
+  }
 
   //
   // Messages
@@ -283,6 +352,9 @@ export default defineBackground(() => {
         message.type === "deleteSnapshot"
       ) {
         await deleteSnapshot(message.snapshotId);
+        return { success: true } as const;
+      } else if (typeof message === "object" && message.type === "sortTabs") {
+        await sortTabsInWindow(message.windowId, message.sortType);
         return { success: true } as const;
       }
     },

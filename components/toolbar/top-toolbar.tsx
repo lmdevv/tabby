@@ -1,7 +1,20 @@
 "use client";
 
-import { CheckSquare, History, Link2, RefreshCw, Tag } from "lucide-react";
+import {
+  ArrowUpDown,
+  CheckSquare,
+  History,
+  Link2,
+  RefreshCw,
+  Tag,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +32,7 @@ interface TopToolbarProps {
   onSelectAll: () => void;
   onRefresh: () => void;
   onHistory: () => void;
+  onSortTabs: (sortType: "title" | "domain" | "recency") => void;
 }
 
 export function TopToolbar({
@@ -31,6 +45,7 @@ export function TopToolbar({
   onSelectAll,
   onRefresh,
   onHistory,
+  onSortTabs,
 }: TopToolbarProps) {
   return (
     <div className="flex gap-2">
@@ -106,6 +121,34 @@ export function TopToolbar({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      <DropdownMenu>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sort tabs</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => onSortTabs("title")}>
+            Sort by Title (A-Z)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onSortTabs("domain")}>
+            Sort by Domain
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onSortTabs("recency")}>
+            Sort by Recency (Newest First)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

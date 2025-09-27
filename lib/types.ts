@@ -134,6 +134,12 @@ export interface DeleteSnapshotMessage {
   snapshotId: number;
 }
 
+export interface SortTabsMessage {
+  type: "sortTabs";
+  windowId: number;
+  sortType: "title" | "domain" | "recency";
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -141,4 +147,5 @@ export type RuntimeMessage =
   | UpdateTabGroupMessage
   | CreateSnapshotMessage
   | RestoreSnapshotMessage
-  | DeleteSnapshotMessage;
+  | DeleteSnapshotMessage
+  | SortTabsMessage;

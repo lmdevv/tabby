@@ -503,6 +503,23 @@ export default function App() {
     [addTabToResourceGroup],
   );
 
+  const handleSortTabs = useCallback(
+    async (windowId: number, sortType: "title" | "domain" | "recency") => {
+      try {
+        await browser.runtime.sendMessage({
+          type: "sortTabs",
+          windowId,
+          sortType,
+        } as const);
+        toast.success("Tabs sorted successfully");
+      } catch (error) {
+        console.error("Failed to sort tabs:", error);
+        toast.error("Failed to sort tabs");
+      }
+    },
+    [],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -647,7 +664,12 @@ export default function App() {
                                     onSelectAll={handleSelectAll}
                                     onRefresh={handleRefresh}
                                     onHistory={() => setHistoryOpen(true)}
-                                    windowId={windowGroup.windowId}
+                                    onSortTabs={(sortType) =>
+                                      handleSortTabs(
+                                        windowGroup.windowId,
+                                        sortType,
+                                      )
+                                    }
                                   />
                                 </div>
                                 <WindowComponent
@@ -737,7 +759,12 @@ export default function App() {
                                     onSelectAll={handleSelectAll}
                                     onRefresh={handleRefresh}
                                     onHistory={() => setHistoryOpen(true)}
-                                    windowId={windowGroup.windowId}
+                                    onSortTabs={(sortType) =>
+                                      handleSortTabs(
+                                        windowGroup.windowId,
+                                        sortType,
+                                      )
+                                    }
                                   />
                                 </div>
                                 <WindowComponent
