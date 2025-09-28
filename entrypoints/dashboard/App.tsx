@@ -520,6 +520,23 @@ export default function App() {
     [],
   );
 
+  const handleGroupTabsByDomain = useCallback(
+    async (windowId: number, groupType: "domain") => {
+      try {
+        await browser.runtime.sendMessage({
+          type: "groupTabs",
+          windowId,
+          groupType,
+        } as const);
+        toast.success("Tabs grouped successfully");
+      } catch (error) {
+        console.error("Failed to group tabs:", error);
+        toast.error("Failed to group tabs");
+      }
+    },
+    [],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -670,6 +687,12 @@ export default function App() {
                                         sortType,
                                       )
                                     }
+                                    onGroupTabs={(groupType) =>
+                                      handleGroupTabsByDomain(
+                                        windowGroup.windowId,
+                                        groupType,
+                                      )
+                                    }
                                   />
                                 </div>
                                 <WindowComponent
@@ -763,6 +786,12 @@ export default function App() {
                                       handleSortTabs(
                                         windowGroup.windowId,
                                         sortType,
+                                      )
+                                    }
+                                    onGroupTabs={(groupType) =>
+                                      handleGroupTabsByDomain(
+                                        windowGroup.windowId,
+                                        groupType,
                                       )
                                     }
                                   />

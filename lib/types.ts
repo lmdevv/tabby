@@ -140,6 +140,12 @@ export interface SortTabsMessage {
   sortType: "title" | "domain" | "recency";
 }
 
+export interface GroupTabsMessage {
+  type: "groupTabs";
+  windowId: number;
+  groupType: "domain";
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -148,4 +154,5 @@ export type RuntimeMessage =
   | CreateSnapshotMessage
   | RestoreSnapshotMessage
   | DeleteSnapshotMessage
-  | SortTabsMessage;
+  | SortTabsMessage
+  | GroupTabsMessage;

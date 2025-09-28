@@ -21,7 +21,7 @@ import {
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
 import { db } from "@/lib/db";
-import type { RuntimeMessage, SortTabsMessage, Workspace } from "@/lib/types";
+import type { RuntimeMessage, Workspace } from "@/lib/types";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;
@@ -208,6 +208,106 @@ export default defineBackground(() => {
     }
   }
 
+  async function groupTabsInWindow(windowId: number, _groupType: "domain") {
+    try {
+      // Get all tabs in the specified window
+      const tabs = await browser.tabs.query({ windowId });
+
+      // Filter out dashboard tabs
+      const nonDashboardTabs = tabs.filter((tab) => {
+        const ourExtensionBaseURL = browser.runtime.getURL("");
+        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        return (
+          tab.url !== specificDashboardURL &&
+          !tab.url?.startsWith(ourExtensionBaseURL)
+        );
+      });
+
+      if (nonDashboardTabs.length <= 1) return; // Nothing to group
+
+      // Group tabs by domain
+      const tabsByDomain = new Map<string, typeof nonDashboardTabs>();
+
+      for (const tab of nonDashboardTabs) {
+        const domain = getDomainFromUrl(tab.url || "");
+        if (!tabsByDomain.has(domain)) {
+          tabsByDomain.set(domain, []);
+        }
+        tabsByDomain.get(domain)?.push(tab);
+      }
+
+      // Find domains with 3 or more tabs
+      const domainsToGroup = Array.from(tabsByDomain.entries()).filter(
+        ([_, tabs]) => tabs.length >= 3,
+      );
+
+      // Create groups for domains with 3+ tabs
+      for (const [domain, domainTabs] of domainsToGroup) {
+        if (domainTabs.length < 3) continue;
+
+        try {
+          // Get tab IDs for grouping
+          const tabIds = domainTabs
+            .map((tab) => tab.id)
+            .filter((id): id is number => id !== undefined) as [
+            number,
+            ...number[],
+          ];
+
+          if (tabIds.length >= 2) {
+            // browser.tabs.group requires at least 2 tabs
+            // Create the group
+            const groupId = await browser.tabs.group({
+              tabIds,
+              createProperties: { windowId },
+            });
+
+            // Update the group with a title based on the domain
+            await browser.tabGroups.update(groupId, {
+              title: domain,
+              color: getRandomTabGroupColor(),
+            });
+
+            console.log(
+              `✅ Created group "${domain}" with ${tabIds.length} tabs in window ${windowId}`,
+            );
+          }
+        } catch (groupError) {
+          console.error(
+            `❌ Failed to create group for domain "${domain}":`,
+            groupError,
+          );
+        }
+      }
+
+      const groupedCount = domainsToGroup.reduce(
+        (sum, [_, tabs]) => sum + tabs.length,
+        0,
+      );
+      console.log(
+        `✅ Grouped ${groupedCount} tabs into ${domainsToGroup.length} domain groups in window ${windowId}`,
+      );
+    } catch (error) {
+      console.error(`❌ Failed to group tabs in window ${windowId}:`, error);
+      throw error;
+    }
+  }
+
+  // Helper function to get a random tab group color
+  function getRandomTabGroupColor() {
+    const colors = [
+      "grey",
+      "blue",
+      "red",
+      "yellow",
+      "green",
+      "pink",
+      "purple",
+      "cyan",
+    ] as const;
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
   //
   // Messages
   //
@@ -355,6 +455,9 @@ export default defineBackground(() => {
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "sortTabs") {
         await sortTabsInWindow(message.windowId, message.sortType);
+        return { success: true } as const;
+      } else if (typeof message === "object" && message.type === "groupTabs") {
+        await groupTabsInWindow(message.windowId, message.groupType);
         return { success: true } as const;
       }
     },

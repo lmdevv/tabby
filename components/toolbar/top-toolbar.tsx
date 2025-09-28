@@ -13,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,6 +34,7 @@ interface TopToolbarProps {
   onRefresh: () => void;
   onHistory: () => void;
   onSortTabs: (sortType: "title" | "domain" | "recency") => void;
+  onGroupTabs: (groupType: "domain") => void;
 }
 
 export function TopToolbar({
@@ -46,6 +48,7 @@ export function TopToolbar({
   onRefresh,
   onHistory,
   onSortTabs,
+  onGroupTabs,
 }: TopToolbarProps) {
   return (
     <div className="flex gap-2">
@@ -146,6 +149,10 @@ export function TopToolbar({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onSortTabs("recency")}>
             Sort by Recency (Newest First)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onGroupTabs("domain")}>
+            Group by Domain
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
