@@ -1,3 +1,21 @@
+import type {
+  DownloadProgressEvent,
+  ExpectedInput,
+  LanguageModel,
+  LanguageModelAvailability,
+  LanguageModelCreateOptions,
+  LanguageModelMonitor,
+  LanguageModelParams,
+  LanguageModelSession,
+  PromptAudioContent,
+  PromptContent,
+  PromptContentType,
+  PromptImageContent,
+  PromptMessage,
+  PromptOptions,
+  PromptRole,
+  PromptTextContent,
+} from "./ai-types";
 import type { Browser } from "wxt/browser";
 
 //
@@ -157,115 +175,21 @@ export type RuntimeMessage =
   | SortTabsMessage
   | GroupTabsMessage;
 
-//
-// Built-in AI API types
-//
-
-export type LanguageModelAvailability =
-  | "unavailable"
-  | "downloadable"
-  | "downloading"
-  | "available";
-
-export interface LanguageModelParams {
-  defaultTopK: number;
-  maxTopK: number;
-  defaultTemperature: number;
-  maxTemperature: number;
-}
-
-export interface LanguageModelMonitor {
-  addEventListener(
-    type: "downloadprogress",
-    listener: (event: DownloadProgressEvent) => void,
-  ): void;
-  removeEventListener(
-    type: "downloadprogress",
-    listener: (event: DownloadProgressEvent) => void,
-  ): void;
-}
-
-export interface DownloadProgressEvent {
-  loaded: number; // Progress as a fraction (0.0 to 1.0)
-}
-
-export type PromptRole = "system" | "user" | "assistant";
-
-export type PromptContentType = "text" | "image" | "audio";
-
-export interface PromptTextContent {
-  type: "text";
-  value: string;
-}
-
-export interface PromptImageContent {
-  type: "image";
-  value:
-    | Blob
-    | ImageData
-    | HTMLImageElement
-    | HTMLCanvasElement
-    | HTMLVideoElement;
-}
-
-export interface PromptAudioContent {
-  type: "audio";
-  value: Blob;
-}
-
-export type PromptContent =
-  | PromptTextContent
-  | PromptImageContent
-  | PromptAudioContent;
-
-export interface PromptMessage {
-  role: PromptRole;
-  content: string | PromptContent[];
-  prefix?: boolean; // Only for assistant role to prefill response
-}
-
-export interface ExpectedInput {
-  type: PromptContentType;
-  languages?: string[]; // For text inputs
-}
-
-export interface LanguageModelCreateOptions {
-  temperature?: number;
-  topK?: number;
-  signal?: AbortSignal;
-  initialPrompts?: PromptMessage[];
-  expectedInputs?: ExpectedInput[];
-  monitor?: (monitor: LanguageModelMonitor) => void;
-}
-
-export interface PromptOptions {
-  signal?: AbortSignal;
-  responseConstraint?: any; // JSON Schema object
-  omitResponseConstraintInput?: boolean;
-}
-
-export interface LanguageModelSession {
-  prompt(
-    input: string | PromptMessage[],
-    options?: PromptOptions,
-  ): Promise<string>;
-  promptStreaming(
-    input: string | PromptMessage[],
-    options?: PromptOptions,
-  ): ReadableStream<string>;
-  append(messages: PromptMessage[]): Promise<void>;
-  clone(options?: { signal?: AbortSignal }): Promise<LanguageModelSession>;
-  destroy(): void;
-  inputUsage: number;
-  inputQuota: number;
-  measureInputUsage(
-    input: string | PromptMessage[],
-    options?: PromptOptions,
-  ): Promise<number>;
-}
-
-export interface LanguageModel {
-  availability(): Promise<LanguageModelAvailability>;
-  params(): Promise<LanguageModelParams>;
-  create(options?: LanguageModelCreateOptions): Promise<LanguageModelSession>;
-}
+export type {
+  LanguageModelAvailability,
+  LanguageModelParams,
+  LanguageModelMonitor,
+  DownloadProgressEvent,
+  PromptRole,
+  PromptContentType,
+  PromptTextContent,
+  PromptImageContent,
+  PromptAudioContent,
+  PromptContent,
+  PromptMessage,
+  ExpectedInput,
+  LanguageModelCreateOptions,
+  PromptOptions,
+  LanguageModelSession,
+  LanguageModel,
+};
