@@ -69,16 +69,19 @@ export default function App() {
   // UI state for the new tab management system - now strongly typed!
   const { data: showTagsData } = useSetting("showTags");
   const { data: showUrlsData } = useSetting("showUrls");
+  const { data: showResourcesData } = useSetting("showResources");
   const { updateSetting } = useUpdateSetting();
 
   // Use default values if data is undefined
   const showTags = showTagsData ?? true;
   const showUrls = showUrlsData ?? true;
+  const showResources = showResourcesData ?? true;
 
   // Helper functions for toggling settings
   const toggleShowTags = () => updateSetting("showTags", !showTags);
   const toggleShowUrls = () => updateSetting("showUrls", !showUrls);
-  const [showResources, setShowResources] = useState(true);
+  const toggleShowResources = () =>
+    updateSetting("showResources", !showResources);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
   const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
   const [groupDialog, setGroupDialog] = useState<{
@@ -615,7 +618,7 @@ export default function App() {
                   <Button
                     variant={showResources ? "default" : "ghost"}
                     size="icon"
-                    onClick={() => setShowResources(!showResources)}
+                    onClick={toggleShowResources}
                     className={showResources ? "" : "hover:bg-accent"}
                   >
                     <Columns2 className="h-[1.2rem] w-[1.2rem]" />
