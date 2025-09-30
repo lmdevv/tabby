@@ -1,3 +1,4 @@
+import type { Browser } from "wxt/browser";
 import type {
   DownloadProgressEvent,
   ExpectedInput,
@@ -16,7 +17,6 @@ import type {
   PromptRole,
   PromptTextContent,
 } from "./ai-types";
-import type { Browser } from "wxt/browser";
 
 //
 // Database types
@@ -193,3 +193,12 @@ export type {
   LanguageModelSession,
   LanguageModel,
 };
+
+// Application settings type
+export interface AppSettings {
+  id: number;
+  key: string;
+  value: string | boolean | number;
+  createdAt: number;
+  updatedAt: number;
+}

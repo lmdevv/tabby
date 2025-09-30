@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
+  AppSettings,
   Resource,
   ResourceGroup,
   SnapshotTab,
@@ -18,6 +19,7 @@ class TabManagerDB extends Dexie {
   tabGroups!: EntityTable<TabGroup, "id">;
   resourceGroups!: EntityTable<ResourceGroup, "id">;
   resources!: EntityTable<Resource, "id">;
+  settings!: EntityTable<AppSettings, "id">;
   // Snapshots
   workspaceSnapshots!: EntityTable<WorkspaceSnapshot, "id">;
   snapshotTabs!: EntityTable<SnapshotTab, "id">;
@@ -37,6 +39,7 @@ class TabManagerDB extends Dexie {
       resourceGroups:
         "++id, name, collapsed, resourceIds, createdAt, updatedAt",
       resources: "++id, url, title, favIconUrl, createdAt, updatedAt",
+      settings: "++id, key, createdAt, updatedAt",
       workspaceSnapshots: "++id, workspaceId, createdAt",
       snapshotTabs: "++id, snapshotId, windowIndex, groupStableId",
       snapshotTabGroups: "++id, snapshotId, stableId",

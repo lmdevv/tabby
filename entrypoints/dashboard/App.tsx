@@ -21,6 +21,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useToggleSetting } from "@/hooks/use-settings";
 import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
@@ -66,8 +67,14 @@ export default function App() {
   );
 
   // UI state for the new tab management system
-  const [showTags, setShowTags] = useState(true);
-  const [showUrls, setShowUrls] = useState(true);
+  const { value: showTags, toggle: toggleShowTags } = useToggleSetting(
+    "showTags",
+    true,
+  );
+  const { value: showUrls, toggle: toggleShowUrls } = useToggleSetting(
+    "showUrls",
+    true,
+  );
   const [showResources, setShowResources] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
   const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
@@ -669,13 +676,9 @@ export default function App() {
                                 <div className="flex items-center justify-end mb-2">
                                   <TopToolbar
                                     showTags={showTags}
-                                    onToggleShowTags={() =>
-                                      setShowTags(!showTags)
-                                    }
+                                    onToggleShowTags={toggleShowTags}
                                     showUrls={showUrls}
-                                    onToggleShowUrls={() =>
-                                      setShowUrls(!showUrls)
-                                    }
+                                    onToggleShowUrls={toggleShowUrls}
                                     selectedTabsCount={selectedTabs.length}
                                     tabsCount={windowGroup.tabs.length}
                                     onSelectAll={handleSelectAll}
@@ -770,13 +773,9 @@ export default function App() {
                                 <div className="flex items-center justify-end mb-2">
                                   <TopToolbar
                                     showTags={showTags}
-                                    onToggleShowTags={() =>
-                                      setShowTags(!showTags)
-                                    }
+                                    onToggleShowTags={toggleShowTags}
                                     showUrls={showUrls}
-                                    onToggleShowUrls={() =>
-                                      setShowUrls(!showUrls)
-                                    }
+                                    onToggleShowUrls={toggleShowUrls}
                                     selectedTabsCount={selectedTabs.length}
                                     tabsCount={windowGroup.tabs.length}
                                     onSelectAll={handleSelectAll}
