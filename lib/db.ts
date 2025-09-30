@@ -44,6 +44,11 @@ class TabManagerDB extends Dexie {
       snapshotTabs: "++id, snapshotId, windowIndex, groupStableId",
       snapshotTabGroups: "++id, snapshotId, stableId",
     });
+
+    // Version 2: Add unique index on settings key for better performance and data integrity
+    this.version(2).stores({
+      settings: "++id, &key, createdAt, updatedAt",
+    });
   }
 }
 

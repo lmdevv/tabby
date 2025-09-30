@@ -21,7 +21,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useToggleSetting } from "@/hooks/use-settings";
+import { useSetting, useUpdateSetting } from "@/hooks/use-settings";
 import { db } from "@/lib/db";
 import { hexToBrowserColor } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
@@ -66,15 +66,18 @@ export default function App() {
     null,
   );
 
-  // UI state for the new tab management system
-  const { value: showTags, toggle: toggleShowTags } = useToggleSetting(
-    "showTags",
-    true,
-  );
-  const { value: showUrls, toggle: toggleShowUrls } = useToggleSetting(
-    "showUrls",
-    true,
-  );
+  // UI state for the new tab management system - now strongly typed!
+  const { data: showTagsData } = useSetting("showTags");
+  const { data: showUrlsData } = useSetting("showUrls");
+  const { updateSetting } = useUpdateSetting();
+
+  // Use default values if data is undefined
+  const showTags = showTagsData ?? true;
+  const showUrls = showUrlsData ?? true;
+
+  // Helper functions for toggling settings
+  const toggleShowTags = () => updateSetting("showTags", !showTags);
+  const toggleShowUrls = () => updateSetting("showUrls", !showUrls);
   const [showResources, setShowResources] = useState(true);
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
   const [minimizedWindows, _setMinimizedWindows] = useState<number[]>([]);
