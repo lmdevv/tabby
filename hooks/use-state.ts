@@ -1,45 +1,45 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { settingsCache } from "@/lib/cache-manager";
+import { stateCache } from "@/lib/cache-manager";
 import { db } from "@/lib/db";
 import {
   getDefaultValue,
-  type SettingKey,
-  type SettingValue,
-} from "@/lib/settings-defs";
+  type StateKey,
+  type StateValue,
+} from "@/lib/state-defs";
 
 /**
- * Strongly typed hook to get a specific setting value
- * Provides full type safety with autocomplete for setting keys
+ * Strongly typed hook to get a specific state value
+ * Provides full type safety with autocomplete for state keys
  * Uses localStorage cache for instant loading while DB loads in background
  */
-export function useSetting<K extends SettingKey>(key: K) {
+export function useState<K extends StateKey>(key: K) {
   const defaultValue = getDefaultValue(key);
 
   // Get cached value for instant loading (parsed to correct type)
-  const cachedValue = settingsCache.getParsedCachedItem(key, defaultValue);
+  const cachedValue = stateCache.getParsedCachedItem(key, defaultValue);
 
   const result = useLiveQuery(
     async () => {
       try {
-        const setting = await db.settings.where("key").equals(key).first();
-        if (!setting) {
-          // Setting doesn't exist, use default and update cache
-          settingsCache.updateCachedItem(key, String(defaultValue));
+        const state = await db.state.where("key").equals(key).first();
+        if (!state) {
+          // State doesn't exist, use default and update cache
+          stateCache.updateCachedItem(key, String(defaultValue));
           return { data: defaultValue, error: null };
         }
 
         // Parse the value based on the expected type
-        let parsedValue: SettingValue<K>;
+        let parsedValue: StateValue<K>;
 
         if (typeof defaultValue === "boolean") {
-          parsedValue = (setting.value === "true") as SettingValue<K>;
+          parsedValue = (state.value === "true") as StateValue<K>;
         } else {
           // String or union types (including numbers stored as strings)
-          parsedValue = setting.value as SettingValue<K>;
+          parsedValue = state.value as StateValue<K>;
         }
 
         // Update cache with fresh DB value (store as string for consistency)
-        settingsCache.updateCachedItem(key, String(parsedValue));
+        stateCache.updateCachedItem(key, String(parsedValue));
 
         return { data: parsedValue, error: null };
       } catch (error) {
@@ -60,46 +60,40 @@ export function useSetting<K extends SettingKey>(key: K) {
   if (result === undefined) {
     // Still loading from DB, use cache or default
     return {
-      data: cachedValue ?? (defaultValue as SettingValue<K>),
+      data: cachedValue ?? (defaultValue as StateValue<K>),
       loading: true,
       error: null,
     };
   }
 
   return {
-    data: result.data as SettingValue<K>,
+    data: result.data as StateValue<K>,
     loading: false,
     error: result.error,
   };
 }
 
 /**
- * Hook for updating a setting value with type safety
+ * Hook for updating a state value with type safety
  * Updates both DB and cache atomically
  */
-export function useUpdateSetting() {
-  const updateSetting = async (
-    key: string,
-    value: string | boolean | number,
-  ) => {
+export function useUpdateState() {
+  const updateState = async (key: string, value: string | boolean | number) => {
     try {
       const now = Date.now();
       const settingValue = String(value);
 
       // Use a transaction to ensure atomicity
-      await db.transaction("rw", db.settings, async () => {
-        await db.settings.where("key").equals(key).modify({
+      await db.transaction("rw", db.state, async () => {
+        await db.state.where("key").equals(key).modify({
           value: settingValue,
           updatedAt: now,
         });
 
-        // If no rows were modified, it means the setting doesn't exist, so add it
-        const existingCount = await db.settings
-          .where("key")
-          .equals(key)
-          .count();
+        // If no rows were modified, it means the state doesn't exist, so add it
+        const existingCount = await db.state.where("key").equals(key).count();
         if (existingCount === 0) {
-          await db.settings.add({
+          await db.state.add({
             key,
             value: settingValue,
             createdAt: now,
@@ -109,7 +103,7 @@ export function useUpdateSetting() {
       });
 
       // Update cache immediately (store as string for consistency)
-      settingsCache.updateCachedItem(key, String(value));
+      stateCache.updateCachedItem(key, String(value));
 
       return null;
     } catch (error) {
@@ -117,18 +111,18 @@ export function useUpdateSetting() {
     }
   };
 
-  return { updateSetting };
+  return { updateState };
 }
 
 /**
- * Hook for toggling a boolean setting with type safety
+ * Hook for toggling a boolean state with type safety
  */
-export function useToggleSetting<K extends SettingKey>(key: K) {
-  const { data: currentValue } = useSetting(key);
-  const { updateSetting } = useUpdateSetting();
+export function useToggleState<K extends StateKey>(key: K) {
+  const { data: currentValue } = useState(key);
+  const { updateState } = useUpdateState();
 
   const toggle = () => {
-    updateSetting(key, !currentValue);
+    updateState(key, !currentValue);
   };
 
   return {

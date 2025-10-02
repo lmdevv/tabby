@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSetting, useUpdateSetting } from "@/hooks/use-settings";
+import { useState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
 
 interface AppHeaderProps {
@@ -32,12 +32,12 @@ export function AppHeader({
   onOpenWorkspace,
 }: AppHeaderProps) {
   // Get settings directly in the component
-  const { data: showResourcesData } = useSetting("showResources");
-  const { updateSetting } = useUpdateSetting();
+  const { data: showResourcesData } = useState("showResources");
+  const { updateState } = useUpdateState();
 
   const showResources = (showResourcesData ?? true) as boolean;
   const _toggleShowResources = () =>
-    updateSetting("showResources", !showResources);
+    updateState("showResources", !showResources);
 
   // Get workspace data directly using Dexie
   const workspaceData = useLiveQuery(async () => {

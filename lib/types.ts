@@ -194,8 +194,8 @@ export type {
   LanguageModel,
 };
 
-// Application settings type
-export interface AppSettings {
+// Application state entry type
+export interface StateEntry {
   id: number;
   key: string;
   value: string | boolean | number;

@@ -7,7 +7,7 @@ import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
-import { useSetting, useUpdateSetting } from "@/hooks/use-settings";
+import { useState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
 import type { Tab } from "@/lib/types";
 
@@ -56,20 +56,20 @@ export function AppContent({
   onHistory,
 }: AppContentProps) {
   // Get settings directly in the component
-  const { data: showTagsData } = useSetting("showTags");
-  const { data: showUrlsData } = useSetting("showUrls");
-  const { data: showResourcesData } = useSetting("showResources");
-  const { updateSetting } = useUpdateSetting();
+  const { data: showTagsData } = useState("showTags");
+  const { data: showUrlsData } = useState("showUrls");
+  const { data: showResourcesData } = useState("showResources");
+  const { updateState } = useUpdateState();
 
   const showTags = (showTagsData ?? true) as boolean;
   const showUrls = (showUrlsData ?? true) as boolean;
   const showResources = (showResourcesData ?? true) as boolean;
 
   // Toggle handlers
-  const toggleShowTags = () => updateSetting("showTags", !showTags);
-  const toggleShowUrls = () => updateSetting("showUrls", !showUrls);
+  const toggleShowTags = () => updateState("showTags", !showTags);
+  const toggleShowUrls = () => updateState("showUrls", !showUrls);
   const _toggleShowResources = () =>
-    updateSetting("showResources", !showResources);
+    updateState("showResources", !showResources);
 
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {

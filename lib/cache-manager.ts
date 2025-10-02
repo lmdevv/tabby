@@ -56,15 +56,15 @@ export class CacheManager<T = Record<string, string | boolean | number>> {
 }
 
 /**
- * Specialized cache manager for settings
+ * Specialized cache manager for state
  */
-export class SettingsCacheManager extends CacheManager<
+export class StateCacheManager extends CacheManager<
   Record<string, string | boolean | number>
 > {
   constructor() {
-    super("tabby_settings_cache");
+    super("tabby_state_cache");
   }
 }
 
-// Singleton instance for settings
-export const settingsCache = new SettingsCacheManager();
+// Singleton instance for state
+export const stateCache = new StateCacheManager();

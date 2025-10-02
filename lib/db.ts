@@ -1,10 +1,10 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
-  AppSettings,
   Resource,
   ResourceGroup,
   SnapshotTab,
   SnapshotTabGroup,
+  StateEntry,
   Tab,
   TabGroup,
   Workspace,
@@ -19,7 +19,7 @@ class TabManagerDB extends Dexie {
   tabGroups!: EntityTable<TabGroup, "id">;
   resourceGroups!: EntityTable<ResourceGroup, "id">;
   resources!: EntityTable<Resource, "id">;
-  settings!: EntityTable<AppSettings, "id">;
+  state!: EntityTable<StateEntry, "id">;
   // Snapshots
   workspaceSnapshots!: EntityTable<WorkspaceSnapshot, "id">;
   snapshotTabs!: EntityTable<SnapshotTab, "id">;
@@ -39,7 +39,7 @@ class TabManagerDB extends Dexie {
       resourceGroups:
         "++id, name, collapsed, resourceIds, createdAt, updatedAt",
       resources: "++id, url, title, favIconUrl, createdAt, updatedAt",
-      settings: "++id, key, createdAt, updatedAt",
+      state: "++id, key, createdAt, updatedAt",
       workspaceSnapshots: "++id, workspaceId, createdAt",
       snapshotTabs: "++id, snapshotId, windowIndex, groupStableId",
       snapshotTabGroups: "++id, snapshotId, stableId",
@@ -47,7 +47,7 @@ class TabManagerDB extends Dexie {
 
     // Version 2: Add unique index on settings key for better performance and data integrity
     this.version(2).stores({
-      settings: "++id, &key, createdAt, updatedAt",
+      state: "++id, &key, createdAt, updatedAt",
     });
   }
 }
