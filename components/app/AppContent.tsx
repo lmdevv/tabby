@@ -68,8 +68,6 @@ export function AppContent({
   // Toggle handlers
   const toggleShowTags = () => updateState("showTags", !showTags);
   const toggleShowUrls = () => updateState("showUrls", !showUrls);
-  const _toggleShowResources = () =>
-    updateState("showResources", !showResources);
 
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {
