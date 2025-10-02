@@ -4,6 +4,7 @@ import { cva, VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useState, useUpdateState } from "@/hooks/use-state"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,18 +24,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
-
-function getCookie(name: string): string | undefined {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -73,11 +66,15 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
+  // Use the state management system for sidebar collapsed state
+  const { data: sidebarCollapsed } = useState("sidebarCollapsed")
+  const { updateState } = useUpdateState()
+
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(() => {
-    const cookieValue = getCookie(SIDEBAR_COOKIE_NAME);
-    return cookieValue ? cookieValue === 'true' : defaultOpen;
+    // Use the cached state value, fallback to defaultOpen
+    return sidebarCollapsed !== undefined ? !sidebarCollapsed : defaultOpen;
   })
   const open = openProp ?? _open
   const setOpen = React.useCallback(
@@ -89,10 +86,10 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      // Update the state management system
+      updateState("sidebarCollapsed", !openState)
     },
-    [setOpenProp, open]
+    [setOpenProp, open, updateState]
   )
 
   // Helper to toggle the sidebar.

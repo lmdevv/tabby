@@ -1,34 +1,14 @@
-import { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "dark" | "light" | "system";
+import { useEffect } from "react";
+import { useState, useUpdateState } from "@/hooks/use-state";
+import type { Theme } from "@/lib/types";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
 };
 
-type ThemeProviderState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-};
-
-const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
-};
-
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
-
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "vite-ui-theme",
-  ...props
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-  );
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  // Use the state management system for theme
+  const { data: theme } = useState("theme");
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -45,29 +25,22 @@ export function ThemeProvider({
       return;
     }
 
-    root.classList.add(theme);
+    root.classList.add(theme as Theme);
   }, [theme]);
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
-  };
-
-  return (
-    <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
-  );
+  return <div {...props}>{children}</div>;
 }
 
 export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
+  const { data: theme } = useState("theme");
+  const { updateState } = useUpdateState();
 
-  if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider");
+  const setTheme = (newTheme: Theme) => {
+    updateState("theme", newTheme);
+  };
 
-  return context;
+  return {
+    theme: theme as Theme,
+    setTheme,
+  };
 };

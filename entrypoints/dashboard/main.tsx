@@ -11,7 +11,7 @@ if (!container) throw new Error('Cannot find <div id="root"> in the HTML');
 
 ReactDOM.createRoot(container).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <ThemeProvider>
       <App />
       <Toaster richColors position="bottom-right" closeButton />
     </ThemeProvider>

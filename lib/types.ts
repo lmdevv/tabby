@@ -202,3 +202,5 @@ export interface StateEntry {
   createdAt: number;
   updatedAt: number;
 }
+
+export type Theme = "light" | "dark" | "system";
