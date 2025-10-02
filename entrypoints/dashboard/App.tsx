@@ -73,9 +73,9 @@ export default function App() {
   const { updateSetting } = useUpdateSetting();
 
   // Use default values if data is undefined
-  const showTags = showTagsData ?? true;
-  const showUrls = showUrlsData ?? true;
-  const showResources = showResourcesData ?? true;
+  const showTags = (showTagsData ?? true) as boolean;
+  const showUrls = (showUrlsData ?? true) as boolean;
+  const showResources = (showResourcesData ?? true) as boolean;
 
   // Helper functions for toggling settings
   const toggleShowTags = () => updateSetting("showTags", !showTags);
