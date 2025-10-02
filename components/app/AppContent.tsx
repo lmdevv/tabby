@@ -7,7 +7,7 @@ import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
-import { useState, useUpdateState } from "@/hooks/use-state";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
 import type { Tab } from "@/lib/types";
 
@@ -56,9 +56,9 @@ export function AppContent({
   onHistory,
 }: AppContentProps) {
   // Get settings directly in the component
-  const { data: showTagsData } = useState("showTags");
-  const { data: showUrlsData } = useState("showUrls");
-  const { data: showResourcesData } = useState("showResources");
+  const { data: showTagsData } = useAppState("showTags");
+  const { data: showUrlsData } = useAppState("showUrls");
+  const { data: showResourcesData } = useAppState("showResources");
   const { updateState } = useUpdateState();
 
   const showTags = (showTagsData ?? true) as boolean;

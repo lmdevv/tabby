@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useState, useUpdateState } from "@/hooks/use-state";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import type { Theme } from "@/lib/types";
 
 type ThemeProviderProps = {
@@ -8,7 +8,7 @@ type ThemeProviderProps = {
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   // Use the state management system for theme
-  const { data: theme } = useState("theme");
+  const { data: theme } = useAppState("theme");
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -32,7 +32,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 }
 
 export const useTheme = () => {
-  const { data: theme } = useState("theme");
+  const { data: theme } = useAppState("theme");
   const { updateState } = useUpdateState();
 
   const setTheme = (newTheme: Theme) => {

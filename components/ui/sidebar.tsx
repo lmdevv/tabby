@@ -4,7 +4,7 @@ import { cva, VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useState, useUpdateState } from "@/hooks/use-state"
+import { useAppState, useUpdateState } from "@/hooks/use-state"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,7 +67,7 @@ function SidebarProvider({
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // Use the state management system for sidebar collapsed state
-  const { data: sidebarCollapsed } = useState("sidebarCollapsed")
+  const { data: sidebarCollapsed } = useAppState("sidebarCollapsed")
   const { updateState } = useUpdateState()
 
   // This is the internal state of the sidebar.

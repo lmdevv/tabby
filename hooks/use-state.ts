@@ -12,7 +12,7 @@ import {
  * Provides full type safety with autocomplete for state keys
  * Uses localStorage cache for instant loading while DB loads in background
  */
-export function useState<K extends StateKey>(key: K) {
+export function useAppState<K extends StateKey>(key: K) {
   const defaultValue = getDefaultValue(key);
 
   // Get cached value for instant loading (parsed to correct type)
@@ -118,7 +118,7 @@ export function useUpdateState() {
  * Hook for toggling a boolean state with type safety
  */
 export function useToggleState<K extends StateKey>(key: K) {
-  const { data: currentValue } = useState(key);
+  const { data: currentValue } = useAppState(key);
   const { updateState } = useUpdateState();
 
   const toggle = () => {

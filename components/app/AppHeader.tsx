@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState, useUpdateState } from "@/hooks/use-state";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { type CachedWorkspaceData, workspaceCache } from "@/lib/cache-manager";
 import { db } from "@/lib/db";
 
@@ -33,7 +33,7 @@ export function AppHeader({
   onOpenWorkspace,
 }: AppHeaderProps) {
   // Get settings directly in the component
-  const { data: showResourcesData } = useState("showResources");
+  const { data: showResourcesData } = useAppState("showResources");
   const { updateState } = useUpdateState();
 
   const showResources = (showResourcesData ?? true) as boolean;
