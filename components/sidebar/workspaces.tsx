@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from "@/components/ui/sidebar";
+import { sidebarCache } from "@/lib/cache-manager";
 import { db } from "@/lib/db";
 import type { Workspace, WorkspaceGroup } from "@/lib/types";
 
@@ -83,13 +84,72 @@ export function Workspaces({
   previewWorkspaceId,
   setPreviewWorkspaceId,
 }: WorkspacesProps) {
-  const workspaceGroups = useLiveQuery(() => db.workspaceGroups.toArray());
-  const workspaces = useLiveQuery(() => db.workspaces.toArray());
-  const undefinedTabsCount = useLiveQuery(() =>
-    db.activeTabs.where("workspaceId").equals(-1).count(),
+  // Get cached sidebar data for instant warm reload
+  const cachedSidebarData = sidebarCache.getCachedData();
+
+  const workspaceGroups = useLiveQuery(
+    () => {
+      const result = db.workspaceGroups.toArray();
+      // Update cache with fresh data
+      result.then((groups) => {
+        const currentCache = sidebarCache.getCachedData() || {};
+        sidebarCache.setCachedData({
+          ...currentCache,
+          workspaceGroups: groups,
+        });
+      });
+      return result;
+    },
+    [],
+    cachedSidebarData?.workspaceGroups,
   );
-  const activeWorkspace = useLiveQuery(() =>
-    db.workspaces.where("active").equals(1).first(),
+
+  const workspaces = useLiveQuery(
+    () => {
+      const result = db.workspaces.toArray();
+      // Update cache with fresh data
+      result.then((workspaces) => {
+        const currentCache = sidebarCache.getCachedData() || {};
+        sidebarCache.setCachedData({ ...currentCache, workspaces });
+      });
+      return result;
+    },
+    [],
+    cachedSidebarData?.workspaces,
+  );
+
+  const undefinedTabsCount = useLiveQuery(
+    () => {
+      const result = db.activeTabs.where("workspaceId").equals(-1).count();
+      // Update cache with fresh data
+      result.then((count) => {
+        const currentCache = sidebarCache.getCachedData() || {};
+        sidebarCache.setCachedData({
+          ...currentCache,
+          undefinedTabsCount: count,
+        });
+      });
+      return result;
+    },
+    [],
+    cachedSidebarData?.undefinedTabsCount,
+  );
+
+  const activeWorkspace = useLiveQuery(
+    () => {
+      const result = db.workspaces.where("active").equals(1).first();
+      // Update cache with fresh data
+      result.then((workspace) => {
+        const currentCache = sidebarCache.getCachedData() || {};
+        sidebarCache.setCachedData({
+          ...currentCache,
+          activeWorkspace: workspace,
+        });
+      });
+      return result;
+    },
+    [],
+    cachedSidebarData?.activeWorkspace,
   );
 
   const standaloneWorkspaces = workspaces?.filter((w) => !w.groupId) || [];

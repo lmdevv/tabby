@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState, useUpdateState } from "@/hooks/use-state";
+import { type CachedWorkspaceData, workspaceCache } from "@/lib/cache-manager";
 import { db } from "@/lib/db";
 
 interface AppHeaderProps {
@@ -39,32 +40,44 @@ export function AppHeader({
   const _toggleShowResources = () =>
     updateState("showResources", !showResources);
 
-  // Get workspace data directly using Dexie
-  const workspaceData = useLiveQuery(async () => {
-    const activeWorkspace = await db.workspaces
-      .where("active")
-      .equals(1)
-      .first();
-    const shownWorkspaceId =
-      previewWorkspaceId !== null ? previewWorkspaceId : activeWorkspace?.id;
-    const shownWorkspace =
-      shownWorkspaceId === -1
-        ? undefined
-        : shownWorkspaceId
-          ? await db.workspaces.get(shownWorkspaceId)
-          : undefined;
+  // Get cached workspace data for instant warm reload
+  const cachedWorkspaceData = workspaceCache.getCachedData();
 
-    const workspaceGroup = shownWorkspace?.groupId
-      ? await db.workspaceGroups.get(shownWorkspace.groupId)
-      : undefined;
+  // Get workspace data directly using Dexie with cached default for instant loading
+  const workspaceData = useLiveQuery(
+    async () => {
+      const activeWorkspace = await db.workspaces
+        .where("active")
+        .equals(1)
+        .first();
+      const shownWorkspaceId =
+        previewWorkspaceId !== null ? previewWorkspaceId : activeWorkspace?.id;
+      const shownWorkspace =
+        shownWorkspaceId === -1
+          ? undefined
+          : shownWorkspaceId
+            ? await db.workspaces.get(shownWorkspaceId)
+            : undefined;
 
-    return {
-      activeWorkspace,
-      shownWorkspace,
-      workspaceGroup,
-      shownWorkspaceId,
-    };
-  }, [previewWorkspaceId]);
+      const workspaceGroup = shownWorkspace?.groupId
+        ? await db.workspaceGroups.get(shownWorkspace.groupId)
+        : undefined;
+
+      const result = {
+        activeWorkspace,
+        shownWorkspace,
+        workspaceGroup,
+        shownWorkspaceId,
+      };
+
+      // Update cache with fresh data for instant reloads
+      workspaceCache.setCachedData(result as CachedWorkspaceData);
+
+      return result;
+    },
+    [previewWorkspaceId],
+    cachedWorkspaceData || undefined,
+  );
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
       <div className="flex items-center gap-2 p-4">

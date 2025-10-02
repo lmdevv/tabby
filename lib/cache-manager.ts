@@ -68,3 +68,43 @@ export class StateCacheManager extends CacheManager<
 
 // Singleton instance for state
 export const stateCache = new StateCacheManager();
+
+import type { Workspace, WorkspaceGroup } from "./types";
+
+/**
+ * Specialized cache manager for workspace breadcrumb data
+ */
+export interface CachedWorkspaceData {
+  activeWorkspace?: Workspace;
+  shownWorkspace?: Workspace;
+  workspaceGroup?: WorkspaceGroup;
+  shownWorkspaceId?: number;
+}
+
+export class WorkspaceCacheManager extends CacheManager<CachedWorkspaceData> {
+  constructor() {
+    super("tabby_workspace_cache");
+  }
+}
+
+// Singleton instance for workspace data
+export const workspaceCache = new WorkspaceCacheManager();
+
+/**
+ * Specialized cache manager for sidebar workspace data
+ */
+export interface CachedSidebarData {
+  workspaceGroups?: WorkspaceGroup[];
+  workspaces?: Workspace[];
+  undefinedTabsCount?: number;
+  activeWorkspace?: Workspace;
+}
+
+export class SidebarCacheManager extends CacheManager<CachedSidebarData> {
+  constructor() {
+    super("tabby_sidebar_cache");
+  }
+}
+
+// Singleton instance for sidebar data
+export const sidebarCache = new SidebarCacheManager();
