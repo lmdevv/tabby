@@ -1,13 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
-import { toast } from "sonner";
-import { browser } from "wxt/browser";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
-import { useAppState, useUpdateState } from "@/hooks/use-state";
+
 import { db } from "@/lib/db";
 import type { Tab } from "@/lib/types";
 
@@ -36,7 +34,6 @@ interface AppContentProps {
   onEditGroup: (groupId: number) => Promise<void>;
   onUngroupTabs: (tabIds: number[]) => Promise<void>;
   onCloseTabs: (tabIds: number[]) => Promise<void>;
-  onHistory: () => void;
 }
 
 export function AppContent({
@@ -53,21 +50,15 @@ export function AppContent({
   onEditGroup,
   onUngroupTabs,
   onCloseTabs,
-  onHistory,
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showTagsData } = useAppState("showTags");
   const { data: showUrlsData } = useAppState("showUrls");
   const { data: showResourcesData } = useAppState("showResources");
-  const { updateState } = useUpdateState();
 
   const showTags = (showTagsData ?? true) as boolean;
   const showUrls = (showUrlsData ?? true) as boolean;
   const showResources = (showResourcesData ?? true) as boolean;
-
-  // Toggle handlers
-  const toggleShowTags = () => updateState("showTags", !showTags);
-  const toggleShowUrls = () => updateState("showUrls", !showUrls);
 
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {
@@ -174,56 +165,6 @@ export function AppContent({
       .sort((a, b) => a.windowId - b.windowId);
   }, [shownTabs, tabGroups]);
 
-  // Toolbar handlers
-  const handleRefresh = async (): Promise<void> => {
-    try {
-      await browser.runtime.sendMessage({ type: "refreshTabs" });
-      toast.success("Tabs refreshed successfully");
-    } catch (error) {
-      console.error("Failed to refresh tabs:", error);
-      toast.error("Failed to refresh tabs");
-    }
-  };
-
-  const handleSortTabs = async (
-    windowId: number,
-    sortType: "title" | "domain" | "recency",
-  ) => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "sortTabs",
-        windowId,
-        sortType,
-      } as const);
-      toast.success("Tabs sorted successfully");
-    } catch (error) {
-      console.error("Failed to sort tabs:", error);
-      toast.error("Failed to sort tabs");
-    }
-  };
-
-  const handleGroupTabsByDomain = async (windowId: number) => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "groupTabs",
-        windowId,
-        groupType: "domain",
-      } as const);
-      toast.success("Tabs grouped successfully");
-    } catch (error) {
-      console.error("Failed to group tabs:", error);
-      toast.error("Failed to group tabs");
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (!shownTabs?.length) return;
-    const allTabIds = shownTabs
-      .map((tab) => tab.id)
-      .filter((id): id is number => id !== undefined);
-    setSelectedTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
-  };
-
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <div className="flex-1 h-full">
@@ -245,21 +186,10 @@ export function AppContent({
                             {/* Per-window toolbar */}
                             <div className="flex items-center justify-end mb-2">
                               <TopToolbar
-                                showTags={showTags}
-                                onToggleShowTags={toggleShowTags}
-                                showUrls={showUrls}
-                                onToggleShowUrls={toggleShowUrls}
-                                selectedTabsCount={selectedTabs.length}
-                                tabsCount={windowGroup.tabs.length}
-                                onSelectAll={handleSelectAll}
-                                onRefresh={handleRefresh}
-                                onHistory={onHistory}
-                                onSortTabs={(sortType) =>
-                                  handleSortTabs(windowGroup.windowId, sortType)
-                                }
-                                onGroupTabs={(_groupType) =>
-                                  handleGroupTabsByDomain(windowGroup.windowId)
-                                }
+                                workspaceId={shownWorkspaceId}
+                                windowId={windowGroup.windowId}
+                                selectedTabs={selectedTabs}
+                                onSelectTabs={setSelectedTabs}
                               />
                             </div>
                             <WindowComponent
@@ -337,21 +267,10 @@ export function AppContent({
                             {/* Per-window toolbar */}
                             <div className="flex items-center justify-end mb-2">
                               <TopToolbar
-                                showTags={showTags}
-                                onToggleShowTags={toggleShowTags}
-                                showUrls={showUrls}
-                                onToggleShowUrls={toggleShowUrls}
-                                selectedTabsCount={selectedTabs.length}
-                                tabsCount={windowGroup.tabs.length}
-                                onSelectAll={handleSelectAll}
-                                onRefresh={handleRefresh}
-                                onHistory={onHistory}
-                                onSortTabs={(sortType) =>
-                                  handleSortTabs(windowGroup.windowId, sortType)
-                                }
-                                onGroupTabs={(_groupType) =>
-                                  handleGroupTabsByDomain(windowGroup.windowId)
-                                }
+                                workspaceId={shownWorkspaceId}
+                                windowId={windowGroup.windowId}
+                                selectedTabs={selectedTabs}
+                                onSelectTabs={setSelectedTabs}
                               />
                             </div>
                             <WindowComponent

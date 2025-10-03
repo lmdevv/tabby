@@ -5,14 +5,13 @@ import { AppContent } from "@/components/app/AppContent";
 import { AppHeader } from "@/components/app/AppHeader";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { HistoryDialog } from "@/components/snapshots/history-dialog";
+
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useAddTabToResourceGroup } from "@/hooks/use-resources";
 import { db } from "@/lib/db";
 
 export default function App() {
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(
     null,
   );
@@ -230,7 +229,6 @@ export default function App() {
           onEditGroup={handleEditGroup}
           onUngroupTabs={handleUngroupTabs}
           onCloseTabs={handleCloseTabsById}
-          onHistory={() => setHistoryOpen(true)}
         />
       </SidebarInset>
 
@@ -242,13 +240,6 @@ export default function App() {
         groupId={groupDialog.groupId}
         title="Edit Tab Group"
         description="Edit the group name and color"
-      />
-
-      {/* History Dialog */}
-      <HistoryDialog
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        workspaceId={shownWorkspaceId || -1}
       />
     </SidebarProvider>
   );

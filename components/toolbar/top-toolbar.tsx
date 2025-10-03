@@ -1,5 +1,6 @@
 "use client";
 
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   ArrowUpDown,
   CheckSquare,
@@ -8,6 +9,10 @@ import {
   RefreshCw,
   Tag,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { browser } from "wxt/browser";
+import { HistoryDialog } from "@/components/snapshots/history-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,34 +27,97 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
+import { db } from "@/lib/db";
 
 interface TopToolbarProps {
-  showTags: boolean;
-  showUrls: boolean;
-  selectedTabsCount: number;
-  tabsCount: number;
-  onToggleShowTags: () => void;
-  onToggleShowUrls: () => void;
-  onSelectAll: () => void;
-  onRefresh: () => void;
-  onHistory: () => void;
-  onSortTabs: (sortType: "title" | "domain" | "recency") => void;
-  onGroupTabs: (groupType: "domain") => void;
+  workspaceId: number | null;
+  windowId: number;
+  selectedTabs: number[];
+  onSelectTabs: (tabIds: number[]) => void;
 }
 
 export function TopToolbar({
-  showTags,
-  showUrls,
-  selectedTabsCount,
-  tabsCount,
-  onToggleShowTags,
-  onToggleShowUrls,
-  onSelectAll,
-  onRefresh,
-  onHistory,
-  onSortTabs,
-  onGroupTabs,
+  workspaceId,
+  windowId,
+  selectedTabs,
+  onSelectTabs,
 }: TopToolbarProps) {
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+
+  // Get UI state directly from global state
+  const { data: showTagsData } = useAppState("showTags");
+  const { data: showUrlsData } = useAppState("showUrls");
+  const { updateState } = useUpdateState();
+
+  const showTags = (showTagsData ?? true) as boolean;
+  const showUrls = (showUrlsData ?? true) as boolean;
+
+  // Get tabs data directly from DB
+  const tabs = useLiveQuery(() => {
+    if (!workspaceId) return [];
+    return db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .filter((tab) => tab.windowId === windowId)
+      .toArray();
+  }, [workspaceId, windowId]);
+
+  const tabsCount = tabs?.length || 0;
+  const selectedTabsCount = selectedTabs.length;
+
+  const toggleShowTags = () => updateState("showTags", !showTags);
+  const toggleShowUrls = () => updateState("showUrls", !showUrls);
+
+  const handleSelectAll = () => {
+    if (!tabs?.length) return;
+    const allTabIds = tabs
+      .map((tab) => tab.id)
+      .filter((id): id is number => id !== undefined);
+    onSelectTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
+  };
+
+  const handleRefresh = async (): Promise<void> => {
+    try {
+      await browser.runtime.sendMessage({ type: "refreshTabs" });
+      toast.success("Tabs refreshed successfully");
+    } catch (error) {
+      console.error("Failed to refresh tabs:", error);
+      toast.error("Failed to refresh tabs");
+    }
+  };
+
+  const handleHistory = () => {
+    setHistoryDialogOpen(true);
+  };
+
+  const handleSortTabs = async (sortType: "title" | "domain" | "recency") => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "sortTabs",
+        windowId,
+        sortType,
+      } as const);
+      toast.success("Tabs sorted successfully");
+    } catch (error) {
+      console.error("Failed to sort tabs:", error);
+      toast.error("Failed to sort tabs");
+    }
+  };
+
+  const handleGroupTabs = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "groupTabs",
+        windowId,
+        groupType: "domain",
+      } as const);
+      toast.success("Tabs grouped successfully");
+    } catch (error) {
+      console.error("Failed to group tabs:", error);
+      toast.error("Failed to group tabs");
+    }
+  };
   return (
     <div className="flex gap-2">
       <TooltipProvider>
@@ -58,7 +126,7 @@ export function TopToolbar({
             <Button
               variant={showTags ? "default" : "ghost"}
               size="icon"
-              onClick={onToggleShowTags}
+              onClick={toggleShowTags}
             >
               <Tag className="h-4 w-4" />
             </Button>
@@ -75,7 +143,7 @@ export function TopToolbar({
             <Button
               variant={showUrls ? "default" : "ghost"}
               size="icon"
-              onClick={onToggleShowUrls}
+              onClick={toggleShowUrls}
             >
               <Link2 className="h-4 w-4" />
             </Button>
@@ -89,7 +157,7 @@ export function TopToolbar({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onSelectAll}>
+            <Button variant="ghost" size="icon" onClick={handleSelectAll}>
               <CheckSquare className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -102,7 +170,7 @@ export function TopToolbar({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onHistory}>
+            <Button variant="ghost" size="icon" onClick={handleHistory}>
               <History className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -115,7 +183,7 @@ export function TopToolbar({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onRefresh}>
+            <Button variant="ghost" size="icon" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -141,21 +209,28 @@ export function TopToolbar({
           </Tooltip>
         </TooltipProvider>
         <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => onSortTabs("title")}>
+          <DropdownMenuItem onClick={() => handleSortTabs("title")}>
             Sort by Title (A-Z)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onSortTabs("domain")}>
+          <DropdownMenuItem onClick={() => handleSortTabs("domain")}>
             Sort by Domain
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onSortTabs("recency")}>
+          <DropdownMenuItem onClick={() => handleSortTabs("recency")}>
             Sort by Recency (Newest First)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onGroupTabs("domain")}>
+          <DropdownMenuItem onClick={handleGroupTabs}>
             Group by Domain
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* History Dialog */}
+      <HistoryDialog
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        workspaceId={workspaceId || -1}
+      />
     </div>
   );
 }
