@@ -16,6 +16,7 @@ export default function App() {
     null,
   );
   const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
+
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
     groupId?: number;
@@ -199,19 +200,8 @@ export default function App() {
         {/* Quick Actions Panel */}
         {selectedTabs.length > 0 && (
           <QuickActionsPanel
-            selectedTabsCount={selectedTabs.length}
-            canGroup={false} // TODO: implement group logic
-            canUngroup={false} // TODO: implement ungroup logic
-            allMuted={false} // TODO: implement mute logic
-            allHighlighted={false} // TODO: implement highlight logic
-            allPinned={false} // Pin functionality removed
-            onCloseTabs={() => handleCloseTabsById(selectedTabs)}
-            onTogglePinTabs={() => {}} // Pin functionality removed
-            onToggleMuteTabs={() => {}} // TODO: implement
-            onToggleHighlightTabs={() => {}} // TODO: implement
-            onGroupTabs={() => {}} // TODO: implement
-            onUngroupTabs={() => handleUngroupTabs(selectedTabs)}
-            onCopyLinks={() => {}} // TODO: implement
+            selectedTabs={selectedTabs}
+            onSelectionCleared={() => setSelectedTabs([])}
           />
         )}
 

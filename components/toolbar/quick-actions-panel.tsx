@@ -1,6 +1,9 @@
 "use client";
 
+import { useLiveQuery } from "dexie-react-hooks";
 import { Copy, Layers, Star, Volume2, VolumeX, X } from "lucide-react";
+import type { Browser } from "wxt/browser";
+import { browser } from "wxt/browser";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,38 +11,124 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { db } from "@/lib/db";
 
 interface QuickActionsPanelProps {
-  selectedTabsCount: number;
-  allPinned: boolean;
-  allMuted: boolean;
-  allHighlighted: boolean;
-  canGroup: boolean;
-  canUngroup: boolean;
-  onCloseTabs: () => void;
-  onTogglePinTabs: () => void;
-  onToggleMuteTabs: () => void;
-  onToggleHighlightTabs: () => void;
-  onGroupTabs: () => void;
-  onUngroupTabs: () => void;
-  onCopyLinks: () => void;
+  selectedTabs: number[];
+  onSelectionCleared: () => void;
 }
 
 export function QuickActionsPanel({
-  selectedTabsCount,
-  allPinned: _allPinned,
-  allMuted,
-  allHighlighted,
-  canGroup,
-  canUngroup,
-  onCloseTabs,
-  onTogglePinTabs: _onTogglePinTabs,
-  onToggleMuteTabs,
-  onToggleHighlightTabs,
-  onGroupTabs,
-  onUngroupTabs,
-  onCopyLinks,
+  selectedTabs,
+  onSelectionCleared,
 }: QuickActionsPanelProps) {
+  // Get active workspace
+  const activeWorkspace = useLiveQuery(() =>
+    db.workspaces.where("active").equals(1).first(),
+  );
+
+  // Get selected tab data
+  const selectedTabData = useLiveQuery(() => {
+    if (!selectedTabs.length || !activeWorkspace) return [];
+    return db.activeTabs
+      .where("id")
+      .anyOf(selectedTabs)
+      .and((tab) => tab.workspaceId === activeWorkspace.id)
+      .toArray();
+  }, [selectedTabs, activeWorkspace]);
+
+  // Calculate derived state
+  const selectedTabsCount = selectedTabs.length;
+  const allMuted =
+    selectedTabData?.every(
+      (tab) => (tab as Browser.tabs.Tab).mutedInfo?.muted,
+    ) ?? false;
+  const allHighlighted =
+    selectedTabData?.every((tab) => (tab as Browser.tabs.Tab).highlighted) ??
+    false;
+  const canGroup = selectedTabs.length > 1; // Can group if more than one tab selected
+  const canUngroup =
+    selectedTabData?.some((tab) => tab.groupId !== undefined) ?? false;
+
+  // Action handlers
+  const handleCloseTabs = async () => {
+    if (!selectedTabs.length) return;
+    try {
+      await browser.tabs.remove(selectedTabs);
+      onSelectionCleared();
+    } catch (error) {
+      console.error("Failed to close tabs:", error);
+    }
+  };
+
+  const handleToggleMuteTabs = async () => {
+    if (!selectedTabData?.length) return;
+    try {
+      const newMutedState = !allMuted;
+      await Promise.all(
+        selectedTabs.map((tabId) =>
+          browser.tabs.update(tabId, { muted: newMutedState }),
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to toggle mute tabs:", error);
+    }
+  };
+
+  const handleToggleHighlightTabs = async () => {
+    if (!selectedTabData?.length) return;
+    try {
+      const newHighlightedState = !allHighlighted;
+      await Promise.all(
+        selectedTabs.map((tabId) =>
+          browser.tabs.update(tabId, { highlighted: newHighlightedState }),
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to toggle highlight tabs:", error);
+    }
+  };
+
+  const handleGroupTabs = async () => {
+    if (!selectedTabs.length || !activeWorkspace) return;
+    try {
+      if (typeof browser?.tabs?.group === "function") {
+        await browser.tabs.group({
+          tabIds: selectedTabs as [number, ...number[]],
+          createProperties: {
+            windowId: selectedTabData?.[0]?.windowId,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to group tabs:", error);
+    }
+  };
+
+  const handleUngroupTabs = async () => {
+    if (!selectedTabs.length) return;
+    try {
+      if (typeof browser?.tabs?.ungroup === "function") {
+        await browser.tabs.ungroup(selectedTabs as [number, ...number[]]);
+      }
+    } catch (error) {
+      console.error("Failed to ungroup tabs:", error);
+    }
+  };
+
+  const handleCopyLinks = async () => {
+    if (!selectedTabData?.length) return;
+    try {
+      const links = selectedTabData
+        .map((tab) => tab.url)
+        .filter(Boolean)
+        .join("\n");
+      await navigator.clipboard.writeText(links);
+    } catch (error) {
+      console.error("Failed to copy links:", error);
+    }
+  };
+
   if (selectedTabsCount === 0) return null;
 
   return (
@@ -52,7 +141,7 @@ export function QuickActionsPanel({
                 variant="ghost"
                 size="sm"
                 className="rounded-full"
-                onClick={onCopyLinks}
+                onClick={handleCopyLinks}
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -68,7 +157,7 @@ export function QuickActionsPanel({
                 variant="ghost"
                 size="sm"
                 className="rounded-full"
-                onClick={onCloseTabs}
+                onClick={handleCloseTabs}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -82,7 +171,7 @@ export function QuickActionsPanel({
                 variant="ghost"
                 size="sm"
                 className="rounded-full"
-                onClick={onToggleMuteTabs}
+                onClick={handleToggleMuteTabs}
               >
                 {allMuted ? (
                   <Volume2 className="h-4 w-4" />
@@ -102,7 +191,7 @@ export function QuickActionsPanel({
                 variant="ghost"
                 size="sm"
                 className="rounded-full"
-                onClick={onToggleHighlightTabs}
+                onClick={handleToggleHighlightTabs}
               >
                 <Star
                   className={`h-4 w-4 ${allHighlighted ? "fill-yellow-500" : ""}`}
@@ -121,7 +210,7 @@ export function QuickActionsPanel({
                   variant="ghost"
                   size="sm"
                   className="rounded-full"
-                  onClick={onGroupTabs}
+                  onClick={handleGroupTabs}
                 >
                   <Layers className="h-4 w-4" />
                 </Button>
@@ -137,7 +226,7 @@ export function QuickActionsPanel({
                   variant="ghost"
                   size="sm"
                   className="rounded-full"
-                  onClick={onUngroupTabs}
+                  onClick={handleUngroupTabs}
                 >
                   <Layers className="h-4 w-4 opacity-50" />
                 </Button>
