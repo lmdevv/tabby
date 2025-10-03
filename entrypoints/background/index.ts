@@ -308,6 +308,40 @@ export default defineBackground(() => {
     return colors[Math.floor(Math.random() * colors.length)];
   }
 
+  // Handle extension icon click
+  async function handleActionClick() {
+    try {
+      const dashboardPageURL = browser.runtime.getURL("/dashboard.html");
+
+      // Query all tabs to see if our dashboard is already open
+      const allTabs = await browser.tabs.query({});
+
+      // Check if any tab matches our specific dashboard URL
+      const dashboardTab = allTabs.find((tab) => tab.url === dashboardPageURL);
+
+      if (dashboardTab?.id) {
+        // Dashboard tab exists, focus it
+        await browser.tabs.update(dashboardTab.id, { active: true });
+        await browser.windows.update(dashboardTab.windowId, { focused: true });
+        console.log("Focused existing dashboard tab");
+      } else {
+        // Dashboard tab doesn't exist, create it
+        await browser.tabs.create({
+          url: dashboardPageURL,
+          pinned: true,
+          active: true,
+          index: 0,
+        });
+        console.log("Created new dashboard tab");
+      }
+    } catch (err) {
+      console.error("Error handling action click:", err);
+      if (browser?.runtime?.lastError) {
+        console.error("Browser last error:", browser.runtime.lastError.message);
+      }
+    }
+  }
+
   //
   // Messages
   //
@@ -318,6 +352,13 @@ export default defineBackground(() => {
         console.error("Reconciliation failed:", err);
       });
     }
+  });
+
+  // Handle extension icon click
+  browser.action.onClicked.addListener((_tab) => {
+    handleActionClick().catch((err) => {
+      console.error("Failed to handle action click:", err);
+    });
   });
 
   // Maybe this could be done on dashboard? without relying on service worker? idk if that would be better or more reliable

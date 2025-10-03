@@ -10,6 +10,9 @@ export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   manifest: {
     permissions: ["tabs", "storage", "tabGroups"],
+    action: {
+      default_title: "Tabby",
+    },
   },
   vite: () => ({
     plugins: [tailwindcss()],
