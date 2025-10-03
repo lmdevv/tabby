@@ -1,5 +1,6 @@
 "use client";
 
+import { useLiveQuery } from "dexie-react-hooks";
 import { BookmarkPlus, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,34 +19,45 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EnrichedResourceGroup } from "@/hooks/use-resources";
+import { db } from "@/lib/db";
 import {
   createResourceGroup,
   deleteResource,
   deleteResourceGroup,
   updateResourceGroup,
 } from "@/lib/resource-helpers";
-import type { Resource, Tab } from "@/lib/types";
+import type { Resource } from "@/lib/types";
 
 interface ResourcesPanelProps {
   resourceGroups?: EnrichedResourceGroup[];
-  resources?: Resource[];
-  showTags: boolean;
-  showUrls: boolean;
-  activeTabs?: Tab[];
 }
 
-export function ResourcesPanel({
-  resourceGroups,
-  showTags,
-  showUrls,
-  activeTabs = [],
-}: ResourcesPanelProps) {
-  // Handle toggle for individual groups
-  const handleToggleGroup = (groupId: number) => {
+export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
+  const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
+
+  // Handle edit for individual groups
+  const handleGroupEdit = (groupId: number, _type: "title" | "description") => {
     const group = resourceGroups?.find((g) => g.id === groupId);
     if (group) {
-      updateResourceGroup(groupId, {
-        collapsed: group.collapsed === 1 ? 0 : 1,
+      setGroupDialog({
+        open: true,
+        mode: "edit",
+        groupId,
+        name: group.name,
+        description: group.description || "",
+      });
+    }
+  };
+
+  // Handle delete for individual groups
+  const handleGroupDelete = (groupId: number) => {
+    const group = resourceGroups?.find((g) => g.id === groupId);
+    if (group) {
+      setDeleteDialog({
+        open: true,
+        type: "group",
+        id: groupId,
+        name: group.name,
       });
     }
   };
@@ -53,11 +65,13 @@ export function ResourcesPanel({
     open: boolean;
     mode: "create" | "edit";
     groupId?: number;
-    initialName?: string;
-    initialDescription?: string;
+    name: string;
+    description: string;
   }>({
     open: false,
     mode: "create",
+    name: "",
+    description: "",
   });
 
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -71,14 +85,11 @@ export function ResourcesPanel({
     type: "group",
   });
 
-  const getResourcesForGroup = (groupId: number) =>
-    resourceGroups?.find((g) => g.id === groupId)?.resources || [];
-
   const handleResourceClick = (resource: Resource) => {
     console.log(`Opening resource: ${resource.title}`);
 
     // Check if there's already an active tab with the same URL
-    const existingTab = activeTabs.find((tab) => tab.url === resource.url);
+    const existingTab = activeTabs?.find((tab) => tab.url === resource.url);
     if (existingTab && existingTab.id !== undefined) {
       try {
         // Switch to existing tab instead of opening new one
@@ -98,17 +109,13 @@ export function ResourcesPanel({
     }
   };
 
-  const handleStarResource = (id: number, starred: boolean) => {
-    console.log(
-      `${starred ? "Starring" : "Unstarring"} resource with id: ${id}`,
-    );
-    toast.info(starred ? "Resource starred" : "Resource unstarred");
-  };
-
   const handleOpenCreateGroupDialog = () => {
     setGroupDialog({
       open: true,
       mode: "create",
+      groupId: undefined,
+      name: "",
+      description: "",
     });
   };
 
@@ -126,7 +133,23 @@ export function ResourcesPanel({
     if (!groupDialog.groupId) return;
 
     try {
-      await updateResourceGroup(groupDialog.groupId, { name, description });
+      // Only update fields that are provided (not empty)
+      const updates: { name?: string; description?: string } = {};
+
+      if (name.trim()) {
+        updates.name = name.trim();
+      }
+
+      if (description.trim()) {
+        updates.description = description.trim();
+      }
+
+      // If description is empty but we have a current group, preserve existing description
+      if (!description.trim() && groupDialog.description) {
+        updates.description = groupDialog.description;
+      }
+
+      await updateResourceGroup(groupDialog.groupId, updates);
       toast.success("Resource group updated successfully");
     } catch (error) {
       console.error("Failed to update resource group:", error);
@@ -192,22 +215,16 @@ export function ResourcesPanel({
           {resourceGroups && resourceGroups.length > 0 ? (
             <div className="space-y-3">
               {resourceGroups.map((group) => {
-                const groupResources = getResourcesForGroup(group.id);
                 return (
                   <ResourceGroupComponent
                     key={group.id}
-                    group={group}
-                    resources={groupResources}
-                    showTags={showTags}
-                    showUrls={showUrls}
+                    groupId={group.id}
                     onResourceClick={handleResourceClick}
                     onDeleteResource={(id, gId) =>
                       handleOpenDeleteResourceDialog(id, gId)
                     }
-                    onStarResource={handleStarResource}
-                    isOpen={group.collapsed === 0}
-                    onToggle={handleToggleGroup}
-                    activeTabs={activeTabs}
+                    onEdit={handleGroupEdit}
+                    onDeleteGroup={handleGroupDelete}
                   />
                 );
               })}
@@ -255,19 +272,35 @@ export function ResourcesPanel({
       </div>
 
       <ResourceGroupDialog
+        key={groupDialog.groupId || "create"}
         open={groupDialog.open}
-        onOpenChange={(open) => setGroupDialog({ ...groupDialog, open })}
+        onOpenChange={(open) => {
+          if (!open) {
+            setGroupDialog({
+              open: false,
+              mode: "create",
+              name: "",
+              description: "",
+            });
+          } else {
+            setGroupDialog({ ...groupDialog, open });
+          }
+        }}
         onConfirm={
           groupDialog.mode === "create" ? handleCreateGroup : handleEditGroup
         }
-        initialName={groupDialog.initialName}
-        initialDescription={groupDialog.initialDescription}
+        name={groupDialog.name}
+        description={groupDialog.description}
+        onNameChange={(name) => setGroupDialog({ ...groupDialog, name })}
+        onDescriptionChange={(description) =>
+          setGroupDialog({ ...groupDialog, description })
+        }
         title={
           groupDialog.mode === "create"
             ? "Create Resource Group"
             : "Edit Resource Group"
         }
-        description={
+        dialogDescription={
           groupDialog.mode === "create"
             ? "Create a new group to organize your resources."
             : "Edit the group name and description."

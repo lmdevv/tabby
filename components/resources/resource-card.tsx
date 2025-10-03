@@ -14,15 +14,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAppState } from "@/hooks/use-state";
 import type { Resource } from "@/lib/types";
 
 interface ResourceCardProps {
   resource: Resource;
   onClick: () => void;
   onDelete?: (id: number) => void;
-  onStar?: (id: number, starred: boolean) => void;
-  showTags: boolean;
-  showUrl: boolean;
   isActive?: boolean;
 }
 
@@ -30,12 +28,13 @@ export function ResourceCard({
   resource,
   onClick,
   onDelete = () => {},
-  onStar = () => {},
-  showTags,
-  showUrl,
   isActive = false,
 }: ResourceCardProps) {
   const { title, url, favIconUrl, tags, description } = resource;
+
+  // Get UI state from global state
+  const { data: showTags } = useAppState("showTags");
+  const { data: showUrl } = useAppState("showUrls");
 
   // Format the URL for display
   const displayUrl = url
@@ -119,7 +118,7 @@ export function ResourceCard({
                     />
                   )}
                 </div>
-                {showUrl && (
+                {(showUrl ?? true) && (
                   <p
                     className="mt-1 truncate text-muted-foreground text-xs"
                     title={url}
@@ -138,7 +137,7 @@ export function ResourceCard({
               </div>
 
               {/* Tags and metadata */}
-              {showTags && tags && tags.length > 0 && (
+              {(showTags ?? true) && tags && tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 sm:justify-end">
                   {tags.slice(0, 2).map((tag) => (
                     <Badge
@@ -191,9 +190,6 @@ export function ResourceCard({
       <ContextMenuContent>
         <ContextMenuItem onClick={() => window.open(url, "_blank")}>
           Open in New Tab
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => onStar(resource.id, true)}>
-          Star Resource
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => onDelete(resource.id)}>

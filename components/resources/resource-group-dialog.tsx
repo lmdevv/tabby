@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkPlus } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,41 +19,37 @@ interface ResourceGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (name: string, description: string) => void;
-  initialName?: string;
-  initialDescription?: string;
-  title: string;
+  name: string;
   description: string;
+  onNameChange: (name: string) => void;
+  onDescriptionChange: (description: string) => void;
+  title: string;
+  dialogDescription: string;
 }
 
 export function ResourceGroupDialog({
   open,
   onOpenChange,
   onConfirm,
-  initialName = "",
-  initialDescription = "",
-  title,
+  name,
   description,
+  onNameChange,
+  onDescriptionChange,
+  title,
+  dialogDescription,
 }: ResourceGroupDialogProps) {
   const nameId = useId();
   const descriptionId = useId();
-  const [name, setName] = useState(initialName);
-  const [groupDescription, setGroupDescription] = useState(initialDescription);
 
   const handleConfirm = () => {
     if (name.trim()) {
-      onConfirm(name.trim(), groupDescription.trim());
+      onConfirm(name.trim(), description.trim());
       onOpenChange(false);
-      setName("");
-      setGroupDescription("");
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen);
-    if (!newOpen) {
-      setName(initialName);
-      setGroupDescription(initialDescription);
-    }
   };
 
   return (
@@ -66,7 +62,7 @@ export function ResourceGroupDialog({
             </div>
             {title}
           </DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="space-y-2">
@@ -76,7 +72,7 @@ export function ResourceGroupDialog({
             <Input
               id={nameId}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => onNameChange(e.target.value)}
               placeholder="e.g., Work Projects, Research, Personal"
               className="w-full"
               autoFocus
@@ -88,8 +84,8 @@ export function ResourceGroupDialog({
             </Label>
             <Textarea
               id={descriptionId}
-              value={groupDescription}
-              onChange={(e) => setGroupDescription(e.target.value)}
+              value={description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
               placeholder="Briefly describe what this group is for (optional)"
               className="w-full resize-none"
               rows={3}

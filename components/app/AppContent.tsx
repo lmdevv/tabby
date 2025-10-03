@@ -34,12 +34,8 @@ export function AppContent({
   onEditGroup,
 }: AppContentProps) {
   // Get settings directly in the component
-  const { data: showTagsData } = useAppState("showTags");
-  const { data: showUrlsData } = useAppState("showUrls");
   const { data: showResourcesData } = useAppState("showResources");
 
-  const showTags = (showTagsData ?? true) as boolean;
-  const showUrls = (showUrlsData ?? true) as boolean;
   const showResources = (showResourcesData ?? true) as boolean;
 
   // Get tabs data directly using Dexie
@@ -78,15 +74,6 @@ export function AppContent({
         ),
       }));
     }, [resourceGroups, resources]);
-
-  // Get active tabs for resource status indicators
-  const activeTabs = useLiveQuery(async () => {
-    if (!shownWorkspaceId) return [];
-    return db.activeTabs
-      .where("workspaceId")
-      .equals(shownWorkspaceId)
-      .toArray();
-  }, [shownWorkspaceId]);
 
   // Create window groups (this logic stays here since it's complex)
   const windowGroups: WindowGroupData[] = useMemo(() => {
@@ -201,13 +188,7 @@ export function AppContent({
             {/* Resources Panel */}
             <div className="flex flex-col">
               <div className="flex-1">
-                <ResourcesPanel
-                  resourceGroups={enrichedResourceGroups}
-                  resources={resources}
-                  showTags={showTags}
-                  showUrls={showUrls}
-                  activeTabs={activeTabs || []}
-                />
+                <ResourcesPanel resourceGroups={enrichedResourceGroups} />
               </div>
             </div>
           </div>
