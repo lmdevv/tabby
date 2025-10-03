@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkPlus } from "lucide-react";
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,27 +19,32 @@ interface ResourceGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (name: string, description: string) => void;
-  name: string;
-  description: string;
-  onNameChange: (name: string) => void;
-  onDescriptionChange: (description: string) => void;
-  title: string;
-  dialogDescription: string;
+  mode: "create" | "edit";
+  initialName?: string;
+  initialDescription?: string;
 }
 
 export function ResourceGroupDialog({
   open,
   onOpenChange,
   onConfirm,
-  name,
-  description,
-  onNameChange,
-  onDescriptionChange,
-  title,
-  dialogDescription,
+  mode,
+  initialName = "",
+  initialDescription = "",
 }: ResourceGroupDialogProps) {
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription);
+
   const nameId = useId();
   const descriptionId = useId();
+
+  // Reset form when dialog opens/closes or mode changes
+  useEffect(() => {
+    if (open) {
+      setName(initialName);
+      setDescription(initialDescription);
+    }
+  }, [open, initialName, initialDescription]);
 
   const handleConfirm = () => {
     if (name.trim()) {
@@ -51,6 +56,13 @@ export function ResourceGroupDialog({
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen);
   };
+
+  const title =
+    mode === "create" ? "Create Resource Group" : "Edit Resource Group";
+  const dialogDescription =
+    mode === "create"
+      ? "Create a new group to organize your resources."
+      : "Edit the group name and description.";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -72,7 +84,7 @@ export function ResourceGroupDialog({
             <Input
               id={nameId}
               value={name}
-              onChange={(e) => onNameChange(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Work Projects, Research, Personal"
               className="w-full"
               autoFocus
@@ -85,7 +97,7 @@ export function ResourceGroupDialog({
             <Textarea
               id={descriptionId}
               value={description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Briefly describe what this group is for (optional)"
               className="w-full resize-none"
               rows={3}
@@ -108,7 +120,7 @@ export function ResourceGroupDialog({
             disabled={!name.trim()}
             className="gap-2"
           >
-            {title.includes("Edit") ? (
+            {mode === "edit" ? (
               <>
                 <BookmarkPlus className="h-4 w-4" />
                 Save Changes

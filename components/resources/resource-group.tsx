@@ -11,7 +11,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { db } from "@/lib/db";
-import { normalizeUrl } from "@/lib/resource-helpers";
 import type { Resource } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,17 +38,6 @@ export function ResourceGroupComponent({
       .anyOf(group.resourceIds.map((id) => parseInt(id, 10)))
       .toArray();
   }, [group?.resourceIds]);
-  const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
-
-  // Check if a resource is currently active
-  const isResourceActive = (resource: Resource) => {
-    return (
-      activeTabs?.some((activeTab) => {
-        if (!activeTab.url || !resource.url) return false;
-        return normalizeUrl(activeTab.url) === normalizeUrl(resource.url);
-      }) || false
-    );
-  };
 
   // Don't render if group data hasn't loaded yet
   if (!group || !resources) {
@@ -133,10 +121,9 @@ export function ResourceGroupComponent({
             {resources.map((resource) => (
               <ResourceCard
                 key={resource.id}
-                resource={resource}
+                resourceId={resource.id}
                 onClick={() => onResourceClick(resource)}
                 onDelete={(id) => onDeleteResource(id, group.id)}
-                isActive={isResourceActive(resource)}
               />
             ))}
           </div>

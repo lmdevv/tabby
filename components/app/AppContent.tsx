@@ -4,7 +4,6 @@ import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 
 import { db } from "@/lib/db";
 import type { Tab } from "@/lib/types";
@@ -52,28 +51,6 @@ export function AppContent({
     if (!shownWorkspaceId) return [];
     return db.tabGroups.where("workspaceId").equals(shownWorkspaceId).toArray();
   }, [shownWorkspaceId]);
-
-  // Get resource groups and resources data directly using Dexie
-  const resourceGroups = useLiveQuery(() => {
-    return db.resourceGroups.toArray();
-  }, []);
-
-  const resources = useLiveQuery(() => {
-    return db.resources.toArray();
-  }, []);
-
-  // Convert ResourceGroup[] to EnrichedResourceGroup[]
-  const enrichedResourceGroups: EnrichedResourceGroup[] | undefined =
-    useMemo(() => {
-      if (!resourceGroups || !resources) return undefined;
-
-      return resourceGroups.map((group) => ({
-        ...group,
-        resources: resources.filter((resource) =>
-          group.resourceIds.includes(resource.id.toString()),
-        ),
-      }));
-    }, [resourceGroups, resources]);
 
   // Create window groups (this logic stays here since it's complex)
   const windowGroups: WindowGroupData[] = useMemo(() => {
@@ -188,7 +165,7 @@ export function AppContent({
             {/* Resources Panel */}
             <div className="flex flex-col">
               <div className="flex-1">
-                <ResourcesPanel resourceGroups={enrichedResourceGroups} />
+                <ResourcesPanel />
               </div>
             </div>
           </div>

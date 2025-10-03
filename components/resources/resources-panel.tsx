@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { EnrichedResourceGroup } from "@/hooks/use-resources";
 import { db } from "@/lib/db";
 import {
   createResourceGroup,
@@ -28,16 +27,17 @@ import {
 } from "@/lib/resource-helpers";
 import type { Resource } from "@/lib/types";
 
-interface ResourcesPanelProps {
-  resourceGroups?: EnrichedResourceGroup[];
-}
-
-export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
+export function ResourcesPanel() {
+  // Fetch resource groups directly from database
+  const resourceGroups = useLiveQuery(() => db.resourceGroups.toArray(), []);
   const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
 
   // Handle edit for individual groups
-  const handleGroupEdit = (groupId: number, _type: "title" | "description") => {
-    const group = resourceGroups?.find((g) => g.id === groupId);
+  const handleGroupEdit = async (
+    groupId: number,
+    _type: "title" | "description",
+  ) => {
+    const group = await db.resourceGroups.get(groupId);
     if (group) {
       setGroupDialog({
         open: true,
@@ -50,8 +50,8 @@ export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
   };
 
   // Handle delete for individual groups
-  const handleGroupDelete = (groupId: number) => {
-    const group = resourceGroups?.find((g) => g.id === groupId);
+  const handleGroupDelete = async (groupId: number) => {
+    const group = await db.resourceGroups.get(groupId);
     if (group) {
       setDeleteDialog({
         open: true,
@@ -157,13 +157,11 @@ export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
     }
   };
 
-  const handleOpenDeleteResourceDialog = (
+  const handleOpenDeleteResourceDialog = async (
     resourceId: number,
     groupId: number,
   ) => {
-    const allResources =
-      resourceGroups?.flatMap((g) => g.resources || []) || [];
-    const resource = allResources.find((r) => r.id === resourceId);
+    const resource = await db.resources.get(resourceId);
     if (resource) {
       setDeleteDialog({
         open: true,
@@ -178,8 +176,8 @@ export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
   const handleConfirmDelete = async () => {
     try {
       if (deleteDialog.type === "group" && deleteDialog.id) {
-        const group = resourceGroups?.find((g) => g.id === deleteDialog.id);
-        const resourceCount = group?.resources?.length || 0;
+        const group = await db.resourceGroups.get(deleteDialog.id);
+        const resourceCount = group?.resourceIds?.length || 0;
         await deleteResourceGroup(deleteDialog.id);
         toast.success(
           `Resource group "${deleteDialog.name}" deleted successfully` +
@@ -289,22 +287,9 @@ export function ResourcesPanel({ resourceGroups }: ResourcesPanelProps) {
         onConfirm={
           groupDialog.mode === "create" ? handleCreateGroup : handleEditGroup
         }
-        name={groupDialog.name}
-        description={groupDialog.description}
-        onNameChange={(name) => setGroupDialog({ ...groupDialog, name })}
-        onDescriptionChange={(description) =>
-          setGroupDialog({ ...groupDialog, description })
-        }
-        title={
-          groupDialog.mode === "create"
-            ? "Create Resource Group"
-            : "Edit Resource Group"
-        }
-        dialogDescription={
-          groupDialog.mode === "create"
-            ? "Create a new group to organize your resources."
-            : "Edit the group name and description."
-        }
+        mode={groupDialog.mode}
+        initialName={groupDialog.name}
+        initialDescription={groupDialog.description}
       />
 
       <AlertDialog

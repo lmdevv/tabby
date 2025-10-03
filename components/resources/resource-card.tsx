@@ -1,3 +1,4 @@
+import { useLiveQuery } from "dexie-react-hooks";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,26 +16,46 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState } from "@/hooks/use-state";
-import type { Resource } from "@/lib/types";
+import { db } from "@/lib/db";
+import { normalizeUrl } from "@/lib/resource-helpers";
 
 interface ResourceCardProps {
-  resource: Resource;
+  resourceId: number;
   onClick: () => void;
   onDelete?: (id: number) => void;
-  isActive?: boolean;
 }
 
 export function ResourceCard({
-  resource,
+  resourceId,
   onClick,
   onDelete = () => {},
-  isActive = false,
 }: ResourceCardProps) {
-  const { title, url, favIconUrl, tags, description } = resource;
-
-  // Get UI state from global state
+  // Get UI state from global state (must be called before any early returns)
   const { data: showTags } = useAppState("showTags");
   const { data: showUrl } = useAppState("showUrls");
+
+  // Fetch resource data directly from database
+  const resource = useLiveQuery(
+    () => db.resources.get(resourceId),
+    [resourceId],
+  );
+
+  // Fetch active tabs to determine if this resource is currently active
+  const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
+
+  // Don't render if resource data hasn't loaded yet
+  if (!resource) {
+    return null;
+  }
+
+  const { title, url, favIconUrl, tags, description } = resource;
+
+  // Check if this resource is currently active
+  const isActive =
+    activeTabs?.some((activeTab) => {
+      if (!activeTab.url || !resource.url) return false;
+      return normalizeUrl(activeTab.url) === normalizeUrl(resource.url);
+    }) || false;
 
   // Format the URL for display
   const displayUrl = url
