@@ -348,6 +348,26 @@ export default defineBackground(() => {
         }
       } else if (
         typeof message === "object" &&
+        message.type === "toggleGroupCollapse"
+      ) {
+        console.log("Toggling group collapse", message.groupId);
+
+        try {
+          // Get the current group state
+          const group = await browser.tabGroups.get(message.groupId);
+          await browser.tabGroups.update(message.groupId, {
+            collapsed: !group.collapsed,
+          });
+          return { success: true };
+        } catch (error) {
+          console.error("❌ Failed to toggle group collapse:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      } else if (
+        typeof message === "object" &&
         message.type === "openWorkspace"
       ) {
         console.log("Opening workspace", message.workspaceId);

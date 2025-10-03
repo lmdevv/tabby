@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useResourceGroups } from "@/hooks/use-resources";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
+import { normalizeUrl } from "@/lib/resource-helpers";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
 
@@ -20,30 +21,14 @@ interface WindowComponentProps {
   windowId: number;
   workspaceId: number;
   onTabClick: (tab: Tab) => void;
-  onDeleteTab: (id: number) => void;
-  onPinTab?: (id: number, pinned: boolean) => void;
-  onMuteTab: (id: number, muted: boolean) => void;
-  onHighlightTab: (id: number, highlighted: boolean) => void;
-  onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
-  onToggleGroupCollapse: (windowId: number, groupId: number) => void;
   onEditGroup: (groupId: number) => void;
-  onUngroupTabs: (tabIds: number[]) => void;
-  onCloseTabs: (tabIds: number[]) => void;
 }
 
 export function WindowComponent({
   windowId,
   workspaceId,
   onTabClick,
-  onDeleteTab,
-  onPinTab: _onPinTab,
-  onMuteTab,
-  onHighlightTab,
-  onAddToResourceGroup,
-  onToggleGroupCollapse,
   onEditGroup,
-  onUngroupTabs,
-  onCloseTabs,
 }: WindowComponentProps) {
   // Fetch data directly from DB
   const tabs = useLiveQuery(
@@ -52,7 +37,7 @@ export function WindowComponent({
         .where("workspaceId")
         .equals(workspaceId)
         .filter((tab) => tab.windowId === windowId)
-        .toArray(),
+        .sortBy("index"),
     [workspaceId, windowId],
   );
 
@@ -62,6 +47,112 @@ export function WindowComponent({
   );
 
   const resourceGroups = useResourceGroups();
+
+  // Action handlers
+  const handleDeleteTab = async (id: number) => {
+    try {
+      await browser.tabs.remove(id);
+    } catch (error) {
+      console.error("Failed to close tab:", error);
+    }
+  };
+
+  const handleAddToResourceGroup = async (tab: Tab, groupId: number) => {
+    try {
+      // Check if resource already exists
+      if (!tab.url) {
+        throw new Error("URL is required to create a resource");
+      }
+
+      const normalizedTabUrl = normalizeUrl(tab.url);
+      const normalizedTabTitle = (tab.title || "Untitled").toLowerCase().trim();
+
+      // Find existing resource by title + URL match
+      const allResources = await db.resources.toArray();
+      const existingResource = allResources.find((resource) => {
+        if (!resource.url) return false;
+        const normalizedResourceUrl = normalizeUrl(resource.url);
+        const normalizedResourceTitle = (resource.title || "Untitled")
+          .toLowerCase()
+          .trim();
+
+        return (
+          normalizedResourceUrl === normalizedTabUrl &&
+          normalizedResourceTitle === normalizedTabTitle
+        );
+      });
+
+      if (existingResource) {
+        console.log(
+          "Resource already exists, adding to group:",
+          existingResource.id,
+        );
+        // Resource already exists, just add it to the group if not already there
+        const group = await db.resourceGroups.get(groupId);
+        if (!group) {
+          throw new Error(`Resource group with ID ${groupId} not found`);
+        }
+
+        if (group.resourceIds.includes(existingResource.id.toString())) {
+          console.log("Resource already in group");
+          return;
+        }
+
+        await db.resourceGroups.update(groupId, {
+          resourceIds: [...group.resourceIds, existingResource.id.toString()],
+        });
+      } else {
+        // Create new resource and add to group
+        const newResourceId = await db.resources.add({
+          title: tab.title || "Untitled",
+          url: tab.url,
+          favIconUrl: tab.favIconUrl,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+
+        const group = await db.resourceGroups.get(groupId);
+        if (!group) {
+          throw new Error(`Resource group with ID ${groupId} not found`);
+        }
+
+        await db.resourceGroups.update(groupId, {
+          resourceIds: [...group.resourceIds, newResourceId.toString()],
+        });
+      }
+    } catch (error) {
+      console.error("Failed to add tab to resource group:", error);
+    }
+  };
+
+  const handleToggleGroupCollapse = async (groupId: number) => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "toggleGroupCollapse",
+        groupId,
+      });
+    } catch (error) {
+      console.error("Failed to toggle group collapse:", error);
+    }
+  };
+
+  const handleUngroupTabs = async (tabIds: number[]) => {
+    try {
+      if (typeof browser?.tabs?.ungroup === "function") {
+        await browser.tabs.ungroup(tabIds as [number, ...number[]]);
+      }
+    } catch (error) {
+      console.error("Failed to ungroup tabs:", error);
+    }
+  };
+
+  const handleCloseTabs = async (tabIds: number[]) => {
+    try {
+      await browser.tabs.remove(tabIds);
+    } catch (error) {
+      console.error("Failed to close tabs:", error);
+    }
+  };
 
   // UI state using global state
   const { data: showTagsData } = useAppState("showTags");
@@ -202,7 +293,7 @@ export function WindowComponent({
                     collapsed={element.groupInfo.collapsed}
                     onToggleCollapse={() =>
                       element.group?.groupId !== undefined &&
-                      onToggleGroupCollapse(windowId, element.group.groupId)
+                      handleToggleGroupCollapse(element.group.groupId)
                     }
                     onEditGroup={() =>
                       element.group?.groupId !== undefined &&
@@ -210,7 +301,7 @@ export function WindowComponent({
                     }
                     onUngroupAll={() =>
                       element.group?.tabs &&
-                      onUngroupTabs(
+                      handleUngroupTabs(
                         element.group.tabs
                           .map((tab) => tab.id)
                           .filter((id): id is number => id !== undefined),
@@ -218,7 +309,7 @@ export function WindowComponent({
                     }
                     onCloseAll={() =>
                       element.group?.tabs &&
-                      onCloseTabs(
+                      handleCloseTabs(
                         element.group.tabs
                           .map((tab) => tab.id)
                           .filter((id): id is number => id !== undefined),
@@ -238,10 +329,8 @@ export function WindowComponent({
                   <TabCard
                     tab={element.tab}
                     onClick={() => element.tab && onTabClick(element.tab)}
-                    onDelete={onDeleteTab}
-                    onMute={onMuteTab}
-                    onHighlight={onHighlightTab}
-                    onAddToResourceGroup={onAddToResourceGroup}
+                    onDelete={handleDeleteTab}
+                    onAddToResourceGroup={handleAddToResourceGroup}
                     resourceGroups={resourceGroups}
                     showTags={showTags}
                     showUrl={showUrls}
@@ -272,10 +361,8 @@ export function WindowComponent({
                   key={`tab-${element.tab.id}`}
                   tab={element.tab}
                   onClick={() => element.tab && onTabClick(element.tab)}
-                  onDelete={onDeleteTab}
-                  onMute={onMuteTab}
-                  onHighlight={onHighlightTab}
-                  onAddToResourceGroup={onAddToResourceGroup}
+                  onDelete={handleDeleteTab}
+                  onAddToResourceGroup={handleAddToResourceGroup}
                   resourceGroups={resourceGroups}
                   showTags={showTags}
                   showUrl={showUrls}

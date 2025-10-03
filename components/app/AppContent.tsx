@@ -24,28 +24,14 @@ interface AppContentProps {
   previewWorkspaceId: number | null;
   shownWorkspaceId: number | null;
   onTabClick: (tab: Tab) => Promise<void>;
-  onDeleteTab: (id: number) => Promise<void>;
-  onMuteTab: (id: number, muted: boolean) => Promise<void>;
-  onHighlightTab: (id: number, highlighted: boolean) => Promise<void>;
-  onAddToResourceGroup: (tab: Tab, groupId: number) => Promise<void>;
-  onToggleGroupCollapse: (windowId: number, groupId: number) => Promise<void>;
   onEditGroup: (groupId: number) => Promise<void>;
-  onUngroupTabs: (tabIds: number[]) => Promise<void>;
-  onCloseTabs: (tabIds: number[]) => Promise<void>;
 }
 
 export function AppContent({
   previewWorkspaceId: _previewWorkspaceId,
   shownWorkspaceId,
   onTabClick,
-  onDeleteTab,
-  onMuteTab,
-  onHighlightTab,
-  onAddToResourceGroup,
-  onToggleGroupCollapse,
   onEditGroup,
-  onUngroupTabs,
-  onCloseTabs,
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showTagsData } = useAppState("showTags");
@@ -191,15 +177,7 @@ export function AppContent({
                                 windowId={windowGroup.windowId}
                                 workspaceId={shownWorkspaceId}
                                 onTabClick={onTabClick}
-                                onDeleteTab={onDeleteTab}
-                                onPinTab={() => {}}
-                                onMuteTab={onMuteTab}
-                                onHighlightTab={onHighlightTab}
-                                onAddToResourceGroup={onAddToResourceGroup}
-                                onToggleGroupCollapse={onToggleGroupCollapse}
                                 onEditGroup={onEditGroup}
-                                onUngroupTabs={onUngroupTabs}
-                                onCloseTabs={onCloseTabs}
                               />
                             )}
                           </div>
@@ -259,15 +237,7 @@ export function AppContent({
                                 windowId={windowGroup.windowId}
                                 workspaceId={shownWorkspaceId}
                                 onTabClick={onTabClick}
-                                onDeleteTab={onDeleteTab}
-                                onPinTab={() => {}}
-                                onMuteTab={onMuteTab}
-                                onHighlightTab={onHighlightTab}
-                                onAddToResourceGroup={onAddToResourceGroup}
-                                onToggleGroupCollapse={onToggleGroupCollapse}
                                 onEditGroup={onEditGroup}
-                                onUngroupTabs={onUngroupTabs}
-                                onCloseTabs={onCloseTabs}
                               />
                             )}
                           </div>

@@ -8,7 +8,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { useAddTabToResourceGroup } from "@/hooks/use-resources";
+
 import { db } from "@/lib/db";
 
 export default function App() {
@@ -59,15 +59,6 @@ export default function App() {
     [previewWorkspaceId, workspaceData?.activeWorkspace?.id],
   );
 
-  // Get tab groups for the current workspace
-  const tabGroups = useLiveQuery(() => {
-    if (!shownWorkspaceId) return [];
-    return db.tabGroups.where("workspaceId").equals(shownWorkspaceId).toArray();
-  }, [shownWorkspaceId]);
-
-  // Hook for adding tabs to resource groups
-  const { addTabToResourceGroup } = useAddTabToResourceGroup();
-
   // Event handlers for tab management
   const handleTabClick = useCallback(
     async (tab: { id?: number; windowId?: number }) => {
@@ -85,63 +76,6 @@ export default function App() {
     [],
   );
 
-  const handleDeleteTab = useCallback(async (id: number) => {
-    try {
-      await browser.tabs.remove(id);
-    } catch (error) {
-      console.error("Failed to close tab:", error);
-    }
-  }, []);
-
-  const handleMuteTab = useCallback(async (id: number, muted: boolean) => {
-    try {
-      await browser.tabs.update(id, { muted });
-    } catch (error) {
-      console.error("Failed to mute/unmute tab:", error);
-    }
-  }, []);
-
-  const handleHighlightTab = useCallback(
-    async (id: number, highlighted: boolean) => {
-      try {
-        await browser.tabs.update(id, { highlighted });
-      } catch (error) {
-        console.error("Failed to highlight/unhighlight tab:", error);
-      }
-    },
-    [],
-  );
-
-  const handleAddToResourceGroup = useCallback(
-    async (
-      tab: { title?: string; url?: string; favIconUrl?: string },
-      groupId: number,
-    ) => {
-      try {
-        await addTabToResourceGroup(tab, groupId);
-      } catch (error) {
-        console.error("Failed to add tab to resource group:", error);
-      }
-    },
-    [addTabToResourceGroup],
-  );
-
-  const handleToggleGroupCollapse = useCallback(
-    async (_windowId: number, groupId: number) => {
-      try {
-        const group = tabGroups?.find((g) => g.id === groupId);
-        if (group && typeof browser?.tabGroups?.update === "function") {
-          await browser.tabGroups.update(groupId, {
-            collapsed: !group.collapsed,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to toggle group collapse:", error);
-      }
-    },
-    [tabGroups],
-  );
-
   const handleEditGroup = useCallback(async (groupId: number) => {
     try {
       setGroupDialog({
@@ -150,24 +84,6 @@ export default function App() {
       });
     } catch (error) {
       console.error("Failed to open edit group dialog:", error);
-    }
-  }, []);
-
-  const handleUngroupTabs = useCallback(async (tabIds: number[]) => {
-    try {
-      if (typeof browser?.tabs?.ungroup === "function") {
-        await browser.tabs.ungroup(tabIds as [number, ...number[]]);
-      }
-    } catch (error) {
-      console.error("Failed to ungroup tabs:", error);
-    }
-  }, []);
-
-  const handleCloseTabsById = useCallback(async (tabIds: number[]) => {
-    try {
-      await browser.tabs.remove(tabIds);
-    } catch (error) {
-      console.error("Failed to close tabs:", error);
     }
   }, []);
 
@@ -202,14 +118,7 @@ export default function App() {
           previewWorkspaceId={previewWorkspaceId}
           shownWorkspaceId={shownWorkspaceId || null}
           onTabClick={handleTabClick}
-          onDeleteTab={handleDeleteTab}
-          onMuteTab={handleMuteTab}
-          onHighlightTab={handleHighlightTab}
-          onAddToResourceGroup={handleAddToResourceGroup}
-          onToggleGroupCollapse={handleToggleGroupCollapse}
           onEditGroup={handleEditGroup}
-          onUngroupTabs={handleUngroupTabs}
-          onCloseTabs={handleCloseTabsById}
         />
       </SidebarInset>
 

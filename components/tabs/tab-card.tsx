@@ -35,8 +35,6 @@ interface TabCardProps {
   onClick: () => void;
   onDelete?: (id: number) => void;
   onPin?: (id: number, pinned: boolean) => void;
-  onMute?: (id: number, muted: boolean) => void;
-  onHighlight?: (id: number, highlighted: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
   resourceGroups?: EnrichedResourceGroup[];
   showTags: boolean;
@@ -51,8 +49,6 @@ export function TabCard({
   onClick,
   onDelete = () => {},
   onPin: _onPin = () => {},
-  onMute = () => {},
-  onHighlight = () => {},
   onAddToResourceGroup = () => {},
   resourceGroups = [],
   showTags,
@@ -70,7 +66,6 @@ export function TabCard({
     pinned,
     audible,
     mutedInfo,
-    highlighted,
     discarded,
     tags,
   } = tab;
@@ -397,21 +392,6 @@ export function TabCard({
         </Button>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem
-          onClick={() =>
-            tab.id !== undefined && onMute(tab.id, !mutedInfo?.muted)
-          }
-        >
-          {mutedInfo?.muted ? "Unmute" : "Mute"} Tab
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() =>
-            tab.id !== undefined && onHighlight(tab.id, !highlighted)
-          }
-        >
-          {highlighted ? "Remove Highlight" : "Highlight"} Tab
-        </ContextMenuItem>
-
         <ContextMenuItem
           onClick={() => {
             if (!url) return;
