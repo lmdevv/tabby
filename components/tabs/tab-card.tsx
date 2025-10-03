@@ -1,3 +1,4 @@
+import { useLiveQuery } from "dexie-react-hooks";
 import { Archive, BookmarkPlus, Star, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -24,40 +25,65 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { EnrichedResourceGroup } from "@/hooks/use-resources";
-import { useTabIsResource } from "@/hooks/use-resources";
-import { withAlpha } from "@/lib/tab-group-colors";
+import { useResourceGroups, useTabIsResource } from "@/hooks/use-resources";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
+import { db } from "@/lib/db";
+import { browserColorToHex, withAlpha } from "@/lib/tab-group-colors";
 import type { ResourceGroup, Tab } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TabCardProps {
-  tab: Tab;
+  tabId: number;
+  groupId?: number;
   onClick: () => void;
   onDelete?: (id: number) => void;
   onPin?: (id: number, pinned: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
-  resourceGroups?: EnrichedResourceGroup[];
-  showTags: boolean;
-  showUrl: boolean;
-  isSelected?: boolean;
-  onSelectChange?: (id: number, selected: boolean) => void;
-  tabGroup?: { name: string; color: string } | undefined;
 }
 
 export function TabCard({
-  tab,
+  tabId,
+  groupId,
   onClick,
   onDelete = () => {},
   onPin: _onPin = () => {},
   onAddToResourceGroup = () => {},
-  resourceGroups = [],
-  showTags,
-  showUrl,
-  isSelected = false,
-  onSelectChange = () => {},
-  tabGroup,
 }: TabCardProps) {
+  // Fetch tab data from DB
+  const tab = useLiveQuery(() => db.activeTabs.get(tabId), [tabId]);
+
+  // Fetch global state
+  const { data: showTags } = useAppState("showTags");
+  const { data: showUrl } = useAppState("showUrls");
+  const { data: selectedTabs } = useAppState("selectedTabs");
+  const { updateState } = useUpdateState();
+
+  // Fetch resource groups
+  const resourceGroups = useResourceGroups() ?? [];
+
+  // Fetch tab group info if groupId is provided
+  const tabGroupInfo = useLiveQuery(
+    () => (groupId ? db.tabGroups.get(groupId) : undefined),
+    [groupId],
+  );
+
   const { getResourceGroupsForTab } = useTabIsResource();
+
+  // Calculate derived state
+  const isSelected = selectedTabs?.includes(tabId) ?? false;
+  const tabGroup = tabGroupInfo
+    ? {
+        name: tabGroupInfo.title || "Untitled",
+        color: tabGroupInfo.color?.startsWith?.("#")
+          ? tabGroupInfo.color
+          : browserColorToHex(
+              tabGroupInfo.color as `${Browser.tabGroups.Color}`,
+            ),
+      }
+    : undefined;
+
+  // Early return if tab not found
+  if (!tab) return null;
 
   const {
     title,
@@ -146,9 +172,11 @@ export function TabCard({
               <Checkbox
                 checked={isSelected}
                 onCheckedChange={(checked) => {
-                  if (tab.id !== undefined) {
-                    onSelectChange(tab.id, checked === true);
-                  }
+                  const newSelected =
+                    checked === true
+                      ? [...(selectedTabs ?? []), tabId]
+                      : (selectedTabs ?? []).filter((id) => id !== tabId);
+                  updateState("selectedTabs", newSelected);
                 }}
                 onClick={(e) => {
                   e.stopPropagation();

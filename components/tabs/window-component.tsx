@@ -4,11 +4,10 @@ import type { Browser } from "wxt/browser";
 import { TabCard } from "@/components/tabs/tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { useResourceGroups } from "@/hooks/use-resources";
-import { useAppState, useUpdateState } from "@/hooks/use-state";
+
 import { db } from "@/lib/db";
 import { normalizeUrl } from "@/lib/resource-helpers";
-import { browserColorToHex } from "@/lib/tab-group-colors";
+
 import type { Tab } from "@/lib/types";
 
 interface TabGroupInWindow {
@@ -45,8 +44,6 @@ export function WindowComponent({
     () => db.tabGroups.where("workspaceId").equals(workspaceId).toArray(),
     [workspaceId],
   );
-
-  const resourceGroups = useResourceGroups();
 
   // Action handlers
   const handleDeleteTab = async (id: number) => {
@@ -143,21 +140,6 @@ export function WindowComponent({
     }
   };
 
-  // UI state using global state
-  const { data: showTagsData } = useAppState("showTags");
-  const { data: showUrlsData } = useAppState("showUrls");
-  const { data: selectedTabs } = useAppState("selectedTabs");
-  const { updateState } = useUpdateState();
-
-  const showTags = (showTagsData as boolean) ?? true;
-  const showUrls = (showUrlsData as boolean) ?? true;
-  const currentSelectedTabs = (selectedTabs as number[]) ?? [];
-  const handleSelectTab = (id: number, selected: boolean) => {
-    const newSelectedTabs = selected
-      ? [...currentSelectedTabs, id]
-      : currentSelectedTabs.filter((tabId: number) => tabId !== id);
-    updateState("selectedTabs", newSelectedTabs);
-  };
   // Create tabGroups from tabs and allTabGroups
   const tabGroups: TabGroupInWindow[] = useMemo(() => {
     if (!tabs || !allTabGroups) return [];
@@ -309,53 +291,30 @@ export function WindowComponent({
 
               return (
                 <div key={`tab-${element.tab.id}`} className="ml-6">
-                  <TabCard
-                    tab={element.tab}
-                    onClick={() => element.tab && onTabClick(element.tab)}
-                    onDelete={handleDeleteTab}
-                    onAddToResourceGroup={handleAddToResourceGroup}
-                    resourceGroups={resourceGroups}
-                    showTags={showTags}
-                    showUrl={showUrls}
-                    isSelected={
-                      element.tab.id !== undefined &&
-                      currentSelectedTabs.includes(element.tab.id)
-                    }
-                    onSelectChange={handleSelectTab}
-                    tabGroup={{
-                      name: element.groupInfo?.title || "Untitled",
-                      color: (element.groupInfo?.color as string)?.startsWith?.(
-                        "#",
-                      )
-                        ? (element.groupInfo?.color as string)
-                        : browserColorToHex(
-                            element.groupInfo
-                              ?.color as `${Browser.tabGroups.Color}`,
-                          ),
-                    }}
-                  />
+                  {element.tab.id !== undefined && (
+                    <TabCard
+                      tabId={element.tab.id}
+                      groupId={element.group?.groupId}
+                      onClick={() => element.tab && onTabClick(element.tab)}
+                      onDelete={handleDeleteTab}
+                      onAddToResourceGroup={handleAddToResourceGroup}
+                    />
+                  )}
                 </div>
               );
             }
 
             if (element.type === "tab" && element.tab) {
               return (
-                <TabCard
-                  key={`tab-${element.tab.id}`}
-                  tab={element.tab}
-                  onClick={() => element.tab && onTabClick(element.tab)}
-                  onDelete={handleDeleteTab}
-                  onAddToResourceGroup={handleAddToResourceGroup}
-                  resourceGroups={resourceGroups}
-                  showTags={showTags}
-                  showUrl={showUrls}
-                  isSelected={
-                    element.tab.id !== undefined &&
-                    currentSelectedTabs.includes(element.tab.id)
-                  }
-                  onSelectChange={handleSelectTab}
-                  tabGroup={undefined}
-                />
+                element.tab.id !== undefined && (
+                  <TabCard
+                    key={`tab-${element.tab.id}`}
+                    tabId={element.tab.id}
+                    onClick={() => element.tab && onTabClick(element.tab)}
+                    onDelete={handleDeleteTab}
+                    onAddToResourceGroup={handleAddToResourceGroup}
+                  />
+                )
               );
             }
 
