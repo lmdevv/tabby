@@ -125,17 +125,6 @@ export function WindowComponent({
     }
   };
 
-  const handleToggleGroupCollapse = async (groupId: number) => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "toggleGroupCollapse",
-        groupId,
-      });
-    } catch (error) {
-      console.error("Failed to toggle group collapse:", error);
-    }
-  };
-
   const handleUngroupTabs = async (tabIds: number[]) => {
     try {
       if (typeof browser?.tabs?.ungroup === "function") {
@@ -288,13 +277,7 @@ export function WindowComponent({
               return (
                 <div key={`group-${element.group.groupId}`}>
                   <TabGroupHeader
-                    groupInfo={element.groupInfo}
-                    tabCount={element.group.tabs.length}
-                    collapsed={element.groupInfo.collapsed}
-                    onToggleCollapse={() =>
-                      element.group?.groupId !== undefined &&
-                      handleToggleGroupCollapse(element.group.groupId)
-                    }
+                    groupId={element.group.groupId}
                     onEditGroup={() =>
                       element.group?.groupId !== undefined &&
                       onEditGroup(element.group.groupId)
