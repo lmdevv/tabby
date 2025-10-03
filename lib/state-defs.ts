@@ -19,6 +19,7 @@ export const stateDefs = {
   sidebarCollapsed: { default: false as boolean },
 
   // Tab Management State
+  selectedTabs: { default: [] as number[] },
   previewMode: { default: false as boolean },
   autoGroupTabs: { default: false as boolean },
   confirmTabClose: { default: true as boolean },

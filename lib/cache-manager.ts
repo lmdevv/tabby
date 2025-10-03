@@ -2,7 +2,9 @@
  * Generic localStorage cache manager
  * Provides instant synchronous access during initial loads
  */
-export class CacheManager<T = Record<string, string | boolean | number>> {
+export class CacheManager<
+  T = Record<string, string | boolean | number | number[]>,
+> {
   private storageKey: string;
 
   constructor(storageKey: string) {
@@ -51,6 +53,15 @@ export class CacheManager<T = Record<string, string | boolean | number>> {
       return Number(cached) as T[K];
     }
 
+    // Parse JSON strings back to arrays
+    if (Array.isArray(defaultValue) && typeof cached === "string") {
+      try {
+        return JSON.parse(cached) as T[K];
+      } catch {
+        return defaultValue;
+      }
+    }
+
     return cached;
   }
 }
@@ -59,7 +70,7 @@ export class CacheManager<T = Record<string, string | boolean | number>> {
  * Specialized cache manager for state
  */
 export class StateCacheManager extends CacheManager<
-  Record<string, string | boolean | number>
+  Record<string, string | boolean | number | number[]>
 > {
   constructor() {
     super("tabby_state_cache");

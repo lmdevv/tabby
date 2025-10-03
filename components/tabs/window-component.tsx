@@ -1,12 +1,14 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { useMemo } from "react";
 import type { Browser } from "wxt/browser";
 import { TabCard } from "@/components/tabs/tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
-import type { EnrichedResourceGroup } from "@/hooks/use-resources";
+import { useResourceGroups } from "@/hooks/use-resources";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
+import { db } from "@/lib/db";
 import { browserColorToHex } from "@/lib/tab-group-colors";
 import type { Tab } from "@/lib/types";
-
-type TabGroup = Browser.tabGroups.TabGroup;
 
 interface TabGroupInWindow {
   groupId: number;
@@ -16,20 +18,13 @@ interface TabGroupInWindow {
 
 interface WindowComponentProps {
   windowId: number;
-  tabs: Tab[];
-  tabGroups: TabGroupInWindow[];
-  allTabGroups: TabGroup[];
-  selectedTabs: number[];
-  showTags: boolean;
-  showUrls: boolean;
+  workspaceId: number;
   onTabClick: (tab: Tab) => void;
   onDeleteTab: (id: number) => void;
   onPinTab?: (id: number, pinned: boolean) => void;
   onMuteTab: (id: number, muted: boolean) => void;
   onHighlightTab: (id: number, highlighted: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
-  resourceGroups?: EnrichedResourceGroup[];
-  onSelectTab: (id: number, selected: boolean) => void;
   onToggleGroupCollapse: (windowId: number, groupId: number) => void;
   onEditGroup: (groupId: number) => void;
   onUngroupTabs: (tabIds: number[]) => void;
@@ -38,39 +33,89 @@ interface WindowComponentProps {
 
 export function WindowComponent({
   windowId,
-  tabs,
-  tabGroups,
-  allTabGroups,
-  selectedTabs,
-  showTags,
-  showUrls,
+  workspaceId,
   onTabClick,
   onDeleteTab,
   onPinTab: _onPinTab,
   onMuteTab,
   onHighlightTab,
   onAddToResourceGroup,
-  resourceGroups,
-  onSelectTab,
   onToggleGroupCollapse,
   onEditGroup,
   onUngroupTabs,
   onCloseTabs,
 }: WindowComponentProps) {
-  const getTabGroupInfo = (groupId?: number) => {
-    if (!groupId) return undefined;
-    return allTabGroups.find((group) => group.id === groupId);
-  };
+  // Fetch data directly from DB
+  const tabs = useLiveQuery(
+    () =>
+      db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .filter((tab) => tab.windowId === windowId)
+        .toArray(),
+    [workspaceId, windowId],
+  );
 
-  // Create a map of which tabs belong to which group for quick lookup
-  const tabToGroupMap = new Map<number, TabGroupInWindow>();
-  for (const group of tabGroups) {
-    for (const tab of group.tabs) {
-      if (tab.id !== undefined) {
-        tabToGroupMap.set(tab.id, group);
+  const allTabGroups = useLiveQuery(
+    () => db.tabGroups.where("workspaceId").equals(workspaceId).toArray(),
+    [workspaceId],
+  );
+
+  const resourceGroups = useResourceGroups();
+
+  // UI state using global state
+  const { data: showTagsData } = useAppState("showTags");
+  const { data: showUrlsData } = useAppState("showUrls");
+  const { data: selectedTabs } = useAppState("selectedTabs");
+  const { updateState } = useUpdateState();
+
+  const showTags = (showTagsData as boolean) ?? true;
+  const showUrls = (showUrlsData as boolean) ?? true;
+  const currentSelectedTabs = (selectedTabs as number[]) ?? [];
+  const handleSelectTab = (id: number, selected: boolean) => {
+    const newSelectedTabs = selected
+      ? [...currentSelectedTabs, id]
+      : currentSelectedTabs.filter((tabId: number) => tabId !== id);
+    updateState("selectedTabs", newSelectedTabs);
+  };
+  // Create tabGroups from tabs and allTabGroups
+  const tabGroups: TabGroupInWindow[] = useMemo(() => {
+    if (!tabs || !allTabGroups) return [];
+
+    const groupsMap = new Map<number, TabGroupInWindow>();
+
+    // Group tabs by their groupId
+    for (const tab of tabs) {
+      if (tab.groupId && tab.groupId !== -1) {
+        if (!groupsMap.has(tab.groupId)) {
+          const groupInfo = allTabGroups.find((g) => g.id === tab.groupId);
+          groupsMap.set(tab.groupId, {
+            groupId: tab.groupId,
+            tabs: [],
+            collapsed: groupInfo?.collapsed ?? false,
+          });
+        }
+        groupsMap.get(tab.groupId)?.tabs.push(tab);
       }
     }
-  }
+
+    return Array.from(groupsMap.values());
+  }, [tabs, allTabGroups]);
+
+  // Create a map of which tabs belong to which group for quick lookup
+  const tabToGroupMap = useMemo(() => {
+    const map = new Map<number, TabGroupInWindow>();
+    if (!tabGroups) return map;
+
+    for (const group of tabGroups) {
+      for (const tab of group.tabs) {
+        if (tab.id !== undefined) {
+          map.set(tab.id, group);
+        }
+      }
+    }
+    return map;
+  }, [tabGroups]);
 
   // Create an ordered list of elements (tabs or group headers) as they should appear
   const orderedElements: Array<{
@@ -78,56 +123,66 @@ export function WindowComponent({
     tab?: Tab;
     group?: TabGroupInWindow;
     groupInfo?: Browser.tabGroups.TabGroup;
-  }> = [];
+  }> = useMemo(() => {
+    if (!tabs || !allTabGroups) return [];
 
-  const processedGroups = new Set<number>();
+    const getTabGroupInfo = (groupId?: number) => {
+      if (!groupId) return undefined;
+      return allTabGroups.find((group) => group.id === groupId);
+    };
 
-  // Process tabs in their browser order
-  for (const tab of tabs) {
-    if (tab.groupId && tab.groupId !== -1) {
-      // This tab is part of a group
-      if (!processedGroups.has(tab.groupId)) {
-        // First time we encounter this group, add the group header
-        const group =
-          tab.id !== undefined ? tabToGroupMap.get(tab.id) : undefined;
-        if (group) {
-          const groupInfo = getTabGroupInfo(tab.groupId);
-          const finalGroupInfo = groupInfo || {
-            id: tab.groupId,
-            title: `Tab Group ${tab.groupId}`,
-            color: "grey" as const,
-            collapsed: group.collapsed,
-            windowId: windowId,
-            shared: false,
-          };
+    const elements: typeof orderedElements = [];
+    const processedGroups = new Set<number>();
 
-          orderedElements.push({
-            type: "groupHeader",
-            group,
-            groupInfo: finalGroupInfo,
-          });
-          processedGroups.add(tab.groupId);
+    // Process tabs in their browser order
+    for (const tab of tabs) {
+      if (tab.groupId && tab.groupId !== -1) {
+        // This tab is part of a group
+        if (!processedGroups.has(tab.groupId)) {
+          // First time we encounter this group, add the group header
+          const group =
+            tab.id !== undefined ? tabToGroupMap.get(tab.id) : undefined;
+          if (group) {
+            const groupInfo = getTabGroupInfo(tab.groupId);
+            const finalGroupInfo = groupInfo || {
+              id: tab.groupId,
+              title: `Tab Group ${tab.groupId}`,
+              color: "grey" as const,
+              collapsed: group.collapsed,
+              windowId: windowId,
+              shared: false,
+            };
 
-          // Add all tabs in this group
-          for (const groupTab of group.tabs) {
-            orderedElements.push({
-              type: "groupedTab",
-              tab: groupTab,
+            elements.push({
+              type: "groupHeader",
               group,
               groupInfo: finalGroupInfo,
             });
+            processedGroups.add(tab.groupId);
+
+            // Add all tabs in this group
+            for (const groupTab of group.tabs) {
+              elements.push({
+                type: "groupedTab",
+                tab: groupTab,
+                group,
+                groupInfo: finalGroupInfo,
+              });
+            }
           }
         }
+        // Skip individual grouped tabs as they're added with their group
+      } else {
+        // Ungrouped tab
+        elements.push({
+          type: "tab",
+          tab,
+        });
       }
-      // Skip individual grouped tabs as they're added with their group
-    } else {
-      // Ungrouped tab
-      orderedElements.push({
-        type: "tab",
-        tab,
-      });
     }
-  }
+
+    return elements;
+  }, [tabs, allTabGroups, tabToGroupMap, windowId]);
 
   return (
     <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1">
@@ -192,9 +247,9 @@ export function WindowComponent({
                     showUrl={showUrls}
                     isSelected={
                       element.tab.id !== undefined &&
-                      selectedTabs.includes(element.tab.id)
+                      currentSelectedTabs.includes(element.tab.id)
                     }
-                    onSelectChange={onSelectTab}
+                    onSelectChange={handleSelectTab}
                     tabGroup={{
                       name: element.groupInfo?.title || "Untitled",
                       color: (element.groupInfo?.color as string)?.startsWith?.(
@@ -226,9 +281,9 @@ export function WindowComponent({
                   showUrl={showUrls}
                   isSelected={
                     element.tab.id !== undefined &&
-                    selectedTabs.includes(element.tab.id)
+                    currentSelectedTabs.includes(element.tab.id)
                   }
-                  onSelectChange={onSelectTab}
+                  onSelectChange={handleSelectTab}
                   tabGroup={undefined}
                 />
               );

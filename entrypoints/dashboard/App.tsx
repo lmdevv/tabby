@@ -15,7 +15,6 @@ export default function App() {
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(
     null,
   );
-  const [selectedTabs, setSelectedTabs] = useState<number[]>([]);
 
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
@@ -89,7 +88,6 @@ export default function App() {
   const handleDeleteTab = useCallback(async (id: number) => {
     try {
       await browser.tabs.remove(id);
-      setSelectedTabs((prev) => prev.filter((tabId) => tabId !== id));
     } catch (error) {
       console.error("Failed to close tab:", error);
     }
@@ -198,18 +196,11 @@ export default function App() {
         />
 
         {/* Quick Actions Panel */}
-        {selectedTabs.length > 0 && (
-          <QuickActionsPanel
-            selectedTabs={selectedTabs}
-            onSelectionCleared={() => setSelectedTabs([])}
-          />
-        )}
+        <QuickActionsPanel />
 
         <AppContent
           previewWorkspaceId={previewWorkspaceId}
           shownWorkspaceId={shownWorkspaceId || null}
-          selectedTabs={selectedTabs}
-          setSelectedTabs={setSelectedTabs}
           onTabClick={handleTabClick}
           onDeleteTab={handleDeleteTab}
           onMuteTab={handleMuteTab}

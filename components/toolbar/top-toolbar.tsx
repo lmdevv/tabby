@@ -33,22 +33,22 @@ import { db } from "@/lib/db";
 interface TopToolbarProps {
   workspaceId: number | null;
   windowId: number;
-  selectedTabs: number[];
-  onSelectTabs: (tabIds: number[]) => void;
 }
 
-export function TopToolbar({
-  workspaceId,
-  windowId,
-  selectedTabs,
-  onSelectTabs,
-}: TopToolbarProps) {
+export function TopToolbar({ workspaceId, windowId }: TopToolbarProps) {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   // Get UI state directly from global state
   const { data: showTagsData } = useAppState("showTags");
   const { data: showUrlsData } = useAppState("showUrls");
+  const { data: selectedTabsData } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
+
+  const selectedTabs = (selectedTabsData as number[]) ?? [];
+
+  const handleSelectTabs = (tabIds: number[]) => {
+    updateState("selectedTabs", tabIds);
+  };
 
   const showTags = (showTagsData ?? true) as boolean;
   const showUrls = (showUrlsData ?? true) as boolean;
@@ -74,7 +74,7 @@ export function TopToolbar({
     const allTabIds = tabs
       .map((tab) => tab.id)
       .filter((id): id is number => id !== undefined);
-    onSelectTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
+    handleSelectTabs(selectedTabs.length === allTabIds.length ? [] : allTabIds);
   };
 
   const handleRefresh = async (): Promise<void> => {

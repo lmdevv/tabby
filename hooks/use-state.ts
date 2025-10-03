@@ -24,7 +24,7 @@ export function useAppState<K extends StateKey>(key: K) {
         const state = await db.state.where("key").equals(key).first();
         if (!state) {
           // State doesn't exist, use default and update cache
-          stateCache.updateCachedItem(key, String(defaultValue));
+          stateCache.updateCachedItem(key, defaultValue);
           return { data: defaultValue, error: null };
         }
 
@@ -33,25 +33,32 @@ export function useAppState<K extends StateKey>(key: K) {
 
         if (typeof defaultValue === "boolean") {
           parsedValue = (state.value === "true") as StateValue<K>;
+        } else if (Array.isArray(defaultValue)) {
+          // Handle array types by parsing JSON
+          try {
+            parsedValue = JSON.parse(state.value as string) as StateValue<K>;
+          } catch {
+            parsedValue = defaultValue;
+          }
         } else {
           // String or union types (including numbers stored as strings)
           parsedValue = state.value as StateValue<K>;
         }
 
-        // Update cache with fresh DB value (store as string for consistency)
-        stateCache.updateCachedItem(key, String(parsedValue));
+        // Update cache with fresh DB value
+        stateCache.updateCachedItem(key, parsedValue);
 
         return { data: parsedValue, error: null };
       } catch (error) {
         return {
-          data: cachedValue ?? defaultValue,
+          data: (cachedValue ?? defaultValue) as StateValue<K>,
           error:
             error instanceof Error ? error : new Error(JSON.stringify(error)),
         };
       }
     },
     [key],
-    // Use cached value as default while DB loads
+    // Use cached value for instant loading
     cachedValue !== null
       ? { data: cachedValue, error: null }
       : { data: defaultValue, error: null },
@@ -60,7 +67,7 @@ export function useAppState<K extends StateKey>(key: K) {
   if (result === undefined) {
     // Still loading from DB, use cache or default
     return {
-      data: cachedValue ?? (defaultValue as StateValue<K>),
+      data: (cachedValue ?? defaultValue) as StateValue<K>,
       loading: true,
       error: null,
     };
@@ -78,10 +85,15 @@ export function useAppState<K extends StateKey>(key: K) {
  * Updates both DB and cache atomically
  */
 export function useUpdateState() {
-  const updateState = async (key: string, value: string | boolean | number) => {
+  const updateState = async <K extends StateKey>(
+    key: K,
+    value: StateValue<K>,
+  ) => {
     try {
       const now = Date.now();
-      const settingValue = String(value);
+      const settingValue = Array.isArray(value)
+        ? JSON.stringify(value)
+        : String(value);
 
       // Use a transaction to ensure atomicity
       await db.transaction("rw", db.state, async () => {

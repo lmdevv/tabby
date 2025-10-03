@@ -11,17 +11,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
 
-interface QuickActionsPanelProps {
-  selectedTabs: number[];
-  onSelectionCleared: () => void;
-}
+export function QuickActionsPanel() {
+  const { data: selectedTabsData } = useAppState("selectedTabs");
+  const { updateState } = useUpdateState();
 
-export function QuickActionsPanel({
-  selectedTabs,
-  onSelectionCleared,
-}: QuickActionsPanelProps) {
+  const currentSelectedTabs = (selectedTabsData as number[]) ?? [];
+
+  const handleSelectionCleared = () => {
+    updateState("selectedTabs", []);
+  };
+
   // Get active workspace
   const activeWorkspace = useLiveQuery(() =>
     db.workspaces.where("active").equals(1).first(),
@@ -29,16 +31,16 @@ export function QuickActionsPanel({
 
   // Get selected tab data
   const selectedTabData = useLiveQuery(() => {
-    if (!selectedTabs.length || !activeWorkspace) return [];
+    if (!currentSelectedTabs.length || !activeWorkspace) return [];
     return db.activeTabs
       .where("id")
-      .anyOf(selectedTabs)
+      .anyOf(currentSelectedTabs)
       .and((tab) => tab.workspaceId === activeWorkspace.id)
       .toArray();
-  }, [selectedTabs, activeWorkspace]);
+  }, [currentSelectedTabs, activeWorkspace]);
 
   // Calculate derived state
-  const selectedTabsCount = selectedTabs.length;
+  const currentSelectedTabsCount = currentSelectedTabs.length;
   const allMuted =
     selectedTabData?.every(
       (tab) => (tab as Browser.tabs.Tab).mutedInfo?.muted,
@@ -46,16 +48,16 @@ export function QuickActionsPanel({
   const allHighlighted =
     selectedTabData?.every((tab) => (tab as Browser.tabs.Tab).highlighted) ??
     false;
-  const canGroup = selectedTabs.length > 1; // Can group if more than one tab selected
+  const canGroup = currentSelectedTabs.length > 1; // Can group if more than one tab selected
   const canUngroup =
     selectedTabData?.some((tab) => tab.groupId !== undefined) ?? false;
 
   // Action handlers
   const handleCloseTabs = async () => {
-    if (!selectedTabs.length) return;
+    if (!currentSelectedTabs.length) return;
     try {
-      await browser.tabs.remove(selectedTabs);
-      onSelectionCleared();
+      await browser.tabs.remove(currentSelectedTabs);
+      handleSelectionCleared();
     } catch (error) {
       console.error("Failed to close tabs:", error);
     }
@@ -66,7 +68,7 @@ export function QuickActionsPanel({
     try {
       const newMutedState = !allMuted;
       await Promise.all(
-        selectedTabs.map((tabId) =>
+        currentSelectedTabs.map((tabId) =>
           browser.tabs.update(tabId, { muted: newMutedState }),
         ),
       );
@@ -80,7 +82,7 @@ export function QuickActionsPanel({
     try {
       const newHighlightedState = !allHighlighted;
       await Promise.all(
-        selectedTabs.map((tabId) =>
+        currentSelectedTabs.map((tabId) =>
           browser.tabs.update(tabId, { highlighted: newHighlightedState }),
         ),
       );
@@ -90,11 +92,11 @@ export function QuickActionsPanel({
   };
 
   const handleGroupTabs = async () => {
-    if (!selectedTabs.length || !activeWorkspace) return;
+    if (!currentSelectedTabs.length || !activeWorkspace) return;
     try {
       if (typeof browser?.tabs?.group === "function") {
         await browser.tabs.group({
-          tabIds: selectedTabs as [number, ...number[]],
+          tabIds: currentSelectedTabs as [number, ...number[]],
           createProperties: {
             windowId: selectedTabData?.[0]?.windowId,
           },
@@ -106,10 +108,12 @@ export function QuickActionsPanel({
   };
 
   const handleUngroupTabs = async () => {
-    if (!selectedTabs.length) return;
+    if (!currentSelectedTabs.length) return;
     try {
       if (typeof browser?.tabs?.ungroup === "function") {
-        await browser.tabs.ungroup(selectedTabs as [number, ...number[]]);
+        await browser.tabs.ungroup(
+          currentSelectedTabs as [number, ...number[]],
+        );
       }
     } catch (error) {
       console.error("Failed to ungroup tabs:", error);
@@ -129,7 +133,7 @@ export function QuickActionsPanel({
     }
   };
 
-  if (selectedTabsCount === 0) return null;
+  if (currentSelectedTabsCount === 0) return null;
 
   return (
     <div className="-translate-x-1/2 fixed bottom-8 left-1/2 z-10 rounded-full border border-border/40 bg-background/90 p-2 shadow-lg backdrop-blur-sm">
@@ -147,7 +151,7 @@ export function QuickActionsPanel({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Copy Link{selectedTabsCount > 1 ? "s" : ""}
+              Copy Link{currentSelectedTabsCount > 1 ? "s" : ""}
             </TooltipContent>
           </Tooltip>
 

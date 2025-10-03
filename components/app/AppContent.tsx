@@ -23,8 +23,6 @@ interface WindowGroupData {
 interface AppContentProps {
   previewWorkspaceId: number | null;
   shownWorkspaceId: number | null;
-  selectedTabs: number[];
-  setSelectedTabs: (tabs: number[] | ((prev: number[]) => number[])) => void;
   onTabClick: (tab: Tab) => Promise<void>;
   onDeleteTab: (id: number) => Promise<void>;
   onMuteTab: (id: number, muted: boolean) => Promise<void>;
@@ -39,8 +37,6 @@ interface AppContentProps {
 export function AppContent({
   previewWorkspaceId: _previewWorkspaceId,
   shownWorkspaceId,
-  selectedTabs,
-  setSelectedTabs,
   onTabClick,
   onDeleteTab,
   onMuteTab,
@@ -188,37 +184,24 @@ export function AppContent({
                               <TopToolbar
                                 workspaceId={shownWorkspaceId}
                                 windowId={windowGroup.windowId}
-                                selectedTabs={selectedTabs}
-                                onSelectTabs={setSelectedTabs}
                               />
                             </div>
-                            <WindowComponent
-                              windowId={windowGroup.windowId}
-                              tabs={windowGroup.tabs}
-                              tabGroups={windowGroup.tabGroups}
-                              allTabGroups={tabGroups || []}
-                              selectedTabs={selectedTabs}
-                              showTags={showTags}
-                              showUrls={showUrls}
-                              resourceGroups={enrichedResourceGroups}
-                              onTabClick={onTabClick}
-                              onDeleteTab={onDeleteTab}
-                              onPinTab={() => {}}
-                              onMuteTab={onMuteTab}
-                              onHighlightTab={onHighlightTab}
-                              onAddToResourceGroup={onAddToResourceGroup}
-                              onSelectTab={(id, selected) =>
-                                setSelectedTabs((prev) =>
-                                  selected
-                                    ? [...prev, id]
-                                    : prev.filter((tabId) => tabId !== id),
-                                )
-                              }
-                              onToggleGroupCollapse={onToggleGroupCollapse}
-                              onEditGroup={onEditGroup}
-                              onUngroupTabs={onUngroupTabs}
-                              onCloseTabs={onCloseTabs}
-                            />
+                            {shownWorkspaceId && (
+                              <WindowComponent
+                                windowId={windowGroup.windowId}
+                                workspaceId={shownWorkspaceId}
+                                onTabClick={onTabClick}
+                                onDeleteTab={onDeleteTab}
+                                onPinTab={() => {}}
+                                onMuteTab={onMuteTab}
+                                onHighlightTab={onHighlightTab}
+                                onAddToResourceGroup={onAddToResourceGroup}
+                                onToggleGroupCollapse={onToggleGroupCollapse}
+                                onEditGroup={onEditGroup}
+                                onUngroupTabs={onUngroupTabs}
+                                onCloseTabs={onCloseTabs}
+                              />
+                            )}
                           </div>
                         );
                       })}
@@ -269,37 +252,24 @@ export function AppContent({
                               <TopToolbar
                                 workspaceId={shownWorkspaceId}
                                 windowId={windowGroup.windowId}
-                                selectedTabs={selectedTabs}
-                                onSelectTabs={setSelectedTabs}
                               />
                             </div>
-                            <WindowComponent
-                              windowId={windowGroup.windowId}
-                              tabs={windowGroup.tabs}
-                              tabGroups={windowGroup.tabGroups}
-                              allTabGroups={tabGroups || []}
-                              selectedTabs={selectedTabs}
-                              showTags={showTags}
-                              showUrls={showUrls}
-                              resourceGroups={enrichedResourceGroups}
-                              onTabClick={onTabClick}
-                              onDeleteTab={onDeleteTab}
-                              onPinTab={() => {}}
-                              onMuteTab={onMuteTab}
-                              onHighlightTab={onHighlightTab}
-                              onAddToResourceGroup={onAddToResourceGroup}
-                              onSelectTab={(id, selected) =>
-                                setSelectedTabs((prev) =>
-                                  selected
-                                    ? [...prev, id]
-                                    : prev.filter((tabId) => tabId !== id),
-                                )
-                              }
-                              onToggleGroupCollapse={onToggleGroupCollapse}
-                              onEditGroup={onEditGroup}
-                              onUngroupTabs={onUngroupTabs}
-                              onCloseTabs={onCloseTabs}
-                            />
+                            {shownWorkspaceId && (
+                              <WindowComponent
+                                windowId={windowGroup.windowId}
+                                workspaceId={shownWorkspaceId}
+                                onTabClick={onTabClick}
+                                onDeleteTab={onDeleteTab}
+                                onPinTab={() => {}}
+                                onMuteTab={onMuteTab}
+                                onHighlightTab={onHighlightTab}
+                                onAddToResourceGroup={onAddToResourceGroup}
+                                onToggleGroupCollapse={onToggleGroupCollapse}
+                                onEditGroup={onEditGroup}
+                                onUngroupTabs={onUngroupTabs}
+                                onCloseTabs={onCloseTabs}
+                              />
+                            )}
                           </div>
                         );
                       })}
