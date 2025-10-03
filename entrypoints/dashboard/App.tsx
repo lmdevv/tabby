@@ -10,6 +10,7 @@ import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { db } from "@/lib/db";
+import { hexToBrowserColor } from "@/lib/tab-group-colors";
 
 export default function App() {
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(
@@ -87,6 +88,25 @@ export default function App() {
     }
   }, []);
 
+  const handleEditGroupConfirm = useCallback(
+    async (name: string, color: string) => {
+      if (groupDialog.groupId) {
+        try {
+          const browserColor = hexToBrowserColor(color);
+          await browser.runtime.sendMessage({
+            type: "updateTabGroup",
+            groupId: groupDialog.groupId,
+            title: name,
+            color: browserColor,
+          });
+        } catch (error) {
+          console.error("Failed to update tab group:", error);
+        }
+      }
+    },
+    [groupDialog.groupId],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -126,7 +146,7 @@ export default function App() {
       <GroupDialog
         open={groupDialog.open}
         onOpenChange={(open) => setGroupDialog({ ...groupDialog, open })}
-        onConfirm={() => {}} // TODO: implement edit group confirmation
+        onConfirm={handleEditGroupConfirm}
         groupId={groupDialog.groupId}
         title="Edit Tab Group"
         description="Edit the group name and color"
