@@ -1,8 +1,8 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Copy, Layers, Star, Volume2, VolumeX, X } from "lucide-react";
-import type { Browser } from "wxt/browser";
+import { Copy, Layers, X } from "lucide-react";
+import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,16 +41,7 @@ export function QuickActionsPanel() {
 
   // Calculate derived state
   const currentSelectedTabsCount = currentSelectedTabs.length;
-  const allMuted =
-    selectedTabData?.every(
-      (tab) => (tab as Browser.tabs.Tab).mutedInfo?.muted,
-    ) ?? false;
-  const allHighlighted =
-    selectedTabData?.every((tab) => (tab as Browser.tabs.Tab).highlighted) ??
-    false;
   const canGroup = currentSelectedTabs.length > 1; // Can group if more than one tab selected
-  const canUngroup =
-    selectedTabData?.some((tab) => tab.groupId !== undefined) ?? false;
 
   // Action handlers
   const handleCloseTabs = async () => {
@@ -60,34 +51,6 @@ export function QuickActionsPanel() {
       handleSelectionCleared();
     } catch (error) {
       console.error("Failed to close tabs:", error);
-    }
-  };
-
-  const handleToggleMuteTabs = async () => {
-    if (!selectedTabData?.length) return;
-    try {
-      const newMutedState = !allMuted;
-      await Promise.all(
-        currentSelectedTabs.map((tabId) =>
-          browser.tabs.update(tabId, { muted: newMutedState }),
-        ),
-      );
-    } catch (error) {
-      console.error("Failed to toggle mute tabs:", error);
-    }
-  };
-
-  const handleToggleHighlightTabs = async () => {
-    if (!selectedTabData?.length) return;
-    try {
-      const newHighlightedState = !allHighlighted;
-      await Promise.all(
-        currentSelectedTabs.map((tabId) =>
-          browser.tabs.update(tabId, { highlighted: newHighlightedState }),
-        ),
-      );
-    } catch (error) {
-      console.error("Failed to toggle highlight tabs:", error);
     }
   };
 
@@ -107,19 +70,6 @@ export function QuickActionsPanel() {
     }
   };
 
-  const handleUngroupTabs = async () => {
-    if (!currentSelectedTabs.length) return;
-    try {
-      if (typeof browser?.tabs?.ungroup === "function") {
-        await browser.tabs.ungroup(
-          currentSelectedTabs as [number, ...number[]],
-        );
-      }
-    } catch (error) {
-      console.error("Failed to ungroup tabs:", error);
-    }
-  };
-
   const handleCopyLinks = async () => {
     if (!selectedTabData?.length) return;
     try {
@@ -128,8 +78,12 @@ export function QuickActionsPanel() {
         .filter(Boolean)
         .join("\n");
       await navigator.clipboard.writeText(links);
+      toast.success(
+        `Link${currentSelectedTabsCount > 1 ? "s" : ""} copied to clipboard`,
+      );
     } catch (error) {
       console.error("Failed to copy links:", error);
+      toast.error("Failed to copy links");
     }
   };
 
@@ -169,44 +123,6 @@ export function QuickActionsPanel() {
             <TooltipContent>Close Tabs</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full"
-                onClick={handleToggleMuteTabs}
-              >
-                {allMuted ? (
-                  <Volume2 className="h-4 w-4" />
-                ) : (
-                  <VolumeX className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {allMuted ? "Unmute Tabs" : "Mute Tabs"}
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full"
-                onClick={handleToggleHighlightTabs}
-              >
-                <Star
-                  className={`h-4 w-4 ${allHighlighted ? "fill-yellow-500" : ""}`}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {allHighlighted ? "Unhighlight Tabs" : "Highlight Tabs"}
-            </TooltipContent>
-          </Tooltip>
-
           {canGroup && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -220,22 +136,6 @@ export function QuickActionsPanel() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Group Tabs</TooltipContent>
-            </Tooltip>
-          )}
-
-          {canUngroup && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={handleUngroupTabs}
-                >
-                  <Layers className="h-4 w-4 opacity-50" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Ungroup Tabs</TooltipContent>
             </Tooltip>
           )}
         </TooltipProvider>
