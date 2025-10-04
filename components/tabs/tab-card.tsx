@@ -5,6 +5,7 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useAppState } from "@/hooks/use-state";
 import {
   type CardData,
   formatDisplayUrl,
@@ -34,8 +35,8 @@ const DEFAULT_MAX_URL_CHARS = 80;
 
 export function TabCard({
   data,
-  showUrl = true,
-  showTags = true,
+  showUrl: showUrlProp,
+  showTags: showTagsProp,
   maxTitleLength = DEFAULT_MAX_TITLE_CHARS,
   maxUrlLength = DEFAULT_MAX_URL_CHARS,
   onClick,
@@ -48,6 +49,13 @@ export function TabCard({
   renderActions,
   renderContextMenu,
 }: TabCardProps) {
+  // Fetch global state for display preferences, use props as overrides
+  const { data: showTagsGlobal } = useAppState("showTags");
+  const { data: showUrlGlobal } = useAppState("showUrls");
+
+  const showUrl = showUrlProp ?? showUrlGlobal ?? true;
+  const showTags = showTagsProp ?? showTagsGlobal ?? true;
+
   const { title, url, favIconUrl, tags } = data;
 
   // Format and truncate display values
@@ -58,9 +66,8 @@ export function TabCard({
   const domainInitial = getDomainInitial(url);
 
   const content = (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       className={`flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3 ${className}`}
       style={style}
       onClick={onClick}
@@ -156,7 +163,7 @@ export function TabCard({
           {renderActions()}
         </div>
       )}
-    </div>
+    </button>
   );
 
   return (

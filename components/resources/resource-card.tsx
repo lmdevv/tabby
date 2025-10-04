@@ -1,18 +1,10 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { X } from "lucide-react";
 import { TabCard } from "@/components/tabs/tab-card";
-import { Button } from "@/components/ui/button";
 import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useAppState } from "@/hooks/use-state";
+import { DeleteAction } from "@/components/ui/delete-action";
 import { db } from "@/lib/db";
 import { normalizeUrl } from "@/lib/resource-helpers";
 
@@ -27,10 +19,6 @@ export function ResourceCard({
   onClick,
   onDelete = () => {},
 }: ResourceCardProps) {
-  // Get UI state from global state (must be called before any early returns)
-  const { data: showTags } = useAppState("showTags");
-  const { data: showUrl } = useAppState("showUrls");
-
   // Fetch resource data directly from database
   const resource = useLiveQuery(
     () => db.resources.get(resourceId),
@@ -66,8 +54,6 @@ export function ResourceCard({
   return (
     <TabCard
       data={cardData}
-      showUrl={showUrl ?? true}
-      showTags={showTags ?? true}
       onClick={onClick}
       ariaLabel={ariaLabel}
       afterTitle={
@@ -92,27 +78,10 @@ export function ResourceCard({
         ) : undefined
       }
       renderActions={() => (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 rounded-full opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(resource.id);
-                }}
-                title="Delete resource"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Delete resource</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <DeleteAction
+          onDelete={() => onDelete(resource.id)}
+          tooltip="Delete resource"
+        />
       )}
       renderContextMenu={() => (
         <>

@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Archive, BookmarkPlus, Star, Volume2, VolumeX, X } from "lucide-react";
+import { Archive, BookmarkPlus, Star, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import { DeleteAction } from "@/components/ui/delete-action";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +53,6 @@ export function ActiveTabCard({
 
   // Fetch global state
   const { data: showTags } = useAppState("showTags");
-  const { data: showUrl } = useAppState("showUrls");
   const { data: selectedTabs } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
 
@@ -134,7 +134,6 @@ export function ActiveTabCard({
   return (
     <TabCard
       data={cardData}
-      showUrl={showUrl}
       showTags={false} // Handle tags in afterInfo for custom layout
       onClick={onClick}
       ariaLabel={`Switch to tab: ${title || "Untitled"}`}
@@ -335,26 +334,16 @@ export function ActiveTabCard({
             </Tooltip>
           )}
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (tab.id !== undefined) {
-                    onDelete(tab.id);
-                  }
-                }}
-                title="Close tab"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Close tab</p>
-            </TooltipContent>
-          </Tooltip>
+          <DeleteAction
+            onDelete={() => {
+              if (tab.id !== undefined) {
+                onDelete(tab.id);
+              }
+            }}
+            tooltip="Close tab"
+            className="h-6 w-6"
+            size="sm"
+          />
         </TooltipProvider>
       )}
       renderContextMenu={() => (
