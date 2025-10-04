@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import type { Browser } from "wxt/browser";
-import { TabCard } from "@/components/tabs/tab-card";
+import { ActiveTabCard } from "@/components/tabs/active-tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -292,7 +292,7 @@ export function WindowComponent({
               return (
                 <div key={`tab-${element.tab.id}`} className="ml-6">
                   {element.tab.id !== undefined && (
-                    <TabCard
+                    <ActiveTabCard
                       tabId={element.tab.id}
                       groupId={element.group?.groupId}
                       onClick={() => element.tab && onTabClick(element.tab)}
@@ -307,7 +307,7 @@ export function WindowComponent({
             if (element.type === "tab" && element.tab) {
               return (
                 element.tab.id !== undefined && (
-                  <TabCard
+                  <ActiveTabCard
                     key={`tab-${element.tab.id}`}
                     tabId={element.tab.id}
                     onClick={() => element.tab && onTabClick(element.tab)}

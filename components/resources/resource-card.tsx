@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { X } from "lucide-react";
-import { BaseCard } from "@/components/ui/base-card";
+import { TabCard } from "@/components/tabs/tab-card";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenuItem,
@@ -13,7 +13,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState } from "@/hooks/use-state";
-import { truncateText } from "@/lib/card-helpers";
 import { db } from "@/lib/db";
 import { normalizeUrl } from "@/lib/resource-helpers";
 
@@ -55,20 +54,17 @@ export function ResourceCard({
       return normalizeUrl(activeTab.url) === normalizeUrl(resource.url);
     }) || false;
 
-  const displayTitle = title || "Untitled";
-  const displayDescription = description ? truncateText(description, 80) : null;
-
   const cardData = {
-    title: displayTitle,
+    title,
     url,
     favIconUrl,
     tags,
   };
 
-  const ariaLabel = `Open resource "${displayTitle}" ${isActive ? "(currently active)" : ""} ${url ? `from ${url}` : ""}`;
+  const ariaLabel = `Open resource "${title || "Untitled"}" ${isActive ? "(currently active)" : ""} ${url ? `from ${url}` : ""}`;
 
   return (
-    <BaseCard
+    <TabCard
       data={cardData}
       showUrl={showUrl ?? true}
       showTags={showTags ?? true}
@@ -84,12 +80,14 @@ export function ResourceCard({
         ) : undefined
       }
       afterInfo={
-        displayDescription ? (
+        description ? (
           <p
             className="mt-1 truncate text-muted-foreground text-xs"
             title={description}
           >
-            {displayDescription}
+            {description.length > 80
+              ? `${description.slice(0, 80)}…`
+              : description}
           </p>
         ) : undefined
       }
