@@ -15,8 +15,6 @@ import {
 
 interface TabCardProps {
   data: CardData;
-  showUrl?: boolean;
-  showTags?: boolean;
   maxTitleLength?: number;
   maxUrlLength?: number;
   onClick: () => void;
@@ -35,8 +33,6 @@ const DEFAULT_MAX_URL_CHARS = 80;
 
 export function TabCard({
   data,
-  showUrl: showUrlProp,
-  showTags: showTagsProp,
   maxTitleLength = DEFAULT_MAX_TITLE_CHARS,
   maxUrlLength = DEFAULT_MAX_URL_CHARS,
   onClick,
@@ -49,12 +45,12 @@ export function TabCard({
   renderActions,
   renderContextMenu,
 }: TabCardProps) {
-  // Fetch global state for display preferences, use props as overrides
+  // Fetch global state for display preferences
   const { data: showTagsGlobal } = useAppState("showTags");
   const { data: showUrlGlobal } = useAppState("showUrls");
 
-  const showUrl = showUrlProp ?? showUrlGlobal ?? true;
-  const showTags = showTagsProp ?? showTagsGlobal ?? true;
+  const showTags = showTagsGlobal ?? true;
+  const showUrl = showUrlGlobal ?? true;
 
   const { title, url, favIconUrl, tags } = data;
 

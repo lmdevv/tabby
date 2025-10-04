@@ -112,7 +112,7 @@ export function ActiveTabCard({
     title: displayTitleTruncated,
     url,
     favIconUrl,
-    tags: showTags ? tags : undefined,
+    tags: undefined, // Always undefined - tags are rendered in afterInfo for custom layout
   };
 
   const className = cn(
@@ -134,7 +134,6 @@ export function ActiveTabCard({
   return (
     <TabCard
       data={cardData}
-      showTags={false} // Handle tags in afterInfo for custom layout
       onClick={onClick}
       ariaLabel={`Switch to tab: ${title || "Untitled"}`}
       className={className}
