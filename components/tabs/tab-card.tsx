@@ -15,8 +15,6 @@ import {
 
 interface TabCardProps {
   data: CardData;
-  maxTitleLength?: number;
-  maxUrlLength?: number;
   onClick: () => void;
   ariaLabel: string;
   className?: string;
@@ -28,13 +26,8 @@ interface TabCardProps {
   renderContextMenu?: () => React.ReactNode;
 }
 
-const DEFAULT_MAX_TITLE_CHARS = 90;
-const DEFAULT_MAX_URL_CHARS = 80;
-
 export function TabCard({
   data,
-  maxTitleLength = DEFAULT_MAX_TITLE_CHARS,
-  maxUrlLength = DEFAULT_MAX_URL_CHARS,
   onClick,
   ariaLabel,
   className = "",
@@ -57,8 +50,8 @@ export function TabCard({
   // Format and truncate display values
   const displayTitle = title || "Untitled";
   const displayUrl = formatDisplayUrl(url);
-  const displayTitleTruncated = truncateText(displayTitle, maxTitleLength);
-  const displayUrlTruncated = truncateText(displayUrl, maxUrlLength);
+  const displayTitleTruncated = truncateText(displayTitle, 90);
+  const displayUrlTruncated = truncateText(displayUrl, 80);
   const domainInitial = getDomainInitial(url);
 
   const content = (
