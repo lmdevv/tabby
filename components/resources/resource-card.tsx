@@ -26,7 +26,10 @@ export function ResourceCard({
   );
 
   // Fetch active tabs to determine if this resource is currently active
-  const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
+  const activeTabs = useLiveQuery(
+    () => db.activeTabs.where("tabStatus").equals("active").toArray(),
+    [],
+  );
 
   // Don't render if resource data hasn't loaded yet
   if (!resource) {

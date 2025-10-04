@@ -23,6 +23,7 @@ import {
   createResourceGroup,
   deleteResource,
   deleteResourceGroup,
+  normalizeUrl,
   updateResourceGroup,
 } from "@/lib/resource-helpers";
 import type { Resource } from "@/lib/types";
@@ -30,7 +31,6 @@ import type { Resource } from "@/lib/types";
 export function ResourcesPanel() {
   // Fetch resource groups directly from database
   const resourceGroups = useLiveQuery(() => db.resourceGroups.toArray(), []);
-  const activeTabs = useLiveQuery(() => db.activeTabs.toArray(), []);
 
   // Handle edit for individual groups
   const handleGroupEdit = async (
@@ -85,27 +85,41 @@ export function ResourcesPanel() {
     type: "group",
   });
 
-  const handleResourceClick = (resource: Resource) => {
+  const handleResourceClick = async (resource: Resource) => {
     console.log(`Opening resource: ${resource.title}`);
 
-    // Check if there's already an active tab with the same URL
-    const existingTab = activeTabs?.find((tab) => tab.url === resource.url);
-    if (existingTab && existingTab.id !== undefined) {
-      try {
-        // Switch to existing tab instead of opening new one
-        browser.tabs.update(existingTab.id, { active: true });
-        if (existingTab.windowId) {
-          browser.windows.update(existingTab.windowId, { focused: true });
+    if (!resource.url) {
+      console.error("Resource has no URL");
+      return;
+    }
+
+    const resourceUrl = resource.url; // Local variable to avoid non-null assertions
+
+    try {
+      // Query current browser tabs directly to find one with matching URL
+      const allBrowserTabs = await browser.tabs.query({});
+      const existingBrowserTab = allBrowserTabs.find((tab) => {
+        if (!tab.url) return false;
+        return normalizeUrl(tab.url) === normalizeUrl(resourceUrl);
+      });
+
+      if (existingBrowserTab && existingBrowserTab.id !== undefined) {
+        // Switch to existing tab
+        await browser.tabs.update(existingBrowserTab.id, { active: true });
+        if (existingBrowserTab.windowId) {
+          await browser.windows.update(existingBrowserTab.windowId, {
+            focused: true,
+          });
         }
-        console.log(`Switched to existing tab: ${existingTab.title}`);
-      } catch (error) {
-        console.error("Failed to switch to existing tab:", error);
-        // Fallback to opening new tab
-        window.open(resource.url, "_blank");
+        console.log(`Switched to existing tab: ${existingBrowserTab.title}`);
+      } else {
+        // No existing tab found, open in new tab
+        await browser.tabs.create({ url: resourceUrl, active: true });
       }
-    } else {
-      // No existing tab found, open in new tab
-      window.open(resource.url, "_blank");
+    } catch (error) {
+      console.error("Failed to handle resource click:", error);
+      // Final fallback
+      window.open(resourceUrl, "_blank");
     }
   };
 
