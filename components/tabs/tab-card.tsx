@@ -30,7 +30,6 @@ export function TabCard({
   data,
   onClick,
   ariaLabel,
-  className = "",
   style,
   beforeFavicon,
   afterTitle,
@@ -57,7 +56,7 @@ export function TabCard({
   const content = (
     <button
       type="button"
-      className={`flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3 ${className}`}
+      className={`flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3`}
       style={style}
       onClick={onClick}
       onKeyDown={(e) => {

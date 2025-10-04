@@ -28,7 +28,6 @@ import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db";
 import { browserColorToHex, withAlpha } from "@/lib/tab-group-colors";
 import type { ResourceGroup, Tab } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { TabCard } from "./tab-card";
 
 interface ActiveTabCardProps {
@@ -115,15 +114,6 @@ export function ActiveTabCard({
     tags: undefined, // Always undefined - tags are rendered in afterInfo for custom layout
   };
 
-  const className = cn(
-    "flex h-auto w-full items-center justify-start rounded-md border border-transparent p-2 text-left",
-    "[max-width:min(1200px,92vw)]",
-    "transition-all duration-200 hover:border-accent",
-    "group relative cursor-pointer select-none",
-    "bg-transparent hover:bg-accent/50", // Button-like styling
-    tabGroup ? "border-l-4" : "",
-  );
-
   const style = tabGroup
     ? {
         borderLeftColor: tabGroup.color,
@@ -136,7 +126,6 @@ export function ActiveTabCard({
       data={cardData}
       onClick={onClick}
       ariaLabel={`Switch to tab: ${title || "Untitled"}`}
-      className={className}
       style={style}
       beforeFavicon={
         <>
