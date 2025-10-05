@@ -20,14 +20,12 @@ interface WindowGroupData {
 }
 
 interface AppContentProps {
-  previewWorkspaceId: number | null;
   shownWorkspaceId: number | null;
   onTabClick: (tab: Tab) => Promise<void>;
   onEditGroup: (groupId: number) => Promise<void>;
 }
 
 export function AppContent({
-  previewWorkspaceId: _previewWorkspaceId,
   shownWorkspaceId,
   onTabClick,
   onEditGroup,
