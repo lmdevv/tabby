@@ -26,14 +26,9 @@ import {
   moveTabInBrowser,
   ungroupTabIfNeeded,
 } from "@/lib/tab-helpers";
+import { createTabKeyboardHandler } from "@/lib/tab-keyboard-navigation";
 
 import type { Tab } from "@/lib/types";
-
-interface TabGroupInWindow {
-  groupId: number;
-  tabs: Tab[];
-  collapsed: boolean;
-}
 
 interface WindowComponentProps {
   windowId: number;
@@ -51,7 +46,6 @@ export function WindowComponent({
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
   const [clipboardTabId, setClipboardTabId] = useState<number | null>(null);
-
   // Set up sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -96,6 +90,7 @@ export function WindowComponent({
     [workspaceId],
   );
 
+  // Use custom hooks
   // Action handlers
   const handleDeleteTab = useCallback(async (id: number) => {
     try {
@@ -113,75 +108,80 @@ export function WindowComponent({
     }
   }, []);
 
-  const handleAddToResourceGroup = async (tab: Tab, groupId: number) => {
-    try {
-      // Check if resource already exists
-      if (!tab.url) {
-        throw new Error("URL is required to create a resource");
-      }
+  const handleAddToResourceGroup = useCallback(
+    async (tab: Tab, groupId: number) => {
+      try {
+        // Check if resource already exists
+        if (!tab.url) {
+          throw new Error("URL is required to create a resource");
+        }
 
-      const normalizedTabUrl = normalizeUrl(tab.url);
-      const normalizedTabTitle = (tab.title || "Untitled").toLowerCase().trim();
-
-      // Find existing resource by title + URL match
-      const allResources = await db.resources.toArray();
-      const existingResource = allResources.find((resource) => {
-        if (!resource.url) return false;
-        const normalizedResourceUrl = normalizeUrl(resource.url);
-        const normalizedResourceTitle = (resource.title || "Untitled")
+        const normalizedTabUrl = normalizeUrl(tab.url);
+        const normalizedTabTitle = (tab.title || "Untitled")
           .toLowerCase()
           .trim();
 
-        return (
-          normalizedResourceUrl === normalizedTabUrl &&
-          normalizedResourceTitle === normalizedTabTitle
-        );
-      });
+        // Find existing resource by title + URL match
+        const allResources = await db.resources.toArray();
+        const existingResource = allResources.find((resource) => {
+          if (!resource.url) return false;
+          const normalizedResourceUrl = normalizeUrl(resource.url);
+          const normalizedResourceTitle = (resource.title || "Untitled")
+            .toLowerCase()
+            .trim();
 
-      if (existingResource) {
-        console.log(
-          "Resource already exists, adding to group:",
-          existingResource.id,
-        );
-        // Resource already exists, just add it to the group if not already there
-        const group = await db.resourceGroups.get(groupId);
-        if (!group) {
-          throw new Error(`Resource group with ID ${groupId} not found`);
-        }
-
-        if (group.resourceIds.includes(existingResource.id.toString())) {
-          console.log("Resource already in group");
-          return;
-        }
-
-        await db.resourceGroups.update(groupId, {
-          resourceIds: [...group.resourceIds, existingResource.id.toString()],
-        });
-      } else {
-        // Create new resource and add to group
-        const newResourceId = await db.resources.add({
-          title: tab.title || "Untitled",
-          url: tab.url,
-          favIconUrl: tab.favIconUrl,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+          return (
+            normalizedResourceUrl === normalizedTabUrl &&
+            normalizedResourceTitle === normalizedTabTitle
+          );
         });
 
-        const group = await db.resourceGroups.get(groupId);
-        if (!group) {
-          throw new Error(`Resource group with ID ${groupId} not found`);
-        }
+        if (existingResource) {
+          console.log(
+            "Resource already exists, adding to group:",
+            existingResource.id,
+          );
+          // Resource already exists, just add it to the group if not already there
+          const group = await db.resourceGroups.get(groupId);
+          if (!group) {
+            throw new Error(`Resource group with ID ${groupId} not found`);
+          }
 
-        await db.resourceGroups.update(groupId, {
-          resourceIds: [...group.resourceIds, newResourceId.toString()],
-        });
+          if (group.resourceIds.includes(existingResource.id.toString())) {
+            console.log("Resource already in group");
+            return;
+          }
+
+          await db.resourceGroups.update(groupId, {
+            resourceIds: [...group.resourceIds, existingResource.id.toString()],
+          });
+        } else {
+          // Create new resource and add to group
+          const newResourceId = await db.resources.add({
+            title: tab.title || "Untitled",
+            url: tab.url,
+            favIconUrl: tab.favIconUrl,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+
+          const group = await db.resourceGroups.get(groupId);
+          if (!group) {
+            throw new Error(`Resource group with ID ${groupId} not found`);
+          }
+
+          await db.resourceGroups.update(groupId, {
+            resourceIds: [...group.resourceIds, newResourceId.toString()],
+          });
+        }
+      } catch (error) {
+        console.error("Failed to add tab to resource group:", error);
       }
-    } catch (error) {
-      console.error("Failed to add tab to resource group:", error);
-    }
-  };
+    },
+    [],
+  );
 
-  const handleUngroupTabs = async (tabIds: number[]) => {
+  const handleUngroupTabs = useCallback(async (tabIds: number[]) => {
     try {
       if (typeof browser?.tabs?.ungroup === "function") {
         await browser.tabs.ungroup(tabIds as [number, ...number[]]);
@@ -189,21 +189,45 @@ export function WindowComponent({
     } catch (error) {
       console.error("Failed to ungroup tabs:", error);
     }
-  };
+  }, []);
 
-  const handleCloseTabs = async (tabIds: number[]) => {
+  const handleCloseTabs = useCallback(async (tabIds: number[]) => {
     try {
       await browser.tabs.remove(tabIds);
     } catch (error) {
       console.error("Failed to close tabs:", error);
     }
-  };
+  }, []);
+
+  // Helper function to move tab to exact position of another tab
+  const moveTabToPosition = useCallback(
+    async (tabIdToMove: number, targetTabId: number) => {
+      if (!tabs) return;
+
+      const tabToMove = findTabById(tabs, tabIdToMove.toString());
+      const targetTab = findTabById(tabs, targetTabId.toString());
+
+      if (!tabToMove?.id || !targetTab) return;
+
+      const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
+      if (targetIndex === -1) return;
+
+      const newIndex = targetIndex;
+
+      await ungroupTabIfNeeded(tabToMove);
+      await moveTabInBrowser(tabToMove.id, newIndex);
+    },
+    [tabs],
+  );
 
   // Create tabGroups from tabs and allTabGroups
-  const tabGroups: TabGroupInWindow[] = useMemo(() => {
+  const tabGroups = useMemo(() => {
     if (!tabs || !allTabGroups) return [];
 
-    const groupsMap = new Map<number, TabGroupInWindow>();
+    const groupsMap = new Map<
+      number,
+      { groupId: number; tabs: Tab[]; collapsed: boolean }
+    >();
 
     // Group tabs by their groupId
     for (const tab of tabs) {
@@ -225,7 +249,10 @@ export function WindowComponent({
 
   // Create a map of which tabs belong to which group for quick lookup
   const tabToGroupMap = useMemo(() => {
-    const map = new Map<number, TabGroupInWindow>();
+    const map = new Map<
+      number,
+      { groupId: number; tabs: Tab[]; collapsed: boolean }
+    >();
     if (!tabGroups) return map;
 
     for (const group of tabGroups) {
@@ -239,12 +266,7 @@ export function WindowComponent({
   }, [tabGroups]);
 
   // Create an ordered list of elements (tabs or group headers) as they should appear
-  const orderedElements: Array<{
-    type: "tab" | "groupHeader" | "groupedTab";
-    tab?: Tab;
-    group?: TabGroupInWindow;
-    groupInfo?: Browser.tabGroups.TabGroup;
-  }> = useMemo(() => {
+  const orderedElements = useMemo(() => {
     if (!tabs || !allTabGroups) return [];
 
     const getTabGroupInfo = (groupId?: number) => {
@@ -252,7 +274,12 @@ export function WindowComponent({
       return allTabGroups.find((group) => group.id === groupId);
     };
 
-    const elements: typeof orderedElements = [];
+    const elements: Array<{
+      type: "tab" | "groupHeader" | "groupedTab";
+      tab?: Tab;
+      group?: { groupId: number; tabs: Tab[]; collapsed: boolean };
+      groupInfo?: Browser.tabGroups.TabGroup;
+    }> = [];
     const processedGroups = new Set<number>();
 
     // Process tabs in their browser order
@@ -327,164 +354,18 @@ export function WindowComponent({
       .map((element) => element.tab);
   }, [orderedElements]);
 
-  // Helper function to move tab to exact position of another tab
-  const moveTabToPosition = useCallback(
-    async (tabIdToMove: number, targetTabId: number) => {
-      if (!tabs) return;
-
-      const tabToMove = findTabById(tabs, tabIdToMove.toString());
-      const targetTab = findTabById(tabs, targetTabId.toString());
-
-      if (!tabToMove?.id || !targetTab) return;
-
-      const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
-      if (targetIndex === -1) return;
-
-      const newIndex = targetIndex;
-
-      await ungroupTabIfNeeded(tabToMove);
-      await moveTabInBrowser(tabToMove.id, newIndex);
-    },
-    [tabs],
-  );
-
   // Keyboard navigation and movement
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if we have tabs and no input is focused
-      if (
-        !navigableTabs.length ||
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      const currentIndex = focusedTabId
-        ? navigableTabs.findIndex((tab) => tab.id === focusedTabId)
-        : -1;
-
-      switch (e.key) {
-        case "h": // Left
-        case "ArrowLeft":
-          e.preventDefault();
-          if (currentIndex > 0 && navigableTabs[currentIndex - 1]?.id) {
-            setFocusedTabId(navigableTabs[currentIndex - 1].id);
-          }
-          break;
-        case "j": // Down
-        case "ArrowDown":
-          e.preventDefault();
-          if (
-            currentIndex < navigableTabs.length - 1 &&
-            navigableTabs[currentIndex + 1]?.id
-          ) {
-            setFocusedTabId(navigableTabs[currentIndex + 1].id);
-          }
-          break;
-        case "k": // Up
-        case "ArrowUp":
-          e.preventDefault();
-          if (currentIndex > 0 && navigableTabs[currentIndex - 1]?.id) {
-            setFocusedTabId(navigableTabs[currentIndex - 1].id);
-          } else if (navigableTabs.length > 0 && navigableTabs[0]?.id) {
-            setFocusedTabId(navigableTabs[0].id);
-          }
-          break;
-        case "l": // Right
-        case "ArrowRight":
-          e.preventDefault();
-          if (
-            currentIndex < navigableTabs.length - 1 &&
-            navigableTabs[currentIndex + 1]?.id
-          ) {
-            setFocusedTabId(navigableTabs[currentIndex + 1].id);
-          }
-          break;
-        case "d": // dd for cut (vim style)
-          if (e.key === "d" && !e.repeat) {
-            // Wait for second 'd'
-            let timeout: NodeJS.Timeout;
-            const secondDHandler = (e2: KeyboardEvent) => {
-              if (e2.key === "d") {
-                e2.preventDefault();
-                if (focusedTabId) {
-                  const tabToCut = navigableTabs.find(
-                    (tab) => tab.id === focusedTabId,
-                  );
-                  if (tabToCut) {
-                    setClipboardTabId(focusedTabId);
-                    // Move to next tab or previous
-                    const nextIndex = Math.min(
-                      currentIndex + 1,
-                      navigableTabs.length - 1,
-                    );
-                    setFocusedTabId(navigableTabs[nextIndex]?.id || null);
-                  }
-                }
-              }
-              document.removeEventListener("keydown", secondDHandler);
-              clearTimeout(timeout);
-            };
-
-            timeout = setTimeout(() => {
-              document.removeEventListener("keydown", secondDHandler);
-            }, 500);
-
-            document.addEventListener("keydown", secondDHandler);
-          }
-          break;
-        case "p": // p for paste (move tab to focused position)
-          e.preventDefault();
-          if (
-            clipboardTabId &&
-            focusedTabId &&
-            clipboardTabId !== focusedTabId
-          ) {
-            // Move clipboard tab to focused position
-            moveTabToPosition(clipboardTabId, focusedTabId);
-            setClipboardTabId(null);
-          }
-          break;
-        case "x": // x for delete focused tab
-          e.preventDefault();
-          if (focusedTabId) {
-            // Calculate next focus position before deletion
-            const currentIndex = navigableTabs.findIndex(
-              (tab) => tab.id === focusedTabId,
-            );
-            let nextFocusId = null;
-
-            if (navigableTabs.length > 1) {
-              if (currentIndex === navigableTabs.length - 1) {
-                // Last tab, move to previous
-                nextFocusId = navigableTabs[currentIndex - 1]?.id || null;
-              } else {
-                // Not last tab, move to next
-                nextFocusId = navigableTabs[currentIndex + 1]?.id || null;
-              }
-            }
-            // If only one tab, focus will be cleared naturally when tabs update
-
-            // Delete the tab
-            handleDeleteTab(focusedTabId);
-
-            // Set new focus immediately for better UX
-            setFocusedTabId(nextFocusId);
-          }
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (focusedTabId) {
-            handleActivateTab(focusedTabId);
-          }
-          break;
-        case "Escape":
-          setFocusedTabId(null);
-          setClipboardTabId(null);
-          break;
-      }
-    };
+    const handleKeyDown = createTabKeyboardHandler({
+      navigableTabs,
+      moveTabToPosition,
+      handleDeleteTab,
+      handleActivateTab,
+      focusedTabId,
+      clipboardTabId,
+      setFocusedTabId,
+      setClipboardTabId,
+    });
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
