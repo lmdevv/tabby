@@ -48,7 +48,7 @@ export function SortableActiveTabCard({
     <div
       {...attributes}
       {...listeners}
-      className="flex items-center justify-center w-6 h-full cursor-grab text-muted-foreground hover:text-foreground"
+      className="text-muted-foreground hover:text-foreground"
     >
       <GripVertical className="h-4 w-4" />
     </div>
