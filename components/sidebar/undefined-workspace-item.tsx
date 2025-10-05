@@ -24,7 +24,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 
 interface UndefinedWorkspaceItemProps {
   tabsCount: number;

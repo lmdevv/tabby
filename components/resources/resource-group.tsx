@@ -10,9 +10,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { db } from "@/lib/db";
-import type { Resource } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { db } from "@/lib/db/db";
+import { cn } from "@/lib/helpers/utils";
+import type { Resource } from "@/lib/types/types";
 
 interface ResourceGroupProps {
   groupId: number;

@@ -5,8 +5,8 @@ import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { db } from "@/lib/db";
-import type { Tab } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { Tab } from "@/lib/types/types";
 
 interface WindowGroupData {
   windowId: number;

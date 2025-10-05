@@ -1,5 +1,5 @@
 import { browser } from "wxt/browser";
-import type { Tab } from "@/lib/types";
+import type { Tab } from "@/lib/types/types";
 
 /**
  * Finds a tab by its string ID in an array of tabs

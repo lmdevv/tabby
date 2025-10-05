@@ -20,8 +20,8 @@ import {
   setupTabGroupListeners,
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
-import { db } from "@/lib/db";
-import type { RuntimeMessage, Workspace } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { RuntimeMessage, Workspace } from "@/lib/types/types";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;

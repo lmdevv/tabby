@@ -18,15 +18,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 import {
   createResourceGroup,
   deleteResource,
   deleteResourceGroup,
   normalizeUrl,
   updateResourceGroup,
-} from "@/lib/resource-helpers";
-import type { Resource } from "@/lib/types";
+} from "@/lib/helpers/resource-helpers";
+import type { Resource } from "@/lib/types/types";
 
 export function ResourcesPanel() {
   // Fetch resource groups directly from database

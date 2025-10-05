@@ -9,8 +9,8 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-import { db } from "@/lib/db";
-import { hexToBrowserColor } from "@/lib/tab-group-colors";
+import { db } from "@/lib/db/db";
+import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
 
 export default function App() {
   const [previewWorkspaceId, setPreviewWorkspaceId] = useState<number | null>(

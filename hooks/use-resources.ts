@@ -1,8 +1,8 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
-import { db } from "@/lib/db";
-import { createResource, normalizeUrl } from "@/lib/resource-helpers";
-import type { Resource, ResourceGroup, Tab } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import { createResource, normalizeUrl } from "@/lib/helpers/resource-helpers";
+import type { Resource, ResourceGroup, Tab } from "@/lib/types/types";
 
 export interface EnrichedResourceGroup extends ResourceGroup {
   resources: Resource[];

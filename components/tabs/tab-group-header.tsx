@@ -13,7 +13,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 
 const isDarkFromTheme = (theme: "light" | "dark" | "system"): boolean => {
   if (theme === "dark") return true;
@@ -27,7 +27,7 @@ const isDarkFromTheme = (theme: "light" | "dark" | "system"): boolean => {
   return false;
 };
 
-import { browserColorToHex, withAlpha } from "@/lib/tab-group-colors";
+import { browserColorToHex, withAlpha } from "@/lib/ui/tab-group-colors";
 
 interface TabGroupHeaderProps {
   groupId: number;

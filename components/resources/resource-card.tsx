@@ -5,8 +5,8 @@ import {
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { DeleteAction } from "@/components/ui/delete-action";
-import { db } from "@/lib/db";
-import { normalizeUrl } from "@/lib/resource-helpers";
+import { db } from "@/lib/db/db";
+import { normalizeUrl } from "@/lib/helpers/resource-helpers";
 
 interface ResourceCardProps {
   resourceId: number;

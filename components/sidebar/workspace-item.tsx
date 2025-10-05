@@ -13,8 +13,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { db } from "@/lib/db";
-import type { Workspace } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { Workspace } from "@/lib/types/types";
 
 interface WorkspaceItemProps {
   workspace: Workspace;

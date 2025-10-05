@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 
 export function QuickActionsPanel() {
   const { data: selectedTabsData } = useAppState("selectedTabs");

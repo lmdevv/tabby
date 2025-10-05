@@ -10,7 +10,7 @@ import type {
   Workspace,
   WorkspaceGroup,
   WorkspaceSnapshot,
-} from "@/lib/types";
+} from "@/lib/types/types";
 
 class TabManagerDB extends Dexie {
   workspaceGroups!: EntityTable<WorkspaceGroup, "id">;

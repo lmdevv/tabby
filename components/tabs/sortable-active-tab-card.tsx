@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-import type { Tab } from "@/lib/types";
+import type { Tab } from "@/lib/types/types";
 import { ActiveTabCard } from "./active-tab-card";
 
 interface SortableActiveTabCardProps {

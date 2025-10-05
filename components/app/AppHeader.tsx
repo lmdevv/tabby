@@ -20,8 +20,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import { type CachedWorkspaceData, workspaceCache } from "@/lib/cache-manager";
-import { db } from "@/lib/db";
+import {
+  type CachedWorkspaceData,
+  workspaceCache,
+} from "@/lib/db/cache-manager";
+import { db } from "@/lib/db/db";
 
 interface AppHeaderProps {
   previewWorkspaceId: number | null;

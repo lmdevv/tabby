@@ -80,7 +80,7 @@ export class StateCacheManager extends CacheManager<
 // Singleton instance for state
 export const stateCache = new StateCacheManager();
 
-import type { Workspace, WorkspaceGroup } from "./types";
+import type { Workspace, WorkspaceGroup } from "../types/types";
 
 /**
  * Specialized cache manager for workspace breadcrumb data

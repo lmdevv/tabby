@@ -22,8 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { db } from "@/lib/db";
-import type { Workspace } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { Workspace } from "@/lib/types/types";
 
 interface CreateWorkspaceProps {
   open?: boolean;

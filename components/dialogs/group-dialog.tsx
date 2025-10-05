@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 import {
   browserColorToHex,
   getDefaultTabGroupColor,
   TAB_GROUP_COLORS,
-} from "@/lib/tab-group-colors";
+} from "@/lib/ui/tab-group-colors";
 
 interface GroupDialogProps {
   open: boolean;

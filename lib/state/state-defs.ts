@@ -3,7 +3,7 @@
  * This file defines the type-safe state schema with their default values
  */
 
-import type { Theme } from "./types";
+import type { Theme } from "../types/types";
 
 // Define the state definition map
 export const stateDefs = {

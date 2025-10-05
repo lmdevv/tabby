@@ -1,4 +1,4 @@
-import type { Tab } from "@/lib/types";
+import type { Tab } from "@/lib/types/types";
 
 export interface TabKeyboardNavigationProps {
   navigableTabs: (Tab & { id: number })[];

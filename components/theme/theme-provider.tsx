@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import type { Theme } from "@/lib/types";
+import type { Theme } from "@/lib/types/types";
 
 type ThemeProviderProps = {
   children: React.ReactNode;

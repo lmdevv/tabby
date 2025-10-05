@@ -1,11 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { stateCache } from "@/lib/cache-manager";
-import { db } from "@/lib/db";
+import { stateCache } from "@/lib/db/cache-manager";
+import { db } from "@/lib/db/db";
 import {
   getDefaultValue,
   type StateKey,
   type StateValue,
-} from "@/lib/state-defs";
+} from "@/lib/state/state-defs";
 
 /**
  * Strongly typed hook to get a specific state value

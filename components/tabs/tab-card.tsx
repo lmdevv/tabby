@@ -11,7 +11,7 @@ import {
   formatDisplayUrl,
   getDomainInitial,
   truncateText,
-} from "@/lib/card-helpers";
+} from "@/lib/helpers/card-helpers";
 
 interface TabCardProps {
   data: CardData;

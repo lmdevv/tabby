@@ -19,16 +19,16 @@ import { browser } from "wxt/browser";
 import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { db } from "@/lib/db";
-import { normalizeUrl } from "@/lib/resource-helpers";
+import { db } from "@/lib/db/db";
+import { normalizeUrl } from "@/lib/helpers/resource-helpers";
 import {
   findTabById,
   moveTabInBrowser,
   ungroupTabIfNeeded,
-} from "@/lib/tab-helpers";
-import { createTabKeyboardHandler } from "@/lib/tab-keyboard-navigation";
+} from "@/lib/helpers/tab-helpers";
+import { createTabKeyboardHandler } from "@/lib/helpers/tab-keyboard-navigation";
 
-import type { Tab } from "@/lib/types";
+import type { Tab } from "@/lib/types/types";
 
 interface WindowComponentProps {
   windowId: number;

@@ -6,13 +6,13 @@
 // Diff-based snapshot restoration
 import { browser } from "wxt/browser";
 import { isDashboardTab } from "@/entrypoints/background/helpers";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/db";
 import type {
   SnapshotTab,
   SnapshotTabGroup,
   Workspace,
   WorkspaceSnapshot,
-} from "@/lib/types";
+} from "@/lib/types/types";
 
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const SNAPSHOT_RETENTION = 50; // per workspace

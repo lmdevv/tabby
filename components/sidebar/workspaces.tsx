@@ -16,9 +16,9 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from "@/components/ui/sidebar";
-import { sidebarCache } from "@/lib/cache-manager";
-import { db } from "@/lib/db";
-import type { Workspace, WorkspaceGroup } from "@/lib/types";
+import { sidebarCache } from "@/lib/db/cache-manager";
+import { db } from "@/lib/db/db";
+import type { Workspace, WorkspaceGroup } from "@/lib/types/types";
 
 interface WorkspacesProps {
   previewWorkspaceId: number | null;

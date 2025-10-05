@@ -3,8 +3,8 @@ import {
   cleanupEmptyTabGroup,
   shiftIndices,
 } from "@/entrypoints/background/helpers";
-import { db } from "@/lib/db";
-import type { Tab, Workspace } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { Tab, Workspace } from "@/lib/types/types";
 
 // Helper function to validate and correct tab state with current browser state
 async function validateTabState(tabId: number, dbTab: Tab): Promise<Tab> {

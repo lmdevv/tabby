@@ -1,5 +1,5 @@
-import { db } from "@/lib/db";
-import type { Resource, ResourceGroup } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { Resource, ResourceGroup } from "@/lib/types/types";
 
 /**
  * Normalize URL for consistent comparison

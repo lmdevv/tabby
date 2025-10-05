@@ -25,9 +25,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useResourceGroups, useTabIsResource } from "@/hooks/use-resources";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import { db } from "@/lib/db";
-import { browserColorToHex, withAlpha } from "@/lib/tab-group-colors";
-import type { ResourceGroup, Tab } from "@/lib/types";
+import { db } from "@/lib/db/db";
+import type { ResourceGroup, Tab } from "@/lib/types/types";
+import { browserColorToHex, withAlpha } from "@/lib/ui/tab-group-colors";
 import { TabCard } from "./tab-card";
 
 interface ActiveTabCardProps {
