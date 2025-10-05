@@ -105,6 +105,14 @@ export function WindowComponent({
     }
   }, []);
 
+  const handleActivateTab = useCallback(async (id: number) => {
+    try {
+      await browser.tabs.update(id, { active: true });
+    } catch (error) {
+      console.error("Failed to activate tab:", error);
+    }
+  }, []);
+
   const handleAddToResourceGroup = async (tab: Tab, groupId: number) => {
     try {
       // Check if resource already exists
@@ -500,6 +508,12 @@ export function WindowComponent({
             setFocusedTabId(nextFocusId);
           }
           break;
+        case "Enter":
+          e.preventDefault();
+          if (focusedTabId) {
+            handleActivateTab(focusedTabId);
+          }
+          break;
         case "Escape":
           setFocusedTabId(null);
           setClipboardTabId(null);
@@ -516,6 +530,7 @@ export function WindowComponent({
     moveTabAfterPosition,
     moveTabBeforePosition,
     handleDeleteTab,
+    handleActivateTab,
   ]);
 
   return (
