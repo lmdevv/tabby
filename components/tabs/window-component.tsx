@@ -21,6 +21,10 @@ import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
+import {
+  copyMultipleTabLinks,
+  copySingleTabLink,
+} from "@/lib/helpers/copy-helpers";
 import { normalizeUrl } from "@/lib/helpers/resource-helpers";
 import {
   findTabById,
@@ -371,6 +375,25 @@ export function WindowComponent({
     [updateState],
   );
 
+  // Copy functions for keyboard shortcuts
+  const copySingleLink = useCallback(
+    async (tabId: number) => {
+      const tab = navigableTabs.find((t) => t.id === tabId);
+      if (tab) {
+        await copySingleTabLink(tab);
+      }
+    },
+    [navigableTabs],
+  );
+
+  const copyMultipleLinks = useCallback(
+    async (tabIds: number[]) => {
+      const tabs = navigableTabs.filter((t) => tabIds.includes(t.id));
+      await copyMultipleTabLinks(tabs);
+    },
+    [navigableTabs],
+  );
+
   // Keyboard navigation and movement
   useEffect(() => {
     const handleKeyDown = createTabKeyboardHandler({
@@ -388,6 +411,8 @@ export function WindowComponent({
       setVisualStartTabId,
       selectedTabs: selectedTabs ?? [],
       updateSelectedTabs: updateSelectedTabsState,
+      copySingleLink,
+      copyMultipleLinks,
     });
 
     document.addEventListener("keydown", handleKeyDown);
@@ -403,6 +428,8 @@ export function WindowComponent({
     visualStartTabId,
     selectedTabs,
     updateSelectedTabsState,
+    copySingleLink,
+    copyMultipleLinks,
   ]);
 
   return (

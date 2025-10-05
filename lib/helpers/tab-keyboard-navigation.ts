@@ -20,6 +20,9 @@ export interface TabKeyboardNavigationProps {
   // Selection management
   selectedTabs: number[];
   updateSelectedTabs: (tabs: number[]) => void;
+  // Copy functions
+  copySingleLink: (tabId: number) => Promise<void>;
+  copyMultipleLinks: (tabIds: number[]) => Promise<void>;
 }
 
 export function createTabKeyboardHandler({
@@ -37,6 +40,8 @@ export function createTabKeyboardHandler({
   setVisualStartTabId,
   selectedTabs,
   updateSelectedTabs,
+  copySingleLink,
+  copyMultipleLinks,
 }: TabKeyboardNavigationProps) {
   // Helper function to update visual selection range
   const updateVisualSelection = (startId: number, endId: number) => {
@@ -195,6 +200,32 @@ export function createTabKeyboardHandler({
 
           // Set new focus immediately for better UX
           setFocusedTabId(nextFocusId);
+        }
+        break;
+      case "y": // y for copy links, yy for single link
+        if (e.key === "y" && !e.repeat) {
+          // Wait for second 'y'
+          let timeout: NodeJS.Timeout;
+          const secondYHandler = (e2: KeyboardEvent) => {
+            if (e2.key === "y") {
+              e2.preventDefault();
+              if (focusedTabId) {
+                copySingleLink(focusedTabId);
+              }
+            }
+            document.removeEventListener("keydown", secondYHandler);
+            clearTimeout(timeout);
+          };
+
+          timeout = setTimeout(() => {
+            document.removeEventListener("keydown", secondYHandler);
+            // Single 'y' - copy selected tabs if any
+            if (selectedTabs.length > 0) {
+              copyMultipleLinks(selectedTabs);
+            }
+          }, 500);
+
+          document.addEventListener("keydown", secondYHandler);
         }
         break;
       case "Enter":

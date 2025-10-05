@@ -2,7 +2,6 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { Copy, Layers, X } from "lucide-react";
-import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
+import { copyMultipleTabLinks } from "@/lib/helpers/copy-helpers";
 
 export function QuickActionsPanel() {
   const { data: selectedTabsData } = useAppState("selectedTabs");
@@ -72,19 +72,7 @@ export function QuickActionsPanel() {
 
   const handleCopyLinks = async () => {
     if (!selectedTabData?.length) return;
-    try {
-      const links = selectedTabData
-        .map((tab) => tab.url)
-        .filter(Boolean)
-        .join("\n");
-      await navigator.clipboard.writeText(links);
-      toast.success(
-        `Link${currentSelectedTabsCount > 1 ? "s" : ""} copied to clipboard`,
-      );
-    } catch (error) {
-      console.error("Failed to copy links:", error);
-      toast.error("Failed to copy links");
-    }
+    await copyMultipleTabLinks(selectedTabData);
   };
 
   if (currentSelectedTabsCount === 0) return null;

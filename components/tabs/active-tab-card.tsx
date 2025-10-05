@@ -26,6 +26,7 @@ import {
 import { useResourceGroups, useTabIsResource } from "@/hooks/use-resources";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
+import { copySingleTabLink } from "@/lib/helpers/copy-helpers";
 import type { ResourceGroup, Tab } from "@/lib/types/types";
 import { browserColorToHex, withAlpha } from "@/lib/ui/tab-group-colors";
 import { TabCard } from "./tab-card";
@@ -346,27 +347,7 @@ export function ActiveTabCard({
       )}
       renderContextMenu={() => (
         <>
-          <ContextMenuItem
-            onClick={() => {
-              if (!url) return;
-              try {
-                if (navigator?.clipboard?.writeText) {
-                  void navigator.clipboard.writeText(url);
-                } else {
-                  const textarea = document.createElement("textarea");
-                  textarea.value = url;
-                  document.body.appendChild(textarea);
-                  textarea.select();
-                  document.execCommand("copy");
-                  document.body.removeChild(textarea);
-                }
-                toast.success("Link copied to clipboard");
-              } catch (error) {
-                console.error("Failed to copy link:", error);
-                toast.error("Failed to copy link");
-              }
-            }}
-          >
+          <ContextMenuItem onClick={() => copySingleTabLink(tab)}>
             Copy Link
           </ContextMenuItem>
 
