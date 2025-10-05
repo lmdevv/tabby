@@ -38,6 +38,8 @@ interface ActiveTabCardProps {
   onPin?: (id: number, pinned: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
   handle?: React.ReactNode;
+  isFocused?: boolean;
+  isInClipboard?: boolean;
 }
 
 export function ActiveTabCard({
@@ -48,6 +50,8 @@ export function ActiveTabCard({
   onPin: _onPin = () => {},
   onAddToResourceGroup = () => {},
   handle,
+  isFocused = false,
+  isInClipboard = false,
 }: ActiveTabCardProps) {
   // Fetch tab data from DB
   const tab = useLiveQuery(() => db.activeTabs.get(tabId), [tabId]);
@@ -131,6 +135,8 @@ export function ActiveTabCard({
       style={style}
       handle={handle}
       isInteractive={true}
+      isFocused={isFocused}
+      isInClipboard={isInClipboard}
       beforeFavicon={
         <>
           {/* Add group indicator if tab is part of a group */}

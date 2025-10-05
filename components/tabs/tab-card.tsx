@@ -26,6 +26,8 @@ interface TabCardProps {
   renderActions?: () => React.ReactNode;
   renderContextMenu?: () => React.ReactNode;
   isInteractive?: boolean; // Whether the card contains interactive elements that would conflict with button wrapper
+  isFocused?: boolean; // Whether this tab is currently focused for keyboard navigation
+  isInClipboard?: boolean; // Whether this tab is currently cut/copied for moving
 }
 
 export function TabCard({
@@ -40,6 +42,8 @@ export function TabCard({
   renderActions,
   renderContextMenu,
   isInteractive = false,
+  isFocused = false,
+  isInClipboard = false,
 }: TabCardProps) {
   // Fetch global state for display preferences
   const { data: showTagsGlobal } = useAppState("showTags");
@@ -57,7 +61,13 @@ export function TabCard({
   const displayUrlTruncated = truncateText(displayUrl, 80);
   const domainInitial = getDomainInitial(url);
 
-  const baseClasses = `flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3`;
+  const baseClasses = `flex h-auto w-full items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3 ${
+    isInClipboard
+      ? "border-destructive bg-destructive/10 shadow-md ring-2 ring-destructive/20 opacity-60"
+      : isFocused
+        ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
+        : "border-transparent"
+  }`;
 
   const innerContent = (
     <>

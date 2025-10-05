@@ -13,6 +13,8 @@ interface SortableActiveTabCardProps {
   onPin?: (id: number, pinned: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
   handle?: React.ReactNode;
+  isFocused?: boolean;
+  isInClipboard?: boolean;
 }
 
 export function SortableActiveTabCard({
@@ -24,6 +26,8 @@ export function SortableActiveTabCard({
   onPin,
   onAddToResourceGroup,
   handle,
+  isFocused,
+  isInClipboard,
 }: SortableActiveTabCardProps) {
   const {
     attributes,
@@ -60,6 +64,8 @@ export function SortableActiveTabCard({
         onPin={onPin}
         onAddToResourceGroup={onAddToResourceGroup}
         handle={handle || defaultHandle}
+        isFocused={isFocused}
+        isInClipboard={isInClipboard}
       />
     </div>
   );

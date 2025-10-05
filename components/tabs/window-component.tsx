@@ -13,7 +13,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Browser } from "wxt/browser";
 import { browser } from "wxt/browser";
 import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-card";
@@ -48,6 +48,10 @@ export function WindowComponent({
   onTabClick,
   onEditGroup,
 }: WindowComponentProps) {
+  // Focus management for vim keybindings
+  const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
+  const [clipboardTabId, setClipboardTabId] = useState<number | null>(null);
+
   // Set up sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -304,6 +308,188 @@ export function WindowComponent({
       .map((element) => element.tab.id.toString());
   }, [orderedElements]);
 
+  // Get all navigable tabs in visual order for keyboard navigation
+  const navigableTabs = useMemo(() => {
+    return orderedElements
+      .filter(
+        (element): element is typeof element & { tab: { id: number } } =>
+          (element.type === "tab" || element.type === "groupedTab") &&
+          !!element.tab?.id,
+      )
+      .map((element) => element.tab);
+  }, [orderedElements]);
+
+  // Helper function to move tab after position of another tab
+  const moveTabAfterPosition = useCallback(
+    async (tabIdToMove: number, targetTabId: number) => {
+      if (!tabs) return;
+
+      const tabToMove = findTabById(tabs, tabIdToMove.toString());
+      const targetTab = findTabById(tabs, targetTabId.toString());
+
+      if (!tabToMove?.id || !targetTab) return;
+
+      const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
+      if (targetIndex === -1) return;
+
+      // Move to position after target (targetIndex + 1)
+      const newIndex = targetIndex + 1;
+
+      await ungroupTabIfNeeded(tabToMove);
+      await moveTabInBrowser(tabToMove.id, newIndex);
+    },
+    [tabs],
+  );
+
+  // Helper function to move tab before position of another tab
+  const moveTabBeforePosition = useCallback(
+    async (tabIdToMove: number, targetTabId: number) => {
+      if (!tabs) return;
+
+      const tabToMove = findTabById(tabs, tabIdToMove.toString());
+      const targetTab = findTabById(tabs, targetTabId.toString());
+
+      if (!tabToMove?.id || !targetTab) return;
+
+      const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
+      if (targetIndex === -1) return;
+
+      // Move to position before target (targetIndex)
+      const newIndex = targetIndex;
+
+      await ungroupTabIfNeeded(tabToMove);
+      await moveTabInBrowser(tabToMove.id, newIndex);
+    },
+    [tabs],
+  );
+
+  // Keyboard navigation and movement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if we have tabs and no input is focused
+      if (
+        !navigableTabs.length ||
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      const currentIndex = focusedTabId
+        ? navigableTabs.findIndex((tab) => tab.id === focusedTabId)
+        : -1;
+
+      switch (e.key) {
+        case "h": // Left
+        case "ArrowLeft":
+          e.preventDefault();
+          if (currentIndex > 0 && navigableTabs[currentIndex - 1]?.id) {
+            setFocusedTabId(navigableTabs[currentIndex - 1].id);
+          }
+          break;
+        case "j": // Down
+        case "ArrowDown":
+          e.preventDefault();
+          if (
+            currentIndex < navigableTabs.length - 1 &&
+            navigableTabs[currentIndex + 1]?.id
+          ) {
+            setFocusedTabId(navigableTabs[currentIndex + 1].id);
+          }
+          break;
+        case "k": // Up
+        case "ArrowUp":
+          e.preventDefault();
+          if (currentIndex > 0 && navigableTabs[currentIndex - 1]?.id) {
+            setFocusedTabId(navigableTabs[currentIndex - 1].id);
+          } else if (navigableTabs.length > 0 && navigableTabs[0]?.id) {
+            setFocusedTabId(navigableTabs[0].id);
+          }
+          break;
+        case "l": // Right
+        case "ArrowRight":
+          e.preventDefault();
+          if (
+            currentIndex < navigableTabs.length - 1 &&
+            navigableTabs[currentIndex + 1]?.id
+          ) {
+            setFocusedTabId(navigableTabs[currentIndex + 1].id);
+          }
+          break;
+        case "d": // dd for cut (vim style)
+          if (e.key === "d" && !e.repeat) {
+            // Wait for second 'd'
+            let timeout: NodeJS.Timeout;
+            const secondDHandler = (e2: KeyboardEvent) => {
+              if (e2.key === "d") {
+                e2.preventDefault();
+                if (focusedTabId) {
+                  const tabToCut = navigableTabs.find(
+                    (tab) => tab.id === focusedTabId,
+                  );
+                  if (tabToCut) {
+                    setClipboardTabId(focusedTabId);
+                    // Move to next tab or previous
+                    const nextIndex = Math.min(
+                      currentIndex + 1,
+                      navigableTabs.length - 1,
+                    );
+                    setFocusedTabId(navigableTabs[nextIndex]?.id || null);
+                  }
+                }
+              }
+              document.removeEventListener("keydown", secondDHandler);
+              clearTimeout(timeout);
+            };
+
+            timeout = setTimeout(() => {
+              document.removeEventListener("keydown", secondDHandler);
+            }, 500);
+
+            document.addEventListener("keydown", secondDHandler);
+          }
+          break;
+        case "p": // p for paste after (move tab)
+          e.preventDefault();
+          if (
+            clipboardTabId &&
+            focusedTabId &&
+            clipboardTabId !== focusedTabId
+          ) {
+            // Move clipboard tab after focused position
+            moveTabAfterPosition(clipboardTabId, focusedTabId);
+            setClipboardTabId(null);
+          }
+          break;
+        case "P": // P for paste before (move tab)
+          e.preventDefault();
+          if (
+            clipboardTabId &&
+            focusedTabId &&
+            clipboardTabId !== focusedTabId
+          ) {
+            // Move clipboard tab before focused position
+            moveTabBeforePosition(clipboardTabId, focusedTabId);
+            setClipboardTabId(null);
+          }
+          break;
+        case "Escape":
+          setFocusedTabId(null);
+          setClipboardTabId(null);
+          break;
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    navigableTabs,
+    focusedTabId,
+    clipboardTabId,
+    moveTabAfterPosition,
+    moveTabBeforePosition,
+  ]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -370,6 +556,8 @@ export function WindowComponent({
                           onClick={() => element.tab && onTabClick(element.tab)}
                           onDelete={handleDeleteTab}
                           onAddToResourceGroup={handleAddToResourceGroup}
+                          isFocused={focusedTabId === element.tab.id}
+                          isInClipboard={clipboardTabId === element.tab.id}
                         />
                       )}
                     </div>
@@ -386,6 +574,8 @@ export function WindowComponent({
                         onClick={() => element.tab && onTabClick(element.tab)}
                         onDelete={handleDeleteTab}
                         onAddToResourceGroup={handleAddToResourceGroup}
+                        isFocused={focusedTabId === element.tab.id}
+                        isInClipboard={clipboardTabId === element.tab.id}
                       />
                     )
                   );
