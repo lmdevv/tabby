@@ -37,6 +37,7 @@ interface ActiveTabCardProps {
   onDelete?: (id: number) => void;
   onPin?: (id: number, pinned: boolean) => void;
   onAddToResourceGroup?: (tab: Tab, groupId: number) => void;
+  handle?: React.ReactNode;
 }
 
 export function ActiveTabCard({
@@ -46,6 +47,7 @@ export function ActiveTabCard({
   onDelete = () => {},
   onPin: _onPin = () => {},
   onAddToResourceGroup = () => {},
+  handle,
 }: ActiveTabCardProps) {
   // Fetch tab data from DB
   const tab = useLiveQuery(() => db.activeTabs.get(tabId), [tabId]);
@@ -127,6 +129,8 @@ export function ActiveTabCard({
       onClick={onClick}
       ariaLabel={`Switch to tab: ${title || "Untitled"}`}
       style={style}
+      handle={handle}
+      isInteractive={true}
       beforeFavicon={
         <>
           {/* Add group indicator if tab is part of a group */}

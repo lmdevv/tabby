@@ -168,6 +168,11 @@ export interface GroupTabsMessage {
   windowId: number;
   groupType: "domain";
 }
+export interface MoveTabMessage {
+  type: "moveTab";
+  tabId: number;
+  newIndex: number;
+}
 
 export type RuntimeMessage =
   | OpenWorkspaceMessage
@@ -179,7 +184,8 @@ export type RuntimeMessage =
   | RestoreSnapshotMessage
   | DeleteSnapshotMessage
   | SortTabsMessage
-  | GroupTabsMessage;
+  | GroupTabsMessage
+  | MoveTabMessage;
 
 export type {
   LanguageModelAvailability,

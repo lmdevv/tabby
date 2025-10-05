@@ -59,6 +59,7 @@ export function ResourceCard({
       data={cardData}
       onClick={onClick}
       ariaLabel={ariaLabel}
+      isInteractive={true}
       afterTitle={
         isActive ? (
           <span

@@ -60,23 +60,18 @@ export async function refreshActiveTabs() {
   // Use workspace ID -1 for undefined/unassigned tabs when no workspace is active
   const targetWorkspaceId = activeWorkspace ? activeWorkspace.id : -1;
 
-  // Filter out dashboard tabs from live tabs
-  const nonDashboardTabs = liveTabs.filter((tab) => {
-    return !isDashboardTab(tab);
-  });
+  // Include all tabs, including dashboard
+  const allTabs = liveTabs;
 
-  // Only clear non-dashboard tabs for the target workspace
+  // Clear all active tabs for the target workspace
   await db.activeTabs
     .where("workspaceId")
     .equals(targetWorkspaceId)
-    .and(
-      (tab) =>
-        tab.tabStatus === "active" && !isDashboardTab(tab as Browser.tabs.Tab),
-    )
+    .and((tab) => tab.tabStatus === "active")
     .delete();
 
   const now = Date.now();
-  const toAdd = nonDashboardTabs.map(
+  const toAdd = allTabs.map(
     (t): Tab => ({
       ...t,
       stableId: crypto.randomUUID(),
@@ -117,11 +112,9 @@ export async function reconcileTabs() {
   // Use workspace ID -1 for undefined/unassigned tabs when no workspace is active
   const targetWorkspaceId = activeWorkspace ? activeWorkspace.id : -1;
 
-  // 1. fetch live tabs from Chrome (excluding dashboard tabs)
+  // 1. fetch live tabs from Chrome (including all tabs)
   const allLiveTabs = await browser.tabs.query({});
-  const liveTabs = allLiveTabs.filter((tab) => {
-    return !isDashboardTab(tab);
-  });
+  const liveTabs = allLiveTabs;
 
   // Create maps for live tabs - both by browser ID and by URL for fallback matching
   const liveTabsByBrowserId = new Map<number, Browser.tabs.Tab>();
@@ -142,14 +135,11 @@ export async function reconcileTabs() {
     }
   }
 
-  // 2. fetch stored tabs from IndexedDB - ONLY for the target workspace (excluding dashboard tabs)
+  // 2. fetch stored tabs from IndexedDB - ONLY for the target workspace
   const storedTabs = await db.activeTabs
     .where("workspaceId")
     .equals(targetWorkspaceId)
-    .and(
-      (tab) =>
-        tab.tabStatus === "active" && !isDashboardTab(tab as Browser.tabs.Tab),
-    )
+    .and((tab) => tab.tabStatus === "active")
     .toArray();
 
   // Create maps for stored tabs by browser ID and stableId

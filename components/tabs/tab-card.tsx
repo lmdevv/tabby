@@ -19,11 +19,13 @@ interface TabCardProps {
   ariaLabel: string;
   className?: string;
   style?: React.CSSProperties; // For custom styling like tab group colors
+  handle?: React.ReactNode; // Drag handle
   beforeFavicon?: React.ReactNode; // For checkbox, etc.
   afterTitle?: React.ReactNode; // For active indicator, etc.
   afterInfo?: React.ReactNode; // For description, status indicators, etc.
   renderActions?: () => React.ReactNode;
   renderContextMenu?: () => React.ReactNode;
+  isInteractive?: boolean; // Whether the card contains interactive elements that would conflict with button wrapper
 }
 
 export function TabCard({
@@ -31,11 +33,13 @@ export function TabCard({
   onClick,
   ariaLabel,
   style,
+  handle,
   beforeFavicon,
   afterTitle,
   afterInfo,
   renderActions,
   renderContextMenu,
+  isInteractive = false,
 }: TabCardProps) {
   // Fetch global state for display preferences
   const { data: showTagsGlobal } = useAppState("showTags");
@@ -53,20 +57,13 @@ export function TabCard({
   const displayUrlTruncated = truncateText(displayUrl, 80);
   const domainInitial = getDomainInitial(url);
 
-  const content = (
-    <button
-      type="button"
-      className={`flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3`}
-      style={style}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      aria-label={ariaLabel}
-    >
+  const baseClasses = `flex h-auto w-full items-center justify-start rounded-lg border border-transparent p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3`;
+
+  const innerContent = (
+    <>
+      {/* Drag handle */}
+      {handle}
+
       {/* Custom content before favicon (e.g., checkbox) */}
       {beforeFavicon}
 
@@ -151,6 +148,39 @@ export function TabCard({
           {renderActions()}
         </div>
       )}
+    </>
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  const content = isInteractive ? (
+    // Use div when nested interactive elements are present
+    // biome-ignore lint/a11y/useSemanticElements: Need div due to nested button constraints
+    <div
+      className={baseClasses}
+      style={style}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
+      {innerContent}
+    </div>
+  ) : (
+    <button
+      type="button"
+      className={baseClasses}
+      style={style}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      aria-label={ariaLabel}
+    >
+      {innerContent}
     </button>
   );
 

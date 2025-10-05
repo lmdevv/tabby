@@ -1,12 +1,31 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import type { Browser } from "wxt/browser";
-import { ActiveTabCard } from "@/components/tabs/active-tab-card";
+import { browser } from "wxt/browser";
+import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
-
 import { db } from "@/lib/db";
 import { normalizeUrl } from "@/lib/resource-helpers";
+import {
+  findTabById,
+  moveTabInBrowser,
+  ungroupTabIfNeeded,
+} from "@/lib/tab-helpers";
 
 import type { Tab } from "@/lib/types";
 
@@ -29,6 +48,34 @@ export function WindowComponent({
   onTabClick,
   onEditGroup,
 }: WindowComponentProps) {
+  // Set up sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // Handle drag end event
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !tabs) {
+      return;
+    }
+
+    const draggedTab = findTabById(tabs, active.id as string);
+    const targetTab = findTabById(tabs, over.id as string);
+
+    if (!draggedTab?.id || !targetTab) return;
+
+    const newIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
+    if (newIndex === -1) return;
+
+    await ungroupTabIfNeeded(draggedTab);
+    await moveTabInBrowser(draggedTab.id, newIndex);
+  };
+
   // Fetch data directly from DB
   const tabs = useLiveQuery(
     () =>
@@ -246,82 +293,110 @@ export function WindowComponent({
     return elements;
   }, [tabs, allTabGroups, tabToGroupMap, windowId]);
 
+  // Create sortable items array for SortableContext in visual order
+  const sortableItems = useMemo(() => {
+    return orderedElements
+      .filter(
+        (element): element is typeof element & { tab: { id: number } } =>
+          (element.type === "tab" || element.type === "groupedTab") &&
+          !!element.tab?.id,
+      )
+      .map((element) => element.tab.id.toString());
+  }, [orderedElements]);
+
   return (
-    <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1">
-      <CardContent className="p-0 flex-1">
-        <div className="space-y-1 p-3">
-          {orderedElements.map((element, _index) => {
-            if (
-              element.type === "groupHeader" &&
-              element.group &&
-              element.groupInfo
-            ) {
-              return (
-                <div key={`group-${element.group.groupId}`}>
-                  <TabGroupHeader
-                    groupId={element.group.groupId}
-                    onEditGroup={() =>
-                      element.group?.groupId !== undefined &&
-                      onEditGroup(element.group.groupId)
-                    }
-                    onUngroupAll={() =>
-                      element.group?.tabs &&
-                      handleUngroupTabs(
-                        element.group.tabs
-                          .map((tab) => tab.id)
-                          .filter((id): id is number => id !== undefined),
-                      )
-                    }
-                    onCloseAll={() =>
-                      element.group?.tabs &&
-                      handleCloseTabs(
-                        element.group.tabs
-                          .map((tab) => tab.id)
-                          .filter((id): id is number => id !== undefined),
-                      )
-                    }
-                  />
-                </div>
-              );
-            }
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={sortableItems}
+        strategy={verticalListSortingStrategy}
+      >
+        <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1">
+          <CardContent className="p-0 flex-1">
+            <div className="space-y-1 p-3">
+              {orderedElements.map((element, _index) => {
+                if (
+                  element.type === "groupHeader" &&
+                  element.group &&
+                  element.groupInfo
+                ) {
+                  return (
+                    <div key={`group-${element.group.groupId}`}>
+                      <TabGroupHeader
+                        groupId={element.group.groupId}
+                        onEditGroup={() =>
+                          element.group?.groupId !== undefined &&
+                          onEditGroup(element.group.groupId)
+                        }
+                        onUngroupAll={() =>
+                          element.group?.tabs &&
+                          handleUngroupTabs(
+                            element.group.tabs
+                              .map((tab) => tab.id)
+                              .filter((id): id is number => id !== undefined),
+                          )
+                        }
+                        onCloseAll={() =>
+                          element.group?.tabs &&
+                          handleCloseTabs(
+                            element.group.tabs
+                              .map((tab) => tab.id)
+                              .filter((id): id is number => id !== undefined),
+                          )
+                        }
+                      />
+                    </div>
+                  );
+                }
 
-            if (element.type === "groupedTab" && element.tab && element.group) {
-              // Only render grouped tabs if the group is not collapsed
-              if (element.groupInfo?.collapsed) return null;
+                if (
+                  element.type === "groupedTab" &&
+                  element.tab &&
+                  element.group
+                ) {
+                  // Only render grouped tabs if the group is not collapsed
+                  if (element.groupInfo?.collapsed) return null;
 
-              return (
-                <div key={`tab-${element.tab.id}`} className="ml-6">
-                  {element.tab.id !== undefined && (
-                    <ActiveTabCard
-                      tabId={element.tab.id}
-                      groupId={element.group?.groupId}
-                      onClick={() => element.tab && onTabClick(element.tab)}
-                      onDelete={handleDeleteTab}
-                      onAddToResourceGroup={handleAddToResourceGroup}
-                    />
-                  )}
-                </div>
-              );
-            }
+                  return (
+                    <div key={`tab-${element.tab.id}`} className="ml-6">
+                      {element.tab.id !== undefined && (
+                        <SortableActiveTabCard
+                          id={element.tab.id.toString()}
+                          tabId={element.tab.id}
+                          groupId={element.group?.groupId}
+                          onClick={() => element.tab && onTabClick(element.tab)}
+                          onDelete={handleDeleteTab}
+                          onAddToResourceGroup={handleAddToResourceGroup}
+                        />
+                      )}
+                    </div>
+                  );
+                }
 
-            if (element.type === "tab" && element.tab) {
-              return (
-                element.tab.id !== undefined && (
-                  <ActiveTabCard
-                    key={`tab-${element.tab.id}`}
-                    tabId={element.tab.id}
-                    onClick={() => element.tab && onTabClick(element.tab)}
-                    onDelete={handleDeleteTab}
-                    onAddToResourceGroup={handleAddToResourceGroup}
-                  />
-                )
-              );
-            }
+                if (element.type === "tab" && element.tab) {
+                  return (
+                    element.tab.id !== undefined && (
+                      <SortableActiveTabCard
+                        key={`tab-${element.tab.id}`}
+                        id={element.tab.id.toString()}
+                        tabId={element.tab.id}
+                        onClick={() => element.tab && onTabClick(element.tab)}
+                        onDelete={handleDeleteTab}
+                        onAddToResourceGroup={handleAddToResourceGroup}
+                      />
+                    )
+                  );
+                }
 
-            return null;
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                return null;
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </SortableContext>
+    </DndContext>
   );
 }

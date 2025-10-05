@@ -520,6 +520,18 @@ export default defineBackground(() => {
       } else if (typeof message === "object" && message.type === "groupTabs") {
         await groupTabsInWindow(message.windowId, message.groupType);
         return { success: true } as const;
+      } else if (typeof message === "object" && message.type === "moveTab") {
+        console.log("Moving tab", message.tabId, "to index", message.newIndex);
+        try {
+          await browser.tabs.move(message.tabId, { index: message.newIndex });
+          return { success: true } as const;
+        } catch (error) {
+          console.error("❌ Failed to move tab:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          } as const;
+        }
       }
     },
   );

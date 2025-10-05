@@ -1,7 +1,6 @@
 import { browser } from "wxt/browser";
 import {
   cleanupEmptyTabGroup,
-  isDashboardTab,
   shiftIndices,
 } from "@/entrypoints/background/helpers";
 import { db } from "@/lib/db";
@@ -87,7 +86,7 @@ export function setupTabListeners(
   getActiveWorkspace: () => Workspace | undefined,
 ) {
   browser.tabs.onCreated.addListener(async (tab) => {
-    if (!tab.id || !tab.index || isDashboardTab(tab)) return;
+    if (!tab.id || !tab.index) return;
 
     const activeWorkspace = getActiveWorkspace();
     if (activeWorkspace) {
@@ -137,7 +136,7 @@ export function setupTabListeners(
 
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const dbTab = await db.activeTabs.get(tabId);
-    if (!dbTab || dbTab.tabStatus === "archived" || isDashboardTab(tab)) return;
+    if (!dbTab || dbTab.tabStatus === "archived") return;
 
     const now = Date.now();
 
