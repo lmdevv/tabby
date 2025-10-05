@@ -159,13 +159,13 @@ export interface DeleteSnapshotMessage {
 
 export interface SortTabsMessage {
   type: "sortTabs";
-  windowId: number;
+  workspaceId: number;
   sortType: "title" | "domain" | "recency";
 }
 
 export interface GroupTabsMessage {
   type: "groupTabs";
-  windowId: number;
+  workspaceId: number;
   groupType: "domain";
 }
 export interface MoveTabMessage {

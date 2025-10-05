@@ -293,6 +293,60 @@ export default defineBackground(() => {
     }
   }
 
+  async function sortTabsInWorkspace(
+    workspaceId: number,
+    sortType: "title" | "domain" | "recency",
+  ) {
+    try {
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+      // Get unique windowIds
+      const windowIds = [...new Set(tabs.map((tab) => tab.windowId))];
+      // Sort tabs in each window
+      for (const windowId of windowIds) {
+        await sortTabsInWindow(windowId, sortType);
+      }
+      console.log(`✅ Sorted tabs in workspace ${workspaceId} by ${sortType}`);
+    } catch (error) {
+      console.error(
+        `❌ Failed to sort tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async function groupTabsInWorkspace(
+    workspaceId: number,
+    groupType: "domain",
+  ) {
+    try {
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+      // Get unique windowIds
+      const windowIds = [...new Set(tabs.map((tab) => tab.windowId))];
+      // Group tabs in each window
+      for (const windowId of windowIds) {
+        await groupTabsInWindow(windowId, groupType);
+      }
+      console.log(
+        `✅ Grouped tabs in workspace ${workspaceId} by ${groupType}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to group tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   // Helper function to get a random tab group color
   function getRandomTabGroupColor() {
     const colors = [
@@ -515,10 +569,10 @@ export default defineBackground(() => {
         await deleteSnapshot(message.snapshotId);
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "sortTabs") {
-        await sortTabsInWindow(message.windowId, message.sortType);
+        await sortTabsInWorkspace(message.workspaceId, message.sortType);
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "groupTabs") {
-        await groupTabsInWindow(message.windowId, message.groupType);
+        await groupTabsInWorkspace(message.workspaceId, message.groupType);
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "moveTab") {
         console.log("Moving tab", message.tabId, "to index", message.newIndex);

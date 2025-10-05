@@ -90,6 +90,7 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
     try {
       await browser.runtime.sendMessage({
         type: "sortTabs",
+        workspaceId,
         sortType,
       } as const);
       toast.success("Tabs sorted successfully");
@@ -103,6 +104,7 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
     try {
       await browser.runtime.sendMessage({
         type: "groupTabs",
+        workspaceId,
         groupType: "domain",
       } as const);
       toast.success("Tabs grouped successfully");
