@@ -114,7 +114,7 @@ export function AppContent({
       <div className="flex-1 h-full">
         {showResources ? (
           /* Split Layout - Both panels */
-          <div className="grid grid-cols-2 gap-4 h-full">
+          <div className="grid grid-cols-2 gap-4 h-full overflow-hidden">
             {/* Active Tabs Panel */}
             <div className="flex flex-col min-w-0 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
@@ -123,7 +123,7 @@ export function AppContent({
               {windowGroups.length > 0 ? (
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                    <div className="space-y-6 px-6 py-2">
+                    <div className="space-y-6 px-6 py-2 min-w-0">
                       <div className="flex items-center justify-end mb-2">
                         <TopToolbar workspaceId={shownWorkspaceId} />
                       </div>
@@ -157,7 +157,7 @@ export function AppContent({
             </div>
 
             {/* Resources Panel */}
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0 overflow-hidden">
               <div className="flex-1">
                 <ResourcesPanel />
               </div>
@@ -173,7 +173,7 @@ export function AppContent({
               {windowGroups.length > 0 ? (
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                    <div className="space-y-6 px-6 py-2">
+                    <div className="space-y-6 px-6 py-2 min-w-0">
                       <div className="flex items-center justify-end mb-2">
                         <TopToolbar workspaceId={shownWorkspaceId} />
                       </div>
