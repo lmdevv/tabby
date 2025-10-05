@@ -129,6 +129,34 @@ export function createTabKeyboardHandler({
           handleActivateTab(focusedTabId);
         }
         break;
+      case "g": // gg for go to first tab
+        if (e.key === "g" && !e.repeat) {
+          // Wait for second 'g'
+          let timeout: NodeJS.Timeout;
+          const secondGHandler = (e2: KeyboardEvent) => {
+            if (e2.key === "g") {
+              e2.preventDefault();
+              if (navigableTabs.length > 0) {
+                setFocusedTabId(navigableTabs[0].id);
+              }
+            }
+            document.removeEventListener("keydown", secondGHandler);
+            clearTimeout(timeout);
+          };
+
+          timeout = setTimeout(() => {
+            document.removeEventListener("keydown", secondGHandler);
+          }, 500);
+
+          document.addEventListener("keydown", secondGHandler);
+        }
+        break;
+      case "G": // G for go to last tab
+        e.preventDefault();
+        if (navigableTabs.length > 0) {
+          setFocusedTabId(navigableTabs[navigableTabs.length - 1].id);
+        }
+        break;
       case "Escape":
         setFocusedTabId(null);
         setClipboardTabId(null);
