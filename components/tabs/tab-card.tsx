@@ -10,7 +10,6 @@ import {
   type CardData,
   formatDisplayUrl,
   getDomainInitial,
-  truncateText,
 } from "@/lib/helpers/card-helpers";
 
 interface TabCardProps {
@@ -54,11 +53,9 @@ export function TabCard({
 
   const { title, url, favIconUrl, tags } = data;
 
-  // Format and truncate display values
+  // Format display values (no truncation - let CSS handle it)
   const displayTitle = title || "Untitled";
   const displayUrl = formatDisplayUrl(url);
-  const displayTitleTruncated = truncateText(displayTitle, 90);
-  const displayUrlTruncated = truncateText(displayUrl, 80);
   const domainInitial = getDomainInitial(url);
 
   const baseClasses = `flex h-auto w-full min-w-0 items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-1 sm:gap-3 ${
@@ -105,22 +102,22 @@ export function TabCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
               <h3
-                className="truncate font-medium text-xs leading-tight"
+                className="truncate font-medium text-xs leading-tight min-w-0"
                 title={displayTitle}
               >
-                {displayTitleTruncated}
+                {displayTitle}
               </h3>
               {/* Custom content after title (e.g., active indicator) */}
               {afterTitle}
             </div>
             {showUrl && (
               <p
-                className="mt-1 truncate text-muted-foreground text-xs"
+                className="mt-1 truncate text-muted-foreground text-xs min-w-0"
                 title={url}
               >
-                {displayUrlTruncated}
+                {displayUrl}
               </p>
             )}
             {/* Custom content after info (e.g., description, status indicators) */}

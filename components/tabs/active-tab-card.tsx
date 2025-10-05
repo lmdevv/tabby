@@ -107,15 +107,8 @@ export function ActiveTabCard({
     }) || [];
   const hasResourceGroups = resourceGroupsForTab.length > 0;
 
-  // Clamp text lengths for better layout stability
-  const MAX_TITLE_CHARS = 90;
-  const displayTitleTruncated =
-    (title || "Untitled").length > MAX_TITLE_CHARS
-      ? `${(title || "Untitled").slice(0, MAX_TITLE_CHARS)}…`
-      : title || "Untitled";
-
   const cardData = {
-    title: displayTitleTruncated,
+    title: title || "Untitled",
     url,
     favIconUrl,
     tags: undefined, // Always undefined - tags are rendered in afterInfo for custom layout
