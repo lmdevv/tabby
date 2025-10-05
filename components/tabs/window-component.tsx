@@ -327,8 +327,8 @@ export function WindowComponent({
       .map((element) => element.tab);
   }, [orderedElements]);
 
-  // Helper function to move tab after position of another tab
-  const moveTabAfterPosition = useCallback(
+  // Helper function to move tab to exact position of another tab
+  const moveTabToPosition = useCallback(
     async (tabIdToMove: number, targetTabId: number) => {
       if (!tabs) return;
 
@@ -340,29 +340,6 @@ export function WindowComponent({
       const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
       if (targetIndex === -1) return;
 
-      // Move to position after target (targetIndex + 1)
-      const newIndex = targetIndex + 1;
-
-      await ungroupTabIfNeeded(tabToMove);
-      await moveTabInBrowser(tabToMove.id, newIndex);
-    },
-    [tabs],
-  );
-
-  // Helper function to move tab before position of another tab
-  const moveTabBeforePosition = useCallback(
-    async (tabIdToMove: number, targetTabId: number) => {
-      if (!tabs) return;
-
-      const tabToMove = findTabById(tabs, tabIdToMove.toString());
-      const targetTab = findTabById(tabs, targetTabId.toString());
-
-      if (!tabToMove?.id || !targetTab) return;
-
-      const targetIndex = tabs.findIndex((tab) => tab.id === targetTab.id);
-      if (targetIndex === -1) return;
-
-      // Move to position before target (targetIndex)
       const newIndex = targetIndex;
 
       await ungroupTabIfNeeded(tabToMove);
@@ -457,27 +434,15 @@ export function WindowComponent({
             document.addEventListener("keydown", secondDHandler);
           }
           break;
-        case "p": // p for paste after (move tab)
+        case "p": // p for paste (move tab to focused position)
           e.preventDefault();
           if (
             clipboardTabId &&
             focusedTabId &&
             clipboardTabId !== focusedTabId
           ) {
-            // Move clipboard tab after focused position
-            moveTabAfterPosition(clipboardTabId, focusedTabId);
-            setClipboardTabId(null);
-          }
-          break;
-        case "P": // P for paste before (move tab)
-          e.preventDefault();
-          if (
-            clipboardTabId &&
-            focusedTabId &&
-            clipboardTabId !== focusedTabId
-          ) {
-            // Move clipboard tab before focused position
-            moveTabBeforePosition(clipboardTabId, focusedTabId);
+            // Move clipboard tab to focused position
+            moveTabToPosition(clipboardTabId, focusedTabId);
             setClipboardTabId(null);
           }
           break;
@@ -527,8 +492,7 @@ export function WindowComponent({
     navigableTabs,
     focusedTabId,
     clipboardTabId,
-    moveTabAfterPosition,
-    moveTabBeforePosition,
+    moveTabToPosition,
     handleDeleteTab,
     handleActivateTab,
   ]);
