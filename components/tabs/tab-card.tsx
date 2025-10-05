@@ -61,7 +61,7 @@ export function TabCard({
   const displayUrlTruncated = truncateText(displayUrl, 80);
   const domainInitial = getDomainInitial(url);
 
-  const baseClasses = `flex h-auto w-full items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3 ${
+  const baseClasses = `flex h-auto w-full min-w-0 items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-3 ${
     isInClipboard
       ? "border-destructive bg-destructive/10 shadow-md ring-2 ring-destructive/20 opacity-60"
       : isFocused

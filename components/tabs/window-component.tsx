@@ -442,9 +442,9 @@ export function WindowComponent({
         items={sortableItems}
         strategy={verticalListSortingStrategy}
       >
-        <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1">
-          <CardContent className="p-0 flex-1">
-            <div className="space-y-1 p-3">
+        <Card className="mx-auto w-full [max-width:min(1200px,92vw)] gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1 min-w-0 overflow-hidden">
+          <CardContent className="p-0 flex-1 overflow-hidden">
+            <div className="space-y-1 p-3 min-w-0">
               {orderedElements.map((element, _index) => {
                 if (
                   element.type === "groupHeader" &&

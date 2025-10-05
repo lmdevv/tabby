@@ -116,7 +116,7 @@ export function AppContent({
           /* Split Layout - Both panels */
           <div className="grid grid-cols-2 gap-4 h-full">
             {/* Active Tabs Panel */}
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Active Tabs</h2>
               </div>
@@ -171,7 +171,7 @@ export function AppContent({
                 <h2 className="font-semibold text-lg">Active Tabs</h2>
               </div>
               {windowGroups.length > 0 ? (
-                <div className="overflow-hidden">
+                <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2">
                       <div className="flex items-center justify-end mb-2">
