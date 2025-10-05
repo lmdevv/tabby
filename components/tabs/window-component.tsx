@@ -19,6 +19,7 @@ import { browser } from "wxt/browser";
 import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import { normalizeUrl } from "@/lib/helpers/resource-helpers";
 import {
@@ -46,6 +47,10 @@ export function WindowComponent({
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
   const [clipboardTabId, setClipboardTabId] = useState<number | null>(null);
+
+  // Visual selection mode state
+  const [isVisualMode, setIsVisualMode] = useState(false);
+  const [visualStartTabId, setVisualStartTabId] = useState<number | null>(null);
   // Set up sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -354,6 +359,18 @@ export function WindowComponent({
       .map((element) => element.tab);
   }, [orderedElements]);
 
+  // Get selected tabs state
+  const { data: selectedTabs } = useAppState("selectedTabs");
+  const { updateState } = useUpdateState();
+
+  // Wrapper function for updating selected tabs
+  const updateSelectedTabsState = useCallback(
+    (tabs: number[]) => {
+      updateState("selectedTabs", tabs);
+    },
+    [updateState],
+  );
+
   // Keyboard navigation and movement
   useEffect(() => {
     const handleKeyDown = createTabKeyboardHandler({
@@ -365,6 +382,12 @@ export function WindowComponent({
       clipboardTabId,
       setFocusedTabId,
       setClipboardTabId,
+      isVisualMode,
+      visualStartTabId,
+      setIsVisualMode,
+      setVisualStartTabId,
+      selectedTabs: selectedTabs ?? [],
+      updateSelectedTabs: updateSelectedTabsState,
     });
 
     document.addEventListener("keydown", handleKeyDown);
@@ -376,6 +399,10 @@ export function WindowComponent({
     moveTabToPosition,
     handleDeleteTab,
     handleActivateTab,
+    isVisualMode,
+    visualStartTabId,
+    selectedTabs,
+    updateSelectedTabsState,
   ]);
 
   return (
