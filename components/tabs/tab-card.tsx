@@ -107,7 +107,7 @@ export function TabCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3
-                className="truncate font-medium text-sm leading-tight"
+                className="truncate font-medium text-xs leading-tight"
                 title={displayTitle}
               >
                 {displayTitleTruncated}

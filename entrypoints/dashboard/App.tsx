@@ -135,7 +135,6 @@ export default function App() {
         <QuickActionsPanel />
 
         <AppContent
-          previewWorkspaceId={previewWorkspaceId}
           shownWorkspaceId={shownWorkspaceId || null}
           onTabClick={handleTabClick}
           onEditGroup={handleEditGroup}
