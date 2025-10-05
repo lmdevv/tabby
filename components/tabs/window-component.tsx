@@ -19,6 +19,7 @@ import { browser } from "wxt/browser";
 import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-card";
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import {
@@ -444,88 +445,93 @@ export function WindowComponent({
       >
         <Card className="w-full max-w-full min-w-0 gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1 overflow-hidden">
           <CardContent className="p-0 flex-1 overflow-hidden">
-            <div className="space-y-1 p-3 min-w-0 w-full">
-              {orderedElements.map((element, _index) => {
-                if (
-                  element.type === "groupHeader" &&
-                  element.group &&
-                  element.groupInfo
-                ) {
-                  return (
-                    <div key={`group-${element.group.groupId}`}>
-                      <TabGroupHeader
-                        groupId={element.group.groupId}
-                        onEditGroup={() =>
-                          element.group?.groupId !== undefined &&
-                          onEditGroup(element.group.groupId)
-                        }
-                        onUngroupAll={() =>
-                          element.group?.tabs &&
-                          handleUngroupTabs(
-                            element.group.tabs
-                              .map((tab) => tab.id)
-                              .filter((id): id is number => id !== undefined),
-                          )
-                        }
-                        onCloseAll={() =>
-                          element.group?.tabs &&
-                          handleCloseTabs(
-                            element.group.tabs
-                              .map((tab) => tab.id)
-                              .filter((id): id is number => id !== undefined),
-                          )
-                        }
-                      />
-                    </div>
-                  );
-                }
+            {/* Add horizontal scroll as last resort */}
+            <ScrollArea className="w-full">
+              <div className="space-y-1 p-3 min-w-0 w-full">
+                {orderedElements.map((element, _index) => {
+                  if (
+                    element.type === "groupHeader" &&
+                    element.group &&
+                    element.groupInfo
+                  ) {
+                    return (
+                      <div key={`group-${element.group.groupId}`}>
+                        <TabGroupHeader
+                          groupId={element.group.groupId}
+                          onEditGroup={() =>
+                            element.group?.groupId !== undefined &&
+                            onEditGroup(element.group.groupId)
+                          }
+                          onUngroupAll={() =>
+                            element.group?.tabs &&
+                            handleUngroupTabs(
+                              element.group.tabs
+                                .map((tab) => tab.id)
+                                .filter((id): id is number => id !== undefined),
+                            )
+                          }
+                          onCloseAll={() =>
+                            element.group?.tabs &&
+                            handleCloseTabs(
+                              element.group.tabs
+                                .map((tab) => tab.id)
+                                .filter((id): id is number => id !== undefined),
+                            )
+                          }
+                        />
+                      </div>
+                    );
+                  }
 
-                if (
-                  element.type === "groupedTab" &&
-                  element.tab &&
-                  element.group
-                ) {
-                  // Only render grouped tabs if the group is not collapsed
-                  if (element.groupInfo?.collapsed) return null;
+                  if (
+                    element.type === "groupedTab" &&
+                    element.tab &&
+                    element.group
+                  ) {
+                    // Only render grouped tabs if the group is not collapsed
+                    if (element.groupInfo?.collapsed) return null;
 
-                  return (
-                    <div key={`tab-${element.tab.id}`} className="ml-6">
-                      {element.tab.id !== undefined && (
+                    return (
+                      <div key={`tab-${element.tab.id}`} className="ml-6">
+                        {element.tab.id !== undefined && (
+                          <SortableActiveTabCard
+                            id={element.tab.id.toString()}
+                            tabId={element.tab.id}
+                            groupId={element.group?.groupId}
+                            onClick={() =>
+                              element.tab && onTabClick(element.tab)
+                            }
+                            onDelete={handleDeleteTab}
+                            onAddToResourceGroup={handleAddToResourceGroup}
+                            isFocused={focusedTabId === element.tab.id}
+                            isInClipboard={clipboardTabId === element.tab.id}
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (element.type === "tab" && element.tab) {
+                    return (
+                      element.tab.id !== undefined && (
                         <SortableActiveTabCard
+                          key={`tab-${element.tab.id}`}
                           id={element.tab.id.toString()}
                           tabId={element.tab.id}
-                          groupId={element.group?.groupId}
                           onClick={() => element.tab && onTabClick(element.tab)}
                           onDelete={handleDeleteTab}
                           onAddToResourceGroup={handleAddToResourceGroup}
                           isFocused={focusedTabId === element.tab.id}
                           isInClipboard={clipboardTabId === element.tab.id}
                         />
-                      )}
-                    </div>
-                  );
-                }
+                      )
+                    );
+                  }
 
-                if (element.type === "tab" && element.tab) {
-                  return (
-                    element.tab.id !== undefined && (
-                      <SortableActiveTabCard
-                        key={`tab-${element.tab.id}`}
-                        id={element.tab.id.toString()}
-                        tabId={element.tab.id}
-                        onClick={() => element.tab && onTabClick(element.tab)}
-                        onDelete={handleDeleteTab}
-                        onAddToResourceGroup={handleAddToResourceGroup}
-                        isFocused={focusedTabId === element.tab.id}
-                        isInClipboard={clipboardTabId === element.tab.id}
-                      />
-                    )
-                  );
-                }
-
-                return null;
-              })}
-            </div>
+                  return null;
+                })}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
       </SortableContext>

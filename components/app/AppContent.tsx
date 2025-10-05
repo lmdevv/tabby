@@ -114,7 +114,7 @@ export function AppContent({
       <div className="flex-1 h-full">
         {showResources ? (
           /* Split Layout - Both panels */
-          <div className="grid grid-cols-2 gap-4 h-full overflow-hidden">
+          <div className="grid gap-4 h-full overflow-hidden grid-cols-[minmax(280px,1fr)_minmax(250px,1fr)]">
             {/* Active Tabs Panel */}
             <div className="flex flex-col min-w-0 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
