@@ -97,13 +97,13 @@ export function WindowComponent({
   );
 
   // Action handlers
-  const handleDeleteTab = async (id: number) => {
+  const handleDeleteTab = useCallback(async (id: number) => {
     try {
       await browser.tabs.remove(id);
     } catch (error) {
       console.error("Failed to close tab:", error);
     }
-  };
+  }, []);
 
   const handleAddToResourceGroup = async (tab: Tab, groupId: number) => {
     try {
@@ -473,6 +473,33 @@ export function WindowComponent({
             setClipboardTabId(null);
           }
           break;
+        case "x": // x for delete focused tab
+          e.preventDefault();
+          if (focusedTabId) {
+            // Calculate next focus position before deletion
+            const currentIndex = navigableTabs.findIndex(
+              (tab) => tab.id === focusedTabId,
+            );
+            let nextFocusId = null;
+
+            if (navigableTabs.length > 1) {
+              if (currentIndex === navigableTabs.length - 1) {
+                // Last tab, move to previous
+                nextFocusId = navigableTabs[currentIndex - 1]?.id || null;
+              } else {
+                // Not last tab, move to next
+                nextFocusId = navigableTabs[currentIndex + 1]?.id || null;
+              }
+            }
+            // If only one tab, focus will be cleared naturally when tabs update
+
+            // Delete the tab
+            handleDeleteTab(focusedTabId);
+
+            // Set new focus immediately for better UX
+            setFocusedTabId(nextFocusId);
+          }
+          break;
         case "Escape":
           setFocusedTabId(null);
           setClipboardTabId(null);
@@ -488,6 +515,7 @@ export function WindowComponent({
     clipboardTabId,
     moveTabAfterPosition,
     moveTabBeforePosition,
+    handleDeleteTab,
   ]);
 
   return (
