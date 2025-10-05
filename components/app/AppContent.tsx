@@ -126,16 +126,12 @@ export function AppContent({
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2">
+                      <div className="flex items-center justify-end mb-2">
+                        <TopToolbar workspaceId={shownWorkspaceId} />
+                      </div>
                       {windowGroups.map((windowGroup) => {
                         return (
                           <div key={windowGroup.windowId}>
-                            {/* Per-window toolbar */}
-                            <div className="flex items-center justify-end mb-2">
-                              <TopToolbar
-                                workspaceId={shownWorkspaceId}
-                                windowId={windowGroup.windowId}
-                              />
-                            </div>
                             {shownWorkspaceId && (
                               <WindowComponent
                                 windowId={windowGroup.windowId}
@@ -180,16 +176,12 @@ export function AppContent({
                 <div className="overflow-hidden">
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2">
+                      <div className="flex items-center justify-end mb-2">
+                        <TopToolbar workspaceId={shownWorkspaceId} />
+                      </div>
                       {windowGroups.map((windowGroup) => {
                         return (
                           <div key={windowGroup.windowId}>
-                            {/* Per-window toolbar */}
-                            <div className="flex items-center justify-end mb-2">
-                              <TopToolbar
-                                workspaceId={shownWorkspaceId}
-                                windowId={windowGroup.windowId}
-                              />
-                            </div>
                             {shownWorkspaceId && (
                               <WindowComponent
                                 windowId={windowGroup.windowId}

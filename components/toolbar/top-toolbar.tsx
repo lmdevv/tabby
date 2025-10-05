@@ -32,10 +32,9 @@ import { db } from "@/lib/db/db";
 
 interface TopToolbarProps {
   workspaceId: number | null;
-  windowId: number;
 }
 
-export function TopToolbar({ workspaceId, windowId }: TopToolbarProps) {
+export function TopToolbar({ workspaceId }: TopToolbarProps) {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   // Get UI state directly from global state
@@ -56,12 +55,8 @@ export function TopToolbar({ workspaceId, windowId }: TopToolbarProps) {
   // Get tabs data directly from DB
   const tabs = useLiveQuery(() => {
     if (!workspaceId) return [];
-    return db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .filter((tab) => tab.windowId === windowId)
-      .toArray();
-  }, [workspaceId, windowId]);
+    return db.activeTabs.where("workspaceId").equals(workspaceId).toArray();
+  }, [workspaceId]);
 
   const tabsCount = tabs?.length || 0;
   const selectedTabsCount = selectedTabs.length;
@@ -95,7 +90,6 @@ export function TopToolbar({ workspaceId, windowId }: TopToolbarProps) {
     try {
       await browser.runtime.sendMessage({
         type: "sortTabs",
-        windowId,
         sortType,
       } as const);
       toast.success("Tabs sorted successfully");
@@ -109,7 +103,6 @@ export function TopToolbar({ workspaceId, windowId }: TopToolbarProps) {
     try {
       await browser.runtime.sendMessage({
         type: "groupTabs",
-        windowId,
         groupType: "domain",
       } as const);
       toast.success("Tabs grouped successfully");
