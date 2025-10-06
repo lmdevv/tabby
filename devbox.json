@@ -2,9 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
   "packages": ["nodejs@latest", "pnpm@latest"],
   "shell": {
-    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
     "scripts": {
-      "check": ["pnpm run check:write && pnpm run compile"]
+      "check": ["pnpm run check:write && pnpm run compile:go"]
     }
   }
 }
