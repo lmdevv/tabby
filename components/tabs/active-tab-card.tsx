@@ -107,15 +107,8 @@ export function ActiveTabCard({
     }) || [];
   const hasResourceGroups = resourceGroupsForTab.length > 0;
 
-  // Clamp text lengths for better layout stability
-  const MAX_TITLE_CHARS = 90;
-  const displayTitleTruncated =
-    (title || "Untitled").length > MAX_TITLE_CHARS
-      ? `${(title || "Untitled").slice(0, MAX_TITLE_CHARS)}…`
-      : title || "Untitled";
-
   const cardData = {
-    title: displayTitleTruncated,
+    title: title || "Untitled",
     url,
     favIconUrl,
     tags: undefined, // Always undefined - tags are rendered in afterInfo for custom layout
@@ -148,7 +141,7 @@ export function ActiveTabCard({
             />
           )}
 
-          {/* Checkbox for multi-select */}
+          {/* Checkbox for multi-select - hide on very small screens */}
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => {
@@ -162,7 +155,7 @@ export function ActiveTabCard({
               e.stopPropagation();
             }}
             aria-label={`Select ${title}`}
-            className="h-3.5 w-3.5 flex-shrink-0 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            className="hidden sm:flex h-3.5 w-3.5 flex-shrink-0 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
           />
         </>
       }
@@ -243,95 +236,98 @@ export function ActiveTabCard({
       }
       renderActions={() => (
         <TooltipProvider>
-          {resourceGroups.length > 0 ? (
-            <DropdownMenu>
+          {/* Hide bookmark button on very small screens */}
+          <div className="hidden sm:block">
+            {resourceGroups.length > 0 ? (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                        title={
+                          hasResourceGroups
+                            ? "Already saved as resource"
+                            : "Add to resource group"
+                        }
+                        className={
+                          hasResourceGroups
+                            ? "text-primary hover:text-primary/80"
+                            : ""
+                        }
+                      >
+                        <BookmarkPlus
+                          className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {hasResourceGroups
+                        ? `Saved in: ${resourceGroupsForTab.map((g: ResourceGroup) => g.name).join(", ")}`
+                        : "Add to resource group"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>
+                    {hasResourceGroups
+                      ? "Manage resource"
+                      : "Add to resource group"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {resourceGroups.map((group) => (
+                    <DropdownMenuItem
+                      key={group.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToResourceGroup?.(tab, group.id);
+                      }}
+                    >
+                      {group.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => e.stopPropagation()}
-                      title={
-                        hasResourceGroups
-                          ? "Already saved as resource"
-                          : "Add to resource group"
-                      }
-                      className={
-                        hasResourceGroups
-                          ? "text-primary hover:text-primary/80"
-                          : ""
-                      }
-                    >
-                      <BookmarkPlus
-                        className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
-                      />
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.info("No resource groups available");
+                    }}
+                    title={
+                      hasResourceGroups
+                        ? "Already saved as resource"
+                        : "Add to resource group"
+                    }
+                    className={
+                      hasResourceGroups
+                        ? "text-primary hover:text-primary/80"
+                        : ""
+                    }
+                  >
+                    <BookmarkPlus
+                      className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
+                    />
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
                     {hasResourceGroups
-                      ? `Saved in: ${resourceGroupsForTab.map((g: ResourceGroup) => g.name).join(", ")}`
+                      ? `Saved in: ${resourceGroupsForTab.map((g) => g.name).join(", ")}`
                       : "Add to resource group"}
                   </p>
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>
-                  {hasResourceGroups
-                    ? "Manage resource"
-                    : "Add to resource group"}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {resourceGroups.map((group) => (
-                  <DropdownMenuItem
-                    key={group.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddToResourceGroup?.(tab, group.id);
-                    }}
-                  >
-                    {group.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toast.info("No resource groups available");
-                  }}
-                  title={
-                    hasResourceGroups
-                      ? "Already saved as resource"
-                      : "Add to resource group"
-                  }
-                  className={
-                    hasResourceGroups
-                      ? "text-primary hover:text-primary/80"
-                      : ""
-                  }
-                >
-                  <BookmarkPlus
-                    className={`h-3 w-3 ${hasResourceGroups ? "text-primary" : ""}`}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {hasResourceGroups
-                    ? `Saved in: ${resourceGroupsForTab.map((g) => g.name).join(", ")}`
-                    : "Add to resource group"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+            )}
+          </div>
 
           <DeleteAction
             onDelete={() => {
