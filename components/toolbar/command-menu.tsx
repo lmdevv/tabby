@@ -9,10 +9,18 @@ import {
   Hash,
   Monitor,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
   CommandDialog,
   CommandEmpty,
@@ -39,6 +47,7 @@ export function CommandMenu({
 }: CommandMenuProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [menuMode, setMenuMode] = useState<MenuMode>("main");
+  const [searchValue, setSearchValue] = useState("");
 
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? externalOpen : internalOpen;
@@ -50,9 +59,10 @@ export function CommandMenu({
       } else {
         setInternalOpen(newOpen);
       }
-      // Reset to main menu when closing
+      // Reset to main menu and clear search when closing
       if (!newOpen) {
         setMenuMode("main");
+        setSearchValue("");
       }
     },
     [isControlled, onOpenChange],
@@ -61,25 +71,14 @@ export function CommandMenu({
   // Fetch all workspaces
   const workspaces = useLiveQuery(() => db.workspaces.toArray(), []);
 
+  // Fetch all workspace groups
+  const workspaceGroups = useLiveQuery(() => db.workspaceGroups.toArray(), []);
+
   // Get active workspace
   const activeWorkspace = useLiveQuery(
     () => db.workspaces.where("active").equals(1).first(),
     [],
   );
-
-  useEffect(() => {
-    if (isControlled) return; // Skip keyboard listener if controlled externally
-
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "o") {
-        e.preventDefault();
-        handleOpenChange(!open);
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, [isControlled, open, handleOpenChange]);
 
   const handleSortTabs = async (sortType: "title" | "domain" | "recency") => {
     try {
@@ -144,10 +143,42 @@ export function CommandMenu({
 
   const showWorkspaces = () => {
     setMenuMode("workspaces");
+    setSearchValue("");
   };
 
   const goBackToMain = () => {
     setMenuMode("main");
+  };
+
+  // Helper function to get workspace display element with group breadcrumbs
+  const getWorkspaceDisplayElement = (workspace: {
+    id: number;
+    name: string;
+    groupId?: number;
+  }) => {
+    if (workspace.groupId && workspaceGroups) {
+      const group = workspaceGroups.find((g) => g.id === workspace.groupId);
+      if (group) {
+        return (
+          <Breadcrumb>
+            <BreadcrumbList className="gap-1">
+              <BreadcrumbItem>
+                <BreadcrumbLink className="text-muted-foreground hover:text-muted-foreground">
+                  {group.name}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-foreground">
+                  {workspace.name}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        );
+      }
+    }
+    return <span>{workspace.name}</span>;
   };
 
   return (
@@ -158,6 +189,8 @@ export function CommandMenu({
             ? "Search workspaces..."
             : "Type a command..."
         }
+        value={searchValue}
+        onValueChange={setSearchValue}
       />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -204,7 +237,9 @@ export function CommandMenu({
                   onSelect={() => openWorkspace(workspace.id)}
                 >
                   <Monitor className="mr-2 h-4 w-4" />
-                  <span className="flex-1">{workspace.name}</span>
+                  <span className="flex-1">
+                    {getWorkspaceDisplayElement(workspace)}
+                  </span>
                   {activeWorkspace?.id === workspace.id && (
                     <Badge variant="secondary" className="ml-2">
                       Active
