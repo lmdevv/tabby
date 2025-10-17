@@ -1,9 +1,18 @@
 "use client";
 
-import { ArrowUpDown, Bot, Group, Hash } from "lucide-react";
+import { useLiveQuery } from "dexie-react-hooks";
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Bot,
+  Group,
+  Hash,
+  Monitor,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
+import { Badge } from "@/components/ui/badge";
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,6 +22,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { aiGroupTabsInWorkspace } from "@/lib/ai/ai-grouping";
+import { db } from "@/lib/db/db";
 
 interface CommandMenuProps {
   workspaceId: number | null;
@@ -20,12 +30,15 @@ interface CommandMenuProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+type MenuMode = "main" | "workspaces";
+
 export function CommandMenu({
   workspaceId,
   open: externalOpen,
   onOpenChange,
 }: CommandMenuProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [menuMode, setMenuMode] = useState<MenuMode>("main");
 
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? externalOpen : internalOpen;
@@ -37,8 +50,21 @@ export function CommandMenu({
       } else {
         setInternalOpen(newOpen);
       }
+      // Reset to main menu when closing
+      if (!newOpen) {
+        setMenuMode("main");
+      }
     },
     [isControlled, onOpenChange],
+  );
+
+  // Fetch all workspaces
+  const workspaces = useLiveQuery(() => db.workspaces.toArray(), []);
+
+  // Get active workspace
+  const activeWorkspace = useLiveQuery(
+    () => db.workspaces.where("active").equals(1).first(),
+    [],
   );
 
   useEffect(() => {
@@ -102,33 +128,93 @@ export function CommandMenu({
     }
   };
 
+  const openWorkspace = async (workspaceIdToOpen: number) => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "openWorkspace",
+        workspaceId: workspaceIdToOpen,
+      });
+      toast.success("Workspace opened successfully");
+      handleOpenChange(false);
+    } catch (error) {
+      console.error("Failed to open workspace:", error);
+      toast.error("Failed to open workspace");
+    }
+  };
+
+  const showWorkspaces = () => {
+    setMenuMode("workspaces");
+  };
+
+  const goBackToMain = () => {
+    setMenuMode("main");
+  };
+
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
-      <CommandInput placeholder="Type a command..." />
+      <CommandInput
+        placeholder={
+          menuMode === "workspaces"
+            ? "Search workspaces..."
+            : "Type a command..."
+        }
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup>
-          <CommandItem onSelect={() => handleSortTabs("title")}>
-            <ArrowUpDown className="mr-2 h-4 w-4" />
-            <span>Sort by Title (A-Z)</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleSortTabs("domain")}>
-            <Hash className="mr-2 h-4 w-4" />
-            <span>Sort by Domain</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleSortTabs("recency")}>
-            <ArrowUpDown className="mr-2 h-4 w-4" />
-            <span>Sort by Recency (Newest First)</span>
-          </CommandItem>
-          <CommandItem onSelect={handleGroupTabs}>
-            <Group className="mr-2 h-4 w-4" />
-            <span>Group by Domain</span>
-          </CommandItem>
-          <CommandItem onSelect={handleAIGroupTabs}>
-            <Bot className="mr-2 h-4 w-4" />
-            <span>Group with Tabby</span>
-          </CommandItem>
-        </CommandGroup>
+
+        {menuMode === "main" && (
+          <CommandGroup>
+            <CommandItem onSelect={() => handleSortTabs("title")}>
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <span>Sort by Title (A-Z)</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleSortTabs("domain")}>
+              <Hash className="mr-2 h-4 w-4" />
+              <span>Sort by Domain</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleSortTabs("recency")}>
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <span>Sort by Recency (Newest First)</span>
+            </CommandItem>
+            <CommandItem onSelect={handleGroupTabs}>
+              <Group className="mr-2 h-4 w-4" />
+              <span>Group by Domain</span>
+            </CommandItem>
+            <CommandItem onSelect={handleAIGroupTabs}>
+              <Bot className="mr-2 h-4 w-4" />
+              <span>Group with Tabby</span>
+            </CommandItem>
+            <CommandItem onSelect={showWorkspaces}>
+              <Monitor className="mr-2 h-4 w-4" />
+              <span>Workspaces</span>
+            </CommandItem>
+          </CommandGroup>
+        )}
+
+        {menuMode === "workspaces" && (
+          <CommandGroup>
+            <CommandItem onSelect={goBackToMain}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              <span>Back to Commands</span>
+            </CommandItem>
+            {workspaces?.map((workspace) =>
+              workspace.id ? (
+                <CommandItem
+                  key={workspace.id}
+                  onSelect={() => openWorkspace(workspace.id)}
+                >
+                  <Monitor className="mr-2 h-4 w-4" />
+                  <span className="flex-1">{workspace.name}</span>
+                  {activeWorkspace?.id === workspace.id && (
+                    <Badge variant="secondary" className="ml-2">
+                      Active
+                    </Badge>
+                  )}
+                </CommandItem>
+              ) : null,
+            )}
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );
