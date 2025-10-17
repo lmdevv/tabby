@@ -3,6 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   ArrowUpDown,
+  Bot,
   CheckSquare,
   History,
   Link2,
@@ -28,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
+import { aiGroupTabsInWorkspace } from "@/lib/ai/ai-grouping";
 import { db } from "@/lib/db/db";
 
 interface TopToolbarProps {
@@ -111,6 +113,19 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
     } catch (error) {
       console.error("Failed to group tabs:", error);
       toast.error("Failed to group tabs");
+    }
+  };
+
+  const handleAIGroupTabs = async () => {
+    if (!workspaceId) return;
+
+    try {
+      toast.loading("Grouping tabs with AI...", { id: "ai-grouping" });
+      await aiGroupTabsInWorkspace(workspaceId);
+      toast.success("Tabs grouped with AI successfully", { id: "ai-grouping" });
+    } catch (error) {
+      console.error("Failed to AI group tabs:", error);
+      toast.error("Failed to AI group tabs", { id: "ai-grouping" });
     }
   };
   return (
@@ -212,6 +227,11 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleSortTabs("recency")}>
             Sort by Recency (Newest First)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleAIGroupTabs}>
+            <Bot className="h-4 w-4 mr-2" />
+            AI Group
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleGroupTabs}>

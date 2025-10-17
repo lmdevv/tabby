@@ -9,6 +9,43 @@ export function findTabById(tabs: Tab[], id: string): Tab | undefined {
 }
 
 /**
+ * Get a random color for tab groups
+ */
+export function getRandomTabGroupColor():
+  | "blue"
+  | "cyan"
+  | "green"
+  | "grey"
+  | "orange"
+  | "pink"
+  | "purple"
+  | "red"
+  | "yellow" {
+  const colors: Array<
+    | "blue"
+    | "cyan"
+    | "green"
+    | "grey"
+    | "orange"
+    | "pink"
+    | "purple"
+    | "red"
+    | "yellow"
+  > = [
+    "grey",
+    "blue",
+    "red",
+    "yellow",
+    "green",
+    "pink",
+    "purple",
+    "cyan",
+    "orange",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+/**
  * Ungroups a tab if it's part of a group
  */
 export async function ungroupTabIfNeeded(tab: Tab): Promise<void> {

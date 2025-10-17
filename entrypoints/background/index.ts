@@ -21,6 +21,7 @@ import {
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
 import { db } from "@/lib/db/db";
+import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 import type { RuntimeMessage, Workspace } from "@/lib/types/types";
 
 export default defineBackground(() => {
@@ -345,21 +346,6 @@ export default defineBackground(() => {
       );
       throw error;
     }
-  }
-
-  // Helper function to get a random tab group color
-  function getRandomTabGroupColor() {
-    const colors = [
-      "grey",
-      "blue",
-      "red",
-      "yellow",
-      "green",
-      "pink",
-      "purple",
-      "cyan",
-    ] as const;
-    return colors[Math.floor(Math.random() * colors.length)];
   }
 
   // Handle extension icon click

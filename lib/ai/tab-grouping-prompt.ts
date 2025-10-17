@@ -1,0 +1,128 @@
+/**
+ * AI-powered tab grouping prompt for Chrome Extension
+ * This prompt is designed to work with local AI models via Chrome's Prompt API
+ */
+
+export interface TabInfo {
+  id: number;
+  title: string;
+  url: string;
+}
+
+export interface TabGroup {
+  name: string;
+  tabIds: number[];
+}
+
+export interface AIGroupResponse {
+  groups: TabGroup[];
+  ungroupedTabs?: number[];
+}
+
+export const AI_GROUP_PROMPT = `You are a helpful assistant that organizes browser tabs into logical groups.
+
+Your task is to analyze a list of browser tabs and group them by related topics, domains, or workflows.
+
+Rules:
+1. Group tabs that are related (same domain, similar topics, part of same workflow)
+2. Give each group a descriptive name (e.g., "Development", "Communication", "Research")
+3. Only create groups when it makes sense - don't force grouping
+4. Some tabs can remain ungrouped if they don't fit well anywhere
+5. Ensure all tab IDs from the input are included in either groups or ungroupedTabs
+6. Keep groups focused and logical
+
+Analyze the following tabs and create appropriate groups:`;
+
+// JSON Schema for structured output validation
+export const AI_GROUP_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    groups: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 50,
+            description: "Descriptive name for the group",
+          },
+          tabIds: {
+            type: "array",
+            items: {
+              type: "number",
+            },
+            minItems: 2,
+            description: "Array of tab IDs that belong to this group",
+          },
+        },
+        required: ["name", "tabIds"],
+        additionalProperties: false,
+      },
+      description: "Array of tab groups",
+    },
+    ungroupedTabs: {
+      type: "array",
+      items: {
+        type: "number",
+      },
+      description: "Optional array of tab IDs that don't belong to any group",
+    },
+  },
+  required: ["groups"],
+  additionalProperties: false,
+};
+
+export function formatTabsForPrompt(tabs: TabInfo[]): string {
+  return JSON.stringify(tabs, null, 2);
+}
+
+export function validateAIGroupResponse(
+  response: string,
+): AIGroupResponse | null {
+  try {
+    const parsed = JSON.parse(response);
+
+    // Validate the structure
+    if (!parsed.groups || !Array.isArray(parsed.groups)) {
+      return null;
+    }
+
+    // Validate each group
+    for (const group of parsed.groups) {
+      if (
+        typeof group.name !== "string" ||
+        !group.name.trim() ||
+        !Array.isArray(group.tabIds) ||
+        group.tabIds.length < 2
+      ) {
+        return null;
+      }
+
+      // Validate tab IDs in each group
+      for (const tabId of group.tabIds) {
+        if (typeof tabId !== "number") {
+          return null;
+        }
+      }
+    }
+
+    // Validate ungrouped tabs if present
+    if (parsed.ungroupedTabs) {
+      if (!Array.isArray(parsed.ungroupedTabs)) {
+        return null;
+      }
+      for (const tabId of parsed.ungroupedTabs) {
+        if (typeof tabId !== "number") {
+          return null;
+        }
+      }
+    }
+
+    return parsed as AIGroupResponse;
+  } catch (error) {
+    console.error("Invalid AI group response:", error);
+    return null;
+  }
+}
