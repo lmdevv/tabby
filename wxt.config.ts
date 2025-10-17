@@ -10,6 +10,14 @@ export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   manifest: {
     permissions: ["tabs", "storage", "tabGroups"],
+    commands: {
+      "open-command-menu": {
+        suggested_key: {
+          default: "Ctrl+Space",
+        },
+        description: "Open Tabby command menu",
+      },
+    },
     action: {
       default_title: "Tabby",
     },

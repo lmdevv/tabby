@@ -1,11 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { browser } from "wxt/browser";
 import { AppContent } from "@/components/app/AppContent";
 import { AppHeader } from "@/components/app/AppHeader";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-
+import { CommandMenu } from "@/components/toolbar/command-menu";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -23,6 +23,20 @@ export default function App() {
   }>({
     open: false,
   });
+
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+
+  // Listen for messages from background script
+  useEffect(() => {
+    const handleMessage = (message: { type: string }) => {
+      if (message.type === "openCommandMenu") {
+        setCommandMenuOpen(true);
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMessage);
+    return () => browser.runtime.onMessage.removeListener(handleMessage);
+  }, []);
 
   // Get workspace data directly using Dexie
   const workspaceData = useLiveQuery(async () => {
@@ -133,6 +147,13 @@ export default function App() {
 
         {/* Quick Actions Panel */}
         <QuickActionsPanel />
+
+        {/* Command Menu */}
+        <CommandMenu
+          workspaceId={shownWorkspaceId || null}
+          open={commandMenuOpen}
+          onOpenChange={setCommandMenuOpen}
+        />
 
         <AppContent
           shownWorkspaceId={shownWorkspaceId || null}

@@ -231,7 +231,7 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleAIGroupTabs}>
             <Bot className="h-4 w-4 mr-2" />
-            AI Group
+            Group with Tabby
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleGroupTabs}>

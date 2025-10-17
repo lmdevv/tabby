@@ -401,6 +401,30 @@ export default defineBackground(() => {
     });
   });
 
+  // Handle keyboard commands
+  browser.commands.onCommand.addListener(async (command) => {
+    if (command === "open-command-menu") {
+      try {
+        // First ensure dashboard is open/focused
+        await handleActionClick();
+
+        // Then send message to dashboard to open command menu
+        const dashboardPageURL = browser.runtime.getURL("/dashboard.html");
+        const dashboardTabs = await browser.tabs.query({
+          url: dashboardPageURL,
+        });
+
+        if (dashboardTabs.length > 0 && dashboardTabs[0].id) {
+          await browser.tabs.sendMessage(dashboardTabs[0].id, {
+            type: "openCommandMenu",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to handle command menu:", err);
+      }
+    }
+  });
+
   // Maybe this could be done on dashboard? without relying on service worker? idk if that would be better or more reliable
   // TODO: Make one big ops for db for atomic updates
   // NOTE: on the logs, this updatetabgroup is getting logged on application console, not service worker, so this message comm doesnt even need to be necessary then
