@@ -77,6 +77,7 @@ export interface LanguageModelCreateOptions {
   signal?: AbortSignal;
   initialPrompts?: PromptMessage[];
   expectedInputs?: ExpectedInput[];
+  expectedOutputs?: ExpectedInput[];
   monitor?: (monitor: LanguageModelMonitor) => void;
 }
 
