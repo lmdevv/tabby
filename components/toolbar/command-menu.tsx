@@ -107,11 +107,7 @@ export function CommandMenu({
       <CommandInput placeholder="Type a command..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Tab Management">
-          <CommandItem onSelect={handleAIGroupTabs}>
-            <Bot className="mr-2 h-4 w-4" />
-            <span>Group with Tabby</span>
-          </CommandItem>
+        <CommandGroup>
           <CommandItem onSelect={() => handleSortTabs("title")}>
             <ArrowUpDown className="mr-2 h-4 w-4" />
             <span>Sort by Title (A-Z)</span>
@@ -127,6 +123,10 @@ export function CommandMenu({
           <CommandItem onSelect={handleGroupTabs}>
             <Group className="mr-2 h-4 w-4" />
             <span>Group by Domain</span>
+          </CommandItem>
+          <CommandItem onSelect={handleAIGroupTabs}>
+            <Bot className="mr-2 h-4 w-4" />
+            <span>Group with Tabby</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>
