@@ -80,6 +80,7 @@ export function CommandMenu({
     [],
   );
 
+  // TODO: This helpers might have to be moved to separate file and imported when needed
   const handleSortTabs = async (sortType: "title" | "domain" | "recency") => {
     try {
       await browser.runtime.sendMessage({
