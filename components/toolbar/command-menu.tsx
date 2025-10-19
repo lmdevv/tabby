@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowUpDown, Bot, Group, Hash, Monitor } from "lucide-react";
+import { ArrowUpDown, Bot, Group, Hash, Monitor, Ungroup } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
@@ -151,6 +151,20 @@ export function CommandMenu({
     }
   };
 
+  const handleUngroupTabs = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "ungroupTabs",
+        workspaceId,
+      } as const);
+      toast.success("Tabs ungrouped successfully");
+      handleOpenChange(false);
+    } catch (error) {
+      console.error("Failed to ungroup tabs:", error);
+      toast.error("Failed to ungroup tabs");
+    }
+  };
+
   const openWorkspace = async (workspaceIdToOpen: number) => {
     try {
       await browser.runtime.sendMessage({
@@ -201,6 +215,7 @@ export function CommandMenu({
       "sort-recency": "Sort by Recency (Newest First)",
       "group-domain": "Group by Domain",
       "group-ai": "Group with Tabby",
+      "ungroup-tabs": "Ungroup All Tabs",
       workspaces: "Browse Workspaces",
     };
 
@@ -291,6 +306,10 @@ export function CommandMenu({
               <CommandItem value="group-ai" onSelect={handleAIGroupTabs}>
                 <Bot className="mr-2 h-4 w-4" />
                 <span>Group with Tabby</span>
+              </CommandItem>
+              <CommandItem value="ungroup-tabs" onSelect={handleUngroupTabs}>
+                <Ungroup className="mr-2 h-4 w-4" />
+                <span>Ungroup All Tabs</span>
               </CommandItem>
               <CommandItem value="workspaces" onSelect={showWorkspaces}>
                 <Monitor className="mr-2 h-4 w-4" />

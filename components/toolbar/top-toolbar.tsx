@@ -9,6 +9,7 @@ import {
   Link2,
   RefreshCw,
   Tag,
+  Ungroup,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -128,6 +129,19 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
       toast.error("Failed to AI group tabs", { id: "ai-grouping" });
     }
   };
+
+  const handleUngroupTabs = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "ungroupTabs",
+        workspaceId,
+      } as const);
+      toast.success("Tabs ungrouped successfully");
+    } catch (error) {
+      console.error("Failed to ungroup tabs:", error);
+      toast.error("Failed to ungroup tabs");
+    }
+  };
   return (
     <div className="flex gap-2">
       <TooltipProvider>
@@ -236,6 +250,10 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleGroupTabs}>
             Group by Domain
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleUngroupTabs}>
+            <Ungroup className="h-4 w-4 mr-2" />
+            Ungroup All Tabs
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

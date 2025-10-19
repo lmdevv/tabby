@@ -299,6 +299,9 @@ export default defineBackground(() => {
     sortType: "title" | "domain" | "recency",
   ) {
     try {
+      // Ungroup tabs first to ensure clean sorting
+      await ungroupTabsInWorkspace(workspaceId);
+
       // Get all tabs in the workspace
       const tabs = await db.activeTabs
         .where("workspaceId")
@@ -325,6 +328,9 @@ export default defineBackground(() => {
     groupType: "domain",
   ) {
     try {
+      // Ungroup tabs first to ensure clean grouping
+      await ungroupTabsInWorkspace(workspaceId);
+
       // Get all tabs in the workspace
       const tabs = await db.activeTabs
         .where("workspaceId")
@@ -344,6 +350,73 @@ export default defineBackground(() => {
         `❌ Failed to group tabs in workspace ${workspaceId}:`,
         error,
       );
+      throw error;
+    }
+  }
+
+  async function ungroupTabsInWorkspace(workspaceId: number) {
+    try {
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+      // Get unique windowIds
+      const windowIds = [...new Set(tabs.map((tab) => tab.windowId))];
+
+      // Ungroup tabs in each window
+      for (const windowId of windowIds) {
+        await ungroupTabsInWindow(windowId);
+      }
+      console.log(`✅ Ungrouped tabs in workspace ${workspaceId}`);
+    } catch (error) {
+      console.error(
+        `❌ Failed to ungroup tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async function ungroupTabsInWindow(windowId: number) {
+    try {
+      // Get all tabs in the window that belong to groups
+      const allTabs = await browser.tabs.query({ windowId });
+      const groupedTabIds: number[] = [];
+
+      for (const tab of allTabs) {
+        if (
+          tab.id !== undefined &&
+          tab.groupId !== undefined &&
+          tab.groupId !== -1
+        ) {
+          groupedTabIds.push(tab.id);
+        }
+      }
+
+      if (groupedTabIds.length > 0) {
+        try {
+          // Ungroup the tabs using Chrome API
+          const tabsApi = browser.tabs as unknown as {
+            ungroup?: (tabIds: number[]) => Promise<void>;
+          };
+          if (tabsApi.ungroup) {
+            await tabsApi.ungroup(groupedTabIds);
+            console.log(
+              `✅ Ungrouped ${groupedTabIds.length} tabs in window ${windowId}`,
+            );
+          }
+        } catch (ungroupError) {
+          console.error(
+            `❌ Failed to ungroup tabs in window ${windowId}:`,
+            ungroupError,
+          );
+        }
+      } else {
+        console.log(`ℹ️ No grouped tabs found in window ${windowId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to ungroup tabs in window ${windowId}:`, error);
       throw error;
     }
   }
@@ -583,6 +656,12 @@ export default defineBackground(() => {
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "groupTabs") {
         await groupTabsInWorkspace(message.workspaceId, message.groupType);
+        return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "ungroupTabs"
+      ) {
+        await ungroupTabsInWorkspace(message.workspaceId);
         return { success: true } as const;
       } else if (typeof message === "object" && message.type === "moveTab") {
         console.log("Moving tab", message.tabId, "to index", message.newIndex);

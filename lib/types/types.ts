@@ -168,6 +168,10 @@ export interface GroupTabsMessage {
   workspaceId: number;
   groupType: "domain";
 }
+export interface UngroupTabsMessage {
+  type: "ungroupTabs";
+  workspaceId: number;
+}
 export interface MoveTabMessage {
   type: "moveTab";
   tabId: number;
@@ -185,6 +189,7 @@ export type RuntimeMessage =
   | DeleteSnapshotMessage
   | SortTabsMessage
   | GroupTabsMessage
+  | UngroupTabsMessage
   | MoveTabMessage;
 
 export type {
