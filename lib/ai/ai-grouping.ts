@@ -97,7 +97,7 @@ export async function aiGroupTabsInWorkspaceCustom(
     const session = await LanguageModel.create();
 
     // Prepare the prompt with tab data and custom instructions
-    const prompt = `${AI_GROUP_PROMPT}\n\nCustom Instructions: ${customInstructions}\n\n${formatTabsForPrompt(tabInfo)}`;
+    const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customInstructions}\n\n${formatTabsForPrompt(tabInfo)}`;
 
     console.log("=== AI CUSTOM GROUP DEBUG ===");
     console.log("Custom instructions:", customInstructions);

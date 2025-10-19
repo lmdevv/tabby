@@ -70,7 +70,7 @@ export const AI_GROUP_RESPONSE_SCHEMA = {
       description: "Optional array of tab IDs that don't belong to any group",
     },
   },
-  required: ["groups"],
+  required: ["groups", "ungroupedTabs"],
   additionalProperties: false,
 };
 

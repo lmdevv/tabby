@@ -175,7 +175,7 @@ export function CommandMenu({
   // Check if search is a custom group command
   const isCustomGroupCommand = searchValue.toLowerCase().startsWith("group ");
   const customGroupInstructions = isCustomGroupCommand
-    ? searchValue.slice(6).trim()
+    ? searchValue.trim()
     : "";
 
   // Get footer content based on current mode and selection
