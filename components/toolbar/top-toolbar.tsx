@@ -3,14 +3,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   ArrowUpDown,
-  Bot,
   CheckSquare,
   History,
   Link2,
   RefreshCw,
   Tag,
-  Trash2,
-  Ungroup,
 } from "lucide-react";
 import { useState } from "react";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
@@ -19,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -227,34 +223,25 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
           <DropdownMenuItem onClick={() => handleSortTabs("recency")}>
             Sort by Recency (Newest First)
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleAIGroupTabs}>
-            <Bot className="h-4 w-4 mr-2" />
             Group with Tabby
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleGroupTabs}>
             Group by Domain
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleUngroupTabs}>
-            <Ungroup className="h-4 w-4 mr-2" />
             Ungroup All Tabs
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCleanUnusedTabs}>
-            <Trash2 className="h-4 w-4 mr-2" />
             Clean Unused Tabs (3+ days)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCleanDuplicateTabs}>
-            <Trash2 className="h-4 w-4 mr-2" />
             Clean Duplicate Tabs
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCleanResourceTabs}>
-            <Trash2 className="h-4 w-4 mr-2" />
             Clean Resource Tabs
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCleanNonResourceTabs}>
-            <Trash2 className="h-4 w-4 mr-2" />
             Clean Non-Resource Tabs
           </DropdownMenuItem>
         </DropdownMenuContent>
