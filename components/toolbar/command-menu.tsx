@@ -1,15 +1,8 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  ArrowLeft,
-  ArrowUpDown,
-  Bot,
-  Group,
-  Hash,
-  Monitor,
-} from "lucide-react";
-import { useCallback, useState } from "react";
+import { ArrowUpDown, Bot, Group, Hash, Monitor } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +15,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -48,9 +42,16 @@ export function CommandMenu({
   const [internalOpen, setInternalOpen] = useState(false);
   const [menuMode, setMenuMode] = useState<MenuMode>("main");
   const [searchValue, setSearchValue] = useState("");
+  const [selectedValue, setSelectedValue] = useState<string>("");
 
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? externalOpen : internalOpen;
+
+  const goBackToMain = useCallback(() => {
+    setMenuMode("main");
+    setSelectedValue("");
+    setSearchValue("");
+  }, []);
 
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
@@ -63,10 +64,32 @@ export function CommandMenu({
       if (!newOpen) {
         setMenuMode("main");
         setSearchValue("");
+        setSelectedValue("");
       }
     },
     [isControlled, onOpenChange],
   );
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!open) return;
+
+      // Ctrl+H or Ctrl+Left Arrow to go back in workspaces mode
+      if (menuMode === "workspaces") {
+        if (
+          (event.ctrlKey && event.key === "h") ||
+          (event.ctrlKey && event.key === "ArrowLeft")
+        ) {
+          event.preventDefault();
+          goBackToMain();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, menuMode, goBackToMain]);
 
   // Fetch all workspaces
   const workspaces = useLiveQuery(() => db.workspaces.toArray(), []);
@@ -147,8 +170,45 @@ export function CommandMenu({
     setSearchValue("");
   };
 
-  const goBackToMain = () => {
-    setMenuMode("main");
+  // Get footer content based on current mode and selection
+  const getFooterContent = () => {
+    if (menuMode === "workspaces") {
+      const selectedWorkspace = workspaces?.find(
+        (w) => w.id?.toString() === selectedValue,
+      );
+      if (selectedWorkspace) {
+        return {
+          enterText: `Open "${selectedWorkspace.name}"`,
+          shortcuts: [
+            { key: "⌃H", action: "Back" },
+            { key: "⌃←", action: "Back" },
+          ],
+        };
+      }
+      return {
+        enterText: "Select workspace",
+        shortcuts: [
+          { key: "⌃H", action: "Back" },
+          { key: "⌃←", action: "Back" },
+        ],
+      };
+    }
+
+    // Main menu mode
+    const commandMap: Record<string, string> = {
+      "sort-title": "Sort by Title (A-Z)",
+      "sort-domain": "Sort by Domain",
+      "sort-recency": "Sort by Recency (Newest First)",
+      "group-domain": "Group by Domain",
+      "group-ai": "Group with Tabby",
+      workspaces: "Browse Workspaces",
+    };
+
+    const action = commandMap[selectedValue];
+    return {
+      enterText: action || "Select command",
+      shortcuts: [],
+    };
   };
 
   // Helper function to get workspace display element with group breadcrumbs
@@ -184,74 +244,106 @@ export function CommandMenu({
 
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
-      <CommandInput
-        placeholder={
-          menuMode === "workspaces"
-            ? "Search workspaces..."
-            : "Type a command..."
-        }
-        value={searchValue}
-        onValueChange={setSearchValue}
-      />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+      <Command
+        value={selectedValue}
+        onValueChange={setSelectedValue}
+        className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+      >
+        <CommandInput
+          placeholder={
+            menuMode === "workspaces"
+              ? "Search workspaces..."
+              : "Type a command..."
+          }
+          value={searchValue}
+          onValueChange={setSearchValue}
+        />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
 
-        {menuMode === "main" && (
-          <CommandGroup>
-            <CommandItem onSelect={() => handleSortTabs("title")}>
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              <span>Sort by Title (A-Z)</span>
-            </CommandItem>
-            <CommandItem onSelect={() => handleSortTabs("domain")}>
-              <Hash className="mr-2 h-4 w-4" />
-              <span>Sort by Domain</span>
-            </CommandItem>
-            <CommandItem onSelect={() => handleSortTabs("recency")}>
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              <span>Sort by Recency (Newest First)</span>
-            </CommandItem>
-            <CommandItem onSelect={handleGroupTabs}>
-              <Group className="mr-2 h-4 w-4" />
-              <span>Group by Domain</span>
-            </CommandItem>
-            <CommandItem onSelect={handleAIGroupTabs}>
-              <Bot className="mr-2 h-4 w-4" />
-              <span>Group with Tabby</span>
-            </CommandItem>
-            <CommandItem onSelect={showWorkspaces}>
-              <Monitor className="mr-2 h-4 w-4" />
-              <span>Workspaces</span>
-            </CommandItem>
-          </CommandGroup>
-        )}
+          {menuMode === "main" && (
+            <CommandGroup>
+              <CommandItem
+                value="sort-title"
+                onSelect={() => handleSortTabs("title")}
+              >
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <span>Sort by Title (A-Z)</span>
+              </CommandItem>
+              <CommandItem
+                value="sort-domain"
+                onSelect={() => handleSortTabs("domain")}
+              >
+                <Hash className="mr-2 h-4 w-4" />
+                <span>Sort by Domain</span>
+              </CommandItem>
+              <CommandItem
+                value="sort-recency"
+                onSelect={() => handleSortTabs("recency")}
+              >
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <span>Sort by Recency (Newest First)</span>
+              </CommandItem>
+              <CommandItem value="group-domain" onSelect={handleGroupTabs}>
+                <Group className="mr-2 h-4 w-4" />
+                <span>Group by Domain</span>
+              </CommandItem>
+              <CommandItem value="group-ai" onSelect={handleAIGroupTabs}>
+                <Bot className="mr-2 h-4 w-4" />
+                <span>Group with Tabby</span>
+              </CommandItem>
+              <CommandItem value="workspaces" onSelect={showWorkspaces}>
+                <Monitor className="mr-2 h-4 w-4" />
+                <span>Workspaces</span>
+              </CommandItem>
+            </CommandGroup>
+          )}
 
-        {menuMode === "workspaces" && (
-          <CommandGroup>
-            <CommandItem onSelect={goBackToMain}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span>Back to Commands</span>
-            </CommandItem>
-            {workspaces?.map((workspace) =>
-              workspace.id ? (
-                <CommandItem
-                  key={workspace.id}
-                  onSelect={() => openWorkspace(workspace.id)}
-                >
-                  <Monitor className="mr-2 h-4 w-4" />
-                  <span className="flex-1">
-                    {getWorkspaceDisplayElement(workspace)}
-                  </span>
-                  {activeWorkspace?.id === workspace.id && (
-                    <Badge variant="secondary" className="ml-2">
-                      Active
-                    </Badge>
-                  )}
-                </CommandItem>
-              ) : null,
-            )}
-          </CommandGroup>
-        )}
-      </CommandList>
+          {menuMode === "workspaces" && (
+            <CommandGroup>
+              {workspaces?.map((workspace) =>
+                workspace.id ? (
+                  <CommandItem
+                    key={workspace.id}
+                    value={`${workspace.name} ${workspace.groupId ? workspaceGroups?.find((g) => g.id === workspace.groupId)?.name : ""}`}
+                    onSelect={() => openWorkspace(workspace.id)}
+                  >
+                    <Monitor className="mr-2 h-4 w-4" />
+                    <span className="flex-1">
+                      {getWorkspaceDisplayElement(workspace)}
+                    </span>
+                    {activeWorkspace?.id === workspace.id && (
+                      <Badge variant="secondary" className="ml-2">
+                        Active
+                      </Badge>
+                    )}
+                  </CommandItem>
+                ) : null,
+              )}
+            </CommandGroup>
+          )}
+        </CommandList>
+
+        {/* Footer */}
+        <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <span>↵</span>
+              <span>{getFooterContent().enterText}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {getFooterContent().shortcuts.map((shortcut) => (
+                <div key={shortcut.key} className="flex items-center gap-1">
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                    <span className="text-xs">{shortcut.key}</span>
+                  </kbd>
+                  <span>{shortcut.action}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Command>
     </CommandDialog>
   );
 }
