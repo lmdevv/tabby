@@ -585,14 +585,12 @@ export default defineBackground(() => {
         .equals(workspaceId)
         .toArray();
 
-      // Get all resources in the workspace
-      const resources = await db.resources
-        .where("workspaceId")
-        .equals(workspaceId)
-        .toArray();
+      // Get the workspace to find its resource groups
+      // Get all resources globally (resources are not workspace-specific)
+      const resources = await db.resources.toArray();
 
       if (resources.length === 0) {
-        console.log(`ℹ️ No resources found in workspace ${workspaceId}`);
+        console.log(`ℹ️ No resources found`);
         return;
       }
 
@@ -603,9 +601,9 @@ export default defineBackground(() => {
           .filter((url): url is string => url !== undefined),
       );
 
-      // Find tabs that match resource URLs
+      // Find tabs that match resource URLs (excluding dashboard tabs)
       const resourceTabs = tabs.filter(
-        (tab) => tab.url && resourceUrls.has(tab.url),
+        (tab) => tab.url && resourceUrls.has(tab.url) && !isDashboardTab(tab),
       );
 
       if (resourceTabs.length === 0) {
@@ -661,11 +659,8 @@ export default defineBackground(() => {
         .equals(workspaceId)
         .toArray();
 
-      // Get all resources in the workspace
-      const resources = await db.resources
-        .where("workspaceId")
-        .equals(workspaceId)
-        .toArray();
+      // Get all resources globally (resources are not workspace-specific)
+      const resources = await db.resources.toArray();
 
       // Create a set of resource URLs for quick lookup
       const resourceUrls = new Set(
@@ -674,9 +669,10 @@ export default defineBackground(() => {
           .filter((url): url is string => url !== undefined),
       );
 
-      // Find tabs that DON'T match resource URLs
+      // Find tabs that DON'T match resource URLs (excluding dashboard tabs)
       const nonResourceTabs = tabs.filter(
-        (tab) => !tab.url || !resourceUrls.has(tab.url),
+        (tab) =>
+          (!tab.url || !resourceUrls.has(tab.url)) && !isDashboardTab(tab),
       );
 
       if (nonResourceTabs.length === 0) {
