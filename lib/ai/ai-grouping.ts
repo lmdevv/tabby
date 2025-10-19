@@ -16,6 +16,145 @@ import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 
 /**
+ * Main function to group tabs in a workspace using AI with custom instructions
+ */
+export async function aiGroupTabsInWorkspaceCustom(
+  workspaceId: number,
+  customInstructions: string,
+) {
+  try {
+    // Get all tabs in the workspace
+    const tabs = await db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .toArray();
+
+    if (tabs.length <= 1) {
+      console.log("Not enough tabs to group");
+      return;
+    }
+
+    // Filter out dashboard tabs and prepare tab info for AI
+    const tabInfo: TabInfo[] = tabs
+      .filter((tab) => {
+        const ourExtensionBaseURL = browser.runtime.getURL("");
+        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        return (
+          tab.url !== specificDashboardURL &&
+          !tab.url?.startsWith(ourExtensionBaseURL) &&
+          tab.id !== undefined
+        );
+      })
+      .map((tab) => ({
+        id: tab.id as number,
+        title: tab.title || "Untitled",
+        url: tab.url || "",
+      }));
+
+    if (tabInfo.length <= 1) {
+      console.log("Not enough non-dashboard tabs to group");
+      return;
+    }
+
+    // Check if Chrome Prompt API is available
+    if (
+      typeof (globalThis as Record<string, unknown>).LanguageModel ===
+      "undefined"
+    ) {
+      throw new Error("Chrome Prompt API not available");
+    }
+
+    const LanguageModel = (globalThis as Record<string, unknown>)
+      .LanguageModel as {
+      availability(): Promise<string>;
+      create(): Promise<{
+        prompt(
+          text: string,
+          options?: {
+            temperature?: number;
+            responseConstraint?: Record<string, unknown>;
+          },
+        ): Promise<string>;
+        promptStreaming(
+          text: string,
+          options?: {
+            temperature?: number;
+            responseConstraint?: Record<string, unknown>;
+          },
+        ): ReadableStream<string>;
+      }>;
+    };
+
+    // Check model availability
+    const availability = await LanguageModel.availability();
+    if (availability !== "available") {
+      throw new Error(`Language model not available. Status: ${availability}`);
+    }
+
+    console.log("Using Chrome's built-in LanguageModel");
+
+    // Create a session for the AI model
+    const session = await LanguageModel.create();
+
+    // Prepare the prompt with tab data and custom instructions
+    const prompt = `${AI_GROUP_PROMPT}\n\nCustom Instructions: ${customInstructions}\n\n${formatTabsForPrompt(tabInfo)}`;
+
+    console.log("=== AI CUSTOM GROUP DEBUG ===");
+    console.log("Custom instructions:", customInstructions);
+    console.log("Sending prompt to AI model:");
+    console.log(prompt);
+    console.log("Using JSON Schema constraint:");
+    console.log(JSON.stringify(AI_GROUP_RESPONSE_SCHEMA, null, 2));
+    console.log("=====================");
+
+    // Use streaming for better performance
+    const stream = session.promptStreaming(prompt, {
+      temperature: 0.3,
+      responseConstraint: AI_GROUP_RESPONSE_SCHEMA,
+    });
+
+    let fullResponse = "";
+    const reader = stream.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullResponse += value;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    console.log("=== AI RESPONSE ===");
+    console.log(fullResponse);
+    console.log("==================");
+
+    // Try to validate the response
+    const validatedResponse = validateAIGroupResponse(fullResponse);
+    if (!validatedResponse) {
+      console.log("❌ Invalid AI response format");
+      console.log("Raw response:", fullResponse);
+      return;
+    }
+
+    console.log("✅ Valid AI response format");
+    console.log("Groups to create:", validatedResponse.groups.length);
+
+    // Apply the AI's grouping suggestions
+    await applyAIGrouping(workspaceId, validatedResponse);
+
+    console.log(`✅ AI custom grouping completed for workspace ${workspaceId}`);
+  } catch (error) {
+    console.error(
+      `❌ Failed to AI custom group tabs in workspace ${workspaceId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Main function to group tabs in a workspace using AI
  */
 export async function aiGroupTabsInWorkspace(workspaceId: number) {

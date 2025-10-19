@@ -33,6 +33,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
+  aiGroupTabsCustom,
   cleanDuplicateTabs,
   cleanNonResourceTabs,
   cleanResourceTabs,
@@ -132,6 +133,13 @@ export function CommandMenu({
     aiGroupTabs({ workspaceId, onClose: () => handleOpenChange(false) });
   };
 
+  const handleCustomAIGroupTabs = (customInstructions: string) => {
+    aiGroupTabsCustom(customInstructions, {
+      workspaceId,
+      onClose: () => handleOpenChange(false),
+    });
+  };
+
   const handleUngroupTabs = () => {
     ungroupTabs({ workspaceId, onClose: () => handleOpenChange(false) });
   };
@@ -163,6 +171,12 @@ export function CommandMenu({
     setMenuMode("workspaces");
     setSearchValue("");
   };
+
+  // Check if search is a custom group command
+  const isCustomGroupCommand = searchValue.toLowerCase().startsWith("group ");
+  const customGroupInstructions = isCustomGroupCommand
+    ? searchValue.slice(6).trim()
+    : "";
 
   // Get footer content based on current mode and selection
   const getFooterContent = () => {
@@ -202,6 +216,13 @@ export function CommandMenu({
       "clean resource tabs": "Clean Resource Tabs",
       "clean non resource tabs": "Clean Non-Resource Tabs",
     };
+
+    if (isCustomGroupCommand && customGroupInstructions) {
+      return {
+        enterText: `Group with custom AI: "${customGroupInstructions}"`,
+        shortcuts: [],
+      };
+    }
 
     const action = commandMap[selectedValue];
     return {
@@ -290,6 +311,17 @@ export function CommandMenu({
                 <Bot className="mr-2 h-4 w-4" />
                 <span>Group with Tabby</span>
               </CommandItem>
+              {isCustomGroupCommand && customGroupInstructions && (
+                <CommandItem
+                  value={`group ${customGroupInstructions}`}
+                  onSelect={() =>
+                    handleCustomAIGroupTabs(customGroupInstructions)
+                  }
+                >
+                  <Bot className="mr-2 h-4 w-4" />
+                  <span>Group: "{customGroupInstructions}"</span>
+                </CommandItem>
+              )}
               <CommandItem
                 value="ungroup all tabs"
                 onSelect={handleUngroupTabs}

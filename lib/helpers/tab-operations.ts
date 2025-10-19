@@ -1,6 +1,9 @@
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
-import { aiGroupTabsInWorkspace } from "@/lib/ai/ai-grouping";
+import {
+  aiGroupTabsInWorkspace,
+  aiGroupTabsInWorkspaceCustom,
+} from "@/lib/ai/ai-grouping";
 
 export type SortType = "title" | "domain" | "recency";
 
@@ -58,6 +61,40 @@ export async function aiGroupTabs(
   } catch (error) {
     console.error("Failed to AI group tabs:", error);
     toast.error("Failed to AI group tabs", { id: "ai-grouping" });
+  }
+}
+
+export async function aiGroupTabsCustom(
+  customInstructions: string,
+  options: TabOperationsOptions,
+): Promise<void> {
+  if (!options.workspaceId) {
+    toast.error("No workspace selected");
+    return;
+  }
+
+  if (!customInstructions.trim()) {
+    toast.error("Custom instructions cannot be empty");
+    return;
+  }
+
+  if (customInstructions.length > 250) {
+    toast.error("Custom instructions must be 250 characters or less");
+    return;
+  }
+
+  try {
+    toast.loading("Grouping tabs with custom AI...", {
+      id: "ai-custom-grouping",
+    });
+    await aiGroupTabsInWorkspaceCustom(options.workspaceId, customInstructions);
+    toast.success("Tabs grouped with custom AI successfully", {
+      id: "ai-custom-grouping",
+    });
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to AI custom group tabs:", error);
+    toast.error("Failed to AI custom group tabs", { id: "ai-custom-grouping" });
   }
 }
 
