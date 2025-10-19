@@ -29,6 +29,7 @@ export interface Tab extends Browser.tabs.Tab {
   description?: string;
   createdAt: number;
   updatedAt: number;
+  lastAccessed?: number;
 }
 
 export interface TabGroup extends Browser.tabGroups.TabGroup {
@@ -178,6 +179,27 @@ export interface MoveTabMessage {
   newIndex: number;
 }
 
+export interface CleanUnusedTabsMessage {
+  type: "cleanUnusedTabs";
+  workspaceId: number;
+  daysThreshold?: number;
+}
+
+export interface CleanDuplicateTabsMessage {
+  type: "cleanDuplicateTabs";
+  workspaceId: number;
+}
+
+export interface CleanResourceTabsMessage {
+  type: "cleanResourceTabs";
+  workspaceId: number;
+}
+
+export interface CleanNonResourceTabsMessage {
+  type: "cleanNonResourceTabs";
+  workspaceId: number;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -190,7 +212,11 @@ export type RuntimeMessage =
   | SortTabsMessage
   | GroupTabsMessage
   | UngroupTabsMessage
-  | MoveTabMessage;
+  | MoveTabMessage
+  | CleanUnusedTabsMessage
+  | CleanDuplicateTabsMessage
+  | CleanResourceTabsMessage
+  | CleanNonResourceTabsMessage;
 
 export type {
   LanguageModelAvailability,

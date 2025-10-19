@@ -421,6 +421,307 @@ export default defineBackground(() => {
     }
   }
 
+  async function cleanUnusedTabsInWorkspace(
+    workspaceId: number,
+    daysThreshold: number = 3,
+  ) {
+    try {
+      console.log(
+        `🧹 Cleaning unused tabs in workspace ${workspaceId} (older than ${daysThreshold} days)`,
+      );
+
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      // Calculate the cutoff date (3 days ago from now)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+      const cutoffTime = cutoffDate.getTime();
+
+      // Filter tabs that haven't been accessed recently
+      // Use updatedAt as a fallback since lastAccessed might not be available
+      const unusedTabs = tabs.filter((tab) => {
+        const lastActivityTime = tab.updatedAt || tab.createdAt;
+        return lastActivityTime < cutoffTime;
+      });
+
+      if (unusedTabs.length === 0) {
+        console.log(`ℹ️ No unused tabs found in workspace ${workspaceId}`);
+        return;
+      }
+
+      // Close the unused browser tabs
+      const tabIdsToClose = unusedTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
+      if (tabIdsToClose.length > 0) {
+        await browser.tabs.remove(tabIdsToClose);
+        console.log(`✅ Closed ${tabIdsToClose.length} unused browser tabs`);
+      }
+
+      // Mark tabs as archived in the database
+      const tabIdsToArchive = unusedTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+      if (tabIdsToArchive.length > 0) {
+        await db.activeTabs
+          .where("id")
+          .anyOf(tabIdsToArchive)
+          .modify({ tabStatus: "archived" });
+        console.log(
+          `✅ Archived ${tabIdsToArchive.length} unused tabs in database`,
+        );
+      }
+
+      console.log(
+        `✅ Cleaned ${unusedTabs.length} unused tabs from workspace ${workspaceId}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to clean unused tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async function cleanDuplicateTabsInWorkspace(workspaceId: number) {
+    try {
+      console.log(`🧹 Cleaning duplicate tabs in workspace ${workspaceId}`);
+
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      // Group tabs by URL to find duplicates
+      const tabsByUrl = new Map<string, typeof tabs>();
+
+      for (const tab of tabs) {
+        if (!tab.url) continue;
+
+        if (!tabsByUrl.has(tab.url)) {
+          tabsByUrl.set(tab.url, []);
+        }
+        tabsByUrl.get(tab.url)?.push(tab);
+      }
+
+      // Find URLs with multiple tabs (duplicates)
+      const duplicateGroups = Array.from(tabsByUrl.entries()).filter(
+        ([_, tabs]) => tabs.length > 1,
+      );
+
+      if (duplicateGroups.length === 0) {
+        console.log(`ℹ️ No duplicate tabs found in workspace ${workspaceId}`);
+        return;
+      }
+
+      let totalClosed = 0;
+      let totalArchived = 0;
+
+      // For each duplicate group, keep the most recently updated tab and close the rest
+      for (const [url, duplicateTabs] of duplicateGroups) {
+        // Sort by updatedAt (most recent first), fallback to id if no updatedAt
+        const sortedTabs = [...duplicateTabs].sort((a, b) => {
+          const aTime = a.updatedAt || a.createdAt;
+          const bTime = b.updatedAt || b.createdAt;
+          return bTime - aTime;
+        });
+
+        // Keep the first (most recent) tab, close the rest
+        const tabsToClose = sortedTabs.slice(1);
+
+        // Close browser tabs
+        const tabIdsToClose = tabsToClose
+          .map((tab) => tab.id)
+          .filter((id): id is number => id !== undefined);
+
+        if (tabIdsToClose.length > 0) {
+          await browser.tabs.remove(tabIdsToClose);
+          totalClosed += tabIdsToClose.length;
+        }
+
+        // Archive tabs in database
+        const tabIdsToArchive = tabsToClose
+          .map((tab) => tab.id)
+          .filter((id): id is number => id !== undefined);
+        if (tabIdsToArchive.length > 0) {
+          await db.activeTabs
+            .where("id")
+            .anyOf(tabIdsToArchive)
+            .modify({ tabStatus: "archived" });
+          totalArchived += tabIdsToArchive.length;
+        }
+
+        console.log(
+          `🔗 URL: ${url} - kept 1, closed ${tabsToClose.length} duplicates`,
+        );
+      }
+
+      console.log(
+        `✅ Cleaned ${totalClosed} duplicate tabs (${totalArchived} archived) from workspace ${workspaceId}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to clean duplicate tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async function cleanResourceTabsInWorkspace(workspaceId: number) {
+    try {
+      console.log(`🧹 Cleaning resource tabs in workspace ${workspaceId}`);
+
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      // Get all resources in the workspace
+      const resources = await db.resources
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      if (resources.length === 0) {
+        console.log(`ℹ️ No resources found in workspace ${workspaceId}`);
+        return;
+      }
+
+      // Create a set of resource URLs for quick lookup
+      const resourceUrls = new Set(
+        resources
+          .map((resource) => resource.url)
+          .filter((url): url is string => url !== undefined),
+      );
+
+      // Find tabs that match resource URLs
+      const resourceTabs = tabs.filter(
+        (tab) => tab.url && resourceUrls.has(tab.url),
+      );
+
+      if (resourceTabs.length === 0) {
+        console.log(
+          `ℹ️ No tabs matching resources found in workspace ${workspaceId}`,
+        );
+        return;
+      }
+
+      // Close the resource browser tabs
+      const tabIdsToClose = resourceTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
+      if (tabIdsToClose.length > 0) {
+        await browser.tabs.remove(tabIdsToClose);
+        console.log(`✅ Closed ${tabIdsToClose.length} resource browser tabs`);
+      }
+
+      // Mark tabs as archived in the database
+      const tabIdsToArchive = resourceTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+      if (tabIdsToArchive.length > 0) {
+        await db.activeTabs
+          .where("id")
+          .anyOf(tabIdsToArchive)
+          .modify({ tabStatus: "archived" });
+        console.log(
+          `✅ Archived ${tabIdsToArchive.length} resource tabs in database`,
+        );
+      }
+
+      console.log(
+        `✅ Cleaned ${resourceTabs.length} resource tabs from workspace ${workspaceId}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to clean resource tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async function cleanNonResourceTabsInWorkspace(workspaceId: number) {
+    try {
+      console.log(`🧹 Cleaning non-resource tabs in workspace ${workspaceId}`);
+
+      // Get all tabs in the workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      // Get all resources in the workspace
+      const resources = await db.resources
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      // Create a set of resource URLs for quick lookup
+      const resourceUrls = new Set(
+        resources
+          .map((resource) => resource.url)
+          .filter((url): url is string => url !== undefined),
+      );
+
+      // Find tabs that DON'T match resource URLs
+      const nonResourceTabs = tabs.filter(
+        (tab) => !tab.url || !resourceUrls.has(tab.url),
+      );
+
+      if (nonResourceTabs.length === 0) {
+        console.log(`ℹ️ No non-resource tabs found in workspace ${workspaceId}`);
+        return;
+      }
+
+      // Close the non-resource browser tabs
+      const tabIdsToClose = nonResourceTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
+      if (tabIdsToClose.length > 0) {
+        await browser.tabs.remove(tabIdsToClose);
+        console.log(
+          `✅ Closed ${tabIdsToClose.length} non-resource browser tabs`,
+        );
+      }
+
+      // Mark tabs as archived in the database
+      const tabIdsToArchive = nonResourceTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+      if (tabIdsToArchive.length > 0) {
+        await db.activeTabs
+          .where("id")
+          .anyOf(tabIdsToArchive)
+          .modify({ tabStatus: "archived" });
+        console.log(
+          `✅ Archived ${tabIdsToArchive.length} non-resource tabs in database`,
+        );
+      }
+
+      console.log(
+        `✅ Cleaned ${nonResourceTabs.length} non-resource tabs from workspace ${workspaceId}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to clean non-resource tabs in workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   // Handle extension icon click
   async function handleActionClick() {
     try {
@@ -675,6 +976,33 @@ export default defineBackground(() => {
             error: error instanceof Error ? error.message : String(error),
           } as const;
         }
+      } else if (
+        typeof message === "object" &&
+        message.type === "cleanUnusedTabs"
+      ) {
+        await cleanUnusedTabsInWorkspace(
+          message.workspaceId,
+          message.daysThreshold,
+        );
+        return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "cleanDuplicateTabs"
+      ) {
+        await cleanDuplicateTabsInWorkspace(message.workspaceId);
+        return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "cleanResourceTabs"
+      ) {
+        await cleanResourceTabsInWorkspace(message.workspaceId);
+        return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "cleanNonResourceTabs"
+      ) {
+        await cleanNonResourceTabsInWorkspace(message.workspaceId);
+        return { success: true } as const;
       }
     },
   );
