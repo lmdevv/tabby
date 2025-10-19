@@ -200,6 +200,11 @@ export interface CleanNonResourceTabsMessage {
   workspaceId: number;
 }
 
+export interface ConvertTabGroupToResourceMessage {
+  type: "convertTabGroupToResource";
+  groupId: number;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -216,7 +221,8 @@ export type RuntimeMessage =
   | CleanUnusedTabsMessage
   | CleanDuplicateTabsMessage
   | CleanResourceTabsMessage
-  | CleanNonResourceTabsMessage;
+  | CleanNonResourceTabsMessage
+  | ConvertTabGroupToResourceMessage;
 
 export type {
   LanguageModelAvailability,

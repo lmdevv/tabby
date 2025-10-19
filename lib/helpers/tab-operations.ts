@@ -208,3 +208,18 @@ export async function cleanNonResourceTabs(
     toast.error("Failed to clean non-resource tabs");
   }
 }
+
+export async function convertTabGroupToResource(
+  groupId: number,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "convertTabGroupToResource",
+      groupId,
+    } as const);
+    toast.success("Tab group converted to resource successfully");
+  } catch (error) {
+    console.error("Failed to convert tab group to resource:", error);
+    toast.error("Failed to convert tab group to resource");
+  }
+}

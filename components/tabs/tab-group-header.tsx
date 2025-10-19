@@ -14,6 +14,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { db } from "@/lib/db/db";
+import { convertTabGroupToResource } from "@/lib/helpers/tab-operations";
 
 const isDarkFromTheme = (theme: "light" | "dark" | "system"): boolean => {
   if (theme === "dark") return true;
@@ -103,6 +104,10 @@ export function TabGroupHeader({
         <ContextMenuItem onClick={onEditGroup}>Edit Group</ContextMenuItem>
         <ContextMenuItem onClick={onUngroupAll}>
           Ungroup All Tabs
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => convertTabGroupToResource(groupId)}>
+          Move as resource group
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={onCloseAll} className="text-destructive">
