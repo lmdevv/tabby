@@ -91,7 +91,7 @@ export function WindowComponent({
       db.activeTabs
         .where("workspaceId")
         .equals(workspaceId)
-        .filter((tab) => tab.windowId === windowId)
+        .and((tab) => tab.windowId === windowId && tab.tabStatus === "active")
         .sortBy("index"),
     [workspaceId, windowId],
   );

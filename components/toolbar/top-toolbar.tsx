@@ -67,7 +67,11 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
   // Get tabs data directly from DB
   const tabs = useLiveQuery(() => {
     if (!workspaceId) return [];
-    return db.activeTabs.where("workspaceId").equals(workspaceId).toArray();
+    return db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((tab) => tab.tabStatus === "active")
+      .toArray();
   }, [workspaceId]);
 
   const tabsCount = tabs?.length || 0;

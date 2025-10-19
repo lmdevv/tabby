@@ -120,7 +120,11 @@ export function Workspaces({
 
   const undefinedTabsCount = useLiveQuery(
     () => {
-      const result = db.activeTabs.where("workspaceId").equals(-1).count();
+      const result = db.activeTabs
+        .where("workspaceId")
+        .equals(-1)
+        .and((tab) => tab.tabStatus === "active")
+        .count();
       // Update cache with fresh data
       result.then((count) => {
         const currentCache = sidebarCache.getCachedData() || {};
