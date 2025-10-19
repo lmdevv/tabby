@@ -453,33 +453,43 @@ export default defineBackground(() => {
         return;
       }
 
-      // Close the unused browser tabs
+      // Close the unused browser tabs and archive them in database
       const tabIdsToClose = unusedTabs
         .map((tab) => tab.id)
         .filter((id): id is number => id !== undefined);
 
       if (tabIdsToClose.length > 0) {
-        await browser.tabs.remove(tabIdsToClose);
-        console.log(`✅ Closed ${tabIdsToClose.length} unused browser tabs`);
-      }
+        try {
+          // Verify tabs exist before trying to close them
+          const existingTabs = await browser.tabs.query({});
+          const existingTabIds = new Set(
+            existingTabs
+              .map((t) => t.id)
+              .filter((id): id is number => id !== undefined),
+          );
+          const validTabIdsToClose = tabIdsToClose.filter((id) =>
+            existingTabIds.has(id),
+          );
 
-      // Mark tabs as archived in the database
-      const tabIdsToArchive = unusedTabs
-        .map((tab) => tab.id)
-        .filter((id): id is number => id !== undefined);
-      if (tabIdsToArchive.length > 0) {
-        await db.activeTabs
-          .where("id")
-          .anyOf(tabIdsToArchive)
-          .modify({ tabStatus: "archived" });
-        console.log(
-          `✅ Archived ${tabIdsToArchive.length} unused tabs in database`,
-        );
-      }
+          // Close browser tabs that still exist
+          if (validTabIdsToClose.length > 0) {
+            await browser.tabs.remove(validTabIdsToClose);
+          }
 
-      console.log(
-        `✅ Cleaned ${unusedTabs.length} unused tabs from workspace ${workspaceId}`,
-      );
+          // Archive all unused tabs in database (regardless of whether browser tab existed)
+          const stableIdsToArchive = unusedTabs.map((tab) => tab.stableId);
+          await db.activeTabs
+            .where("stableId")
+            .anyOf(stableIdsToArchive)
+            .modify({ tabStatus: "archived" });
+
+          console.log(
+            `✅ Cleaned ${unusedTabs.length} unused tabs from workspace ${workspaceId}`,
+          );
+        } catch (error) {
+          console.error(`❌ Error cleaning unused tabs:`, error);
+        }
+      }
     } catch (error) {
       console.error(
         `❌ Failed to clean unused tabs in workspace ${workspaceId}:`,
@@ -491,12 +501,11 @@ export default defineBackground(() => {
 
   async function cleanDuplicateTabsInWorkspace(workspaceId: number) {
     try {
-      console.log(`🧹 Cleaning duplicate tabs in workspace ${workspaceId}`);
-
-      // Get all tabs in the workspace
+      // Get only active tabs in the workspace (exclude already archived tabs)
       const tabs = await db.activeTabs
         .where("workspaceId")
         .equals(workspaceId)
+        .and((tab) => tab.tabStatus === "active")
         .toArray();
 
       // Group tabs by URL to find duplicates
@@ -517,15 +526,13 @@ export default defineBackground(() => {
       );
 
       if (duplicateGroups.length === 0) {
-        console.log(`ℹ️ No duplicate tabs found in workspace ${workspaceId}`);
         return;
       }
 
-      let totalClosed = 0;
-      let totalArchived = 0;
+      let totalCleaned = 0;
 
       // For each duplicate group, keep the most recently updated tab and close the rest
-      for (const [url, duplicateTabs] of duplicateGroups) {
+      for (const [_url, duplicateTabs] of duplicateGroups) {
         // Sort by updatedAt (most recent first), fallback to id if no updatedAt
         const sortedTabs = [...duplicateTabs].sort((a, b) => {
           const aTime = a.updatedAt || a.createdAt;
@@ -536,36 +543,47 @@ export default defineBackground(() => {
         // Keep the first (most recent) tab, close the rest
         const tabsToClose = sortedTabs.slice(1);
 
-        // Close browser tabs
+        // Close browser tabs that still exist
         const tabIdsToClose = tabsToClose
           .map((tab) => tab.id)
           .filter((id): id is number => id !== undefined);
 
         if (tabIdsToClose.length > 0) {
-          await browser.tabs.remove(tabIdsToClose);
-          totalClosed += tabIdsToClose.length;
+          try {
+            const existingTabs = await browser.tabs.query({});
+            const existingTabIds = new Set(
+              existingTabs
+                .map((t) => t.id)
+                .filter((id): id is number => id !== undefined),
+            );
+            const validTabIdsToClose = tabIdsToClose.filter((id) =>
+              existingTabIds.has(id),
+            );
+
+            if (validTabIdsToClose.length > 0) {
+              await browser.tabs.remove(validTabIdsToClose);
+            }
+          } catch (error) {
+            console.error(`❌ Error closing duplicate tabs:`, error);
+          }
         }
 
-        // Archive tabs in database
-        const tabIdsToArchive = tabsToClose
-          .map((tab) => tab.id)
-          .filter((id): id is number => id !== undefined);
-        if (tabIdsToArchive.length > 0) {
+        // Archive all duplicate tabs in database
+        const stableIdsToArchive = tabsToClose.map((tab) => tab.stableId);
+        if (stableIdsToArchive.length > 0) {
           await db.activeTabs
-            .where("id")
-            .anyOf(tabIdsToArchive)
+            .where("stableId")
+            .anyOf(stableIdsToArchive)
             .modify({ tabStatus: "archived" });
-          totalArchived += tabIdsToArchive.length;
+          totalCleaned += stableIdsToArchive.length;
         }
-
-        console.log(
-          `🔗 URL: ${url} - kept 1, closed ${tabsToClose.length} duplicates`,
-        );
       }
 
-      console.log(
-        `✅ Cleaned ${totalClosed} duplicate tabs (${totalArchived} archived) from workspace ${workspaceId}`,
-      );
+      if (totalCleaned > 0) {
+        console.log(
+          `✅ Cleaned ${totalCleaned} duplicate tabs from workspace ${workspaceId}`,
+        );
+      }
     } catch (error) {
       console.error(
         `❌ Failed to clean duplicate tabs in workspace ${workspaceId}:`,
@@ -577,20 +595,16 @@ export default defineBackground(() => {
 
   async function cleanResourceTabsInWorkspace(workspaceId: number) {
     try {
-      console.log(`🧹 Cleaning resource tabs in workspace ${workspaceId}`);
-
-      // Get all tabs in the workspace
+      // Get only active tabs in the workspace
       const tabs = await db.activeTabs
         .where("workspaceId")
         .equals(workspaceId)
+        .and((tab) => tab.tabStatus === "active")
         .toArray();
 
-      // Get the workspace to find its resource groups
-      // Get all resources globally (resources are not workspace-specific)
+      // Get all resources globally
       const resources = await db.resources.toArray();
-
       if (resources.length === 0) {
-        console.log(`ℹ️ No resources found`);
         return;
       }
 
@@ -607,39 +621,46 @@ export default defineBackground(() => {
       );
 
       if (resourceTabs.length === 0) {
-        console.log(
-          `ℹ️ No tabs matching resources found in workspace ${workspaceId}`,
-        );
         return;
       }
 
-      // Close the resource browser tabs
+      // Close browser tabs that still exist
       const tabIdsToClose = resourceTabs
         .map((tab) => tab.id)
         .filter((id): id is number => id !== undefined);
 
       if (tabIdsToClose.length > 0) {
-        await browser.tabs.remove(tabIdsToClose);
-        console.log(`✅ Closed ${tabIdsToClose.length} resource browser tabs`);
+        try {
+          const existingTabs = await browser.tabs.query({});
+          const existingTabIds = new Set(
+            existingTabs
+              .map((t) => t.id)
+              .filter((id): id is number => id !== undefined),
+          );
+          const validTabIdsToClose = tabIdsToClose.filter((id) =>
+            existingTabIds.has(id),
+          );
+
+          if (validTabIdsToClose.length > 0) {
+            await browser.tabs.remove(validTabIdsToClose);
+          }
+        } catch (error) {
+          console.error(`❌ Error closing resource tabs:`, error);
+        }
       }
 
-      // Mark tabs as archived in the database
-      const tabIdsToArchive = resourceTabs
-        .map((tab) => tab.id)
-        .filter((id): id is number => id !== undefined);
-      if (tabIdsToArchive.length > 0) {
+      // Archive all resource tabs in database
+      const stableIdsToArchive = resourceTabs.map((tab) => tab.stableId);
+      if (stableIdsToArchive.length > 0) {
         await db.activeTabs
-          .where("id")
-          .anyOf(tabIdsToArchive)
+          .where("stableId")
+          .anyOf(stableIdsToArchive)
           .modify({ tabStatus: "archived" });
+
         console.log(
-          `✅ Archived ${tabIdsToArchive.length} resource tabs in database`,
+          `✅ Cleaned ${resourceTabs.length} resource tabs from workspace ${workspaceId}`,
         );
       }
-
-      console.log(
-        `✅ Cleaned ${resourceTabs.length} resource tabs from workspace ${workspaceId}`,
-      );
     } catch (error) {
       console.error(
         `❌ Failed to clean resource tabs in workspace ${workspaceId}:`,
@@ -651,15 +672,14 @@ export default defineBackground(() => {
 
   async function cleanNonResourceTabsInWorkspace(workspaceId: number) {
     try {
-      console.log(`🧹 Cleaning non-resource tabs in workspace ${workspaceId}`);
-
-      // Get all tabs in the workspace
+      // Get only active tabs in the workspace
       const tabs = await db.activeTabs
         .where("workspaceId")
         .equals(workspaceId)
+        .and((tab) => tab.tabStatus === "active")
         .toArray();
 
-      // Get all resources globally (resources are not workspace-specific)
+      // Get all resources globally
       const resources = await db.resources.toArray();
 
       // Create a set of resource URLs for quick lookup
@@ -676,39 +696,46 @@ export default defineBackground(() => {
       );
 
       if (nonResourceTabs.length === 0) {
-        console.log(`ℹ️ No non-resource tabs found in workspace ${workspaceId}`);
         return;
       }
 
-      // Close the non-resource browser tabs
+      // Close browser tabs that still exist
       const tabIdsToClose = nonResourceTabs
         .map((tab) => tab.id)
         .filter((id): id is number => id !== undefined);
 
       if (tabIdsToClose.length > 0) {
-        await browser.tabs.remove(tabIdsToClose);
-        console.log(
-          `✅ Closed ${tabIdsToClose.length} non-resource browser tabs`,
-        );
+        try {
+          const existingTabs = await browser.tabs.query({});
+          const existingTabIds = new Set(
+            existingTabs
+              .map((t) => t.id)
+              .filter((id): id is number => id !== undefined),
+          );
+          const validTabIdsToClose = tabIdsToClose.filter((id) =>
+            existingTabIds.has(id),
+          );
+
+          if (validTabIdsToClose.length > 0) {
+            await browser.tabs.remove(validTabIdsToClose);
+          }
+        } catch (error) {
+          console.error(`❌ Error closing non-resource tabs:`, error);
+        }
       }
 
-      // Mark tabs as archived in the database
-      const tabIdsToArchive = nonResourceTabs
-        .map((tab) => tab.id)
-        .filter((id): id is number => id !== undefined);
-      if (tabIdsToArchive.length > 0) {
+      // Archive all non-resource tabs in database
+      const stableIdsToArchive = nonResourceTabs.map((tab) => tab.stableId);
+      if (stableIdsToArchive.length > 0) {
         await db.activeTabs
-          .where("id")
-          .anyOf(tabIdsToArchive)
+          .where("stableId")
+          .anyOf(stableIdsToArchive)
           .modify({ tabStatus: "archived" });
+
         console.log(
-          `✅ Archived ${tabIdsToArchive.length} non-resource tabs in database`,
+          `✅ Cleaned ${nonResourceTabs.length} non-resource tabs from workspace ${workspaceId}`,
         );
       }
-
-      console.log(
-        `✅ Cleaned ${nonResourceTabs.length} non-resource tabs from workspace ${workspaceId}`,
-      );
     } catch (error) {
       console.error(
         `❌ Failed to clean non-resource tabs in workspace ${workspaceId}:`,

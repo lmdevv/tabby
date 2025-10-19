@@ -262,15 +262,56 @@ export async function reconcileTabs() {
   }
 
   // 6. Handle removed tabs (stored tabs with no live match)
-  for (const storedTab of storedTabs) {
-    if (!matchedStoredStableIds.has(storedTab.stableId)) {
-      console.log(
-        `🗑️ [StableId ${storedTab.stableId}] tab removed: ${storedTab.title}`,
-      );
-      // Use stableId to find and delete the tab instead of browser ID
-      await db.activeTabs.where("stableId").equals(storedTab.stableId).delete();
+  // First, identify all tabs that should be removed
+  const tabsToRemove = storedTabs.filter(
+    (tab) => !matchedStoredStableIds.has(tab.stableId),
+  );
+
+  if (tabsToRemove.length > 0) {
+    // Remove them in a batch for efficiency
+    const stableIdsToRemove = tabsToRemove.map((tab) => tab.stableId);
+    await db.activeTabs.where("stableId").anyOf(stableIdsToRemove).delete();
+  }
+
+  // 7. Final validation - ensure no duplicate browser IDs exist in the database
+  const allActiveTabs = await db.activeTabs
+    .where("workspaceId")
+    .equals(targetWorkspaceId)
+    .and((tab) => tab.tabStatus === "active")
+    .toArray();
+
+  const browserIdCounts = new Map<number, number>();
+  const duplicateBrowserIds: number[] = [];
+
+  for (const tab of allActiveTabs) {
+    if (tab.id != null) {
+      const count = browserIdCounts.get(tab.id) || 0;
+      browserIdCounts.set(tab.id, count + 1);
+      if (count === 1) {
+        duplicateBrowserIds.push(tab.id);
+      }
     }
   }
+
+  // Clean up any duplicate browser IDs by keeping the most recently updated entry
+  for (const duplicateId of duplicateBrowserIds) {
+    const duplicateTabs = allActiveTabs.filter((tab) => tab.id === duplicateId);
+    if (duplicateTabs.length > 1) {
+      // Sort by updatedAt (most recent first) and keep the first one
+      duplicateTabs.sort((a, b) => b.updatedAt - a.updatedAt);
+      const tabsToDelete = duplicateTabs.slice(1);
+
+      for (const tabToDelete of tabsToDelete) {
+        await db.activeTabs
+          .where("stableId")
+          .equals(tabToDelete.stableId)
+          .delete();
+      }
+    }
+  }
+
+  // 8. Final cleanup - remove archived tabs from database to keep it clean
+  await db.activeTabs.where("tabStatus").equals("archived").delete();
 }
 
 export async function switchWorkspaceTabs(workspaceId: number) {
