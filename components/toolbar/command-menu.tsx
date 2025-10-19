@@ -29,6 +29,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Kbd } from "@/components/ui/kbd";
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
@@ -360,15 +361,13 @@ export function CommandMenu({
         <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
-              <span>↵</span>
+              <Kbd>↵</Kbd>
               <span>{getFooterContent().enterText}</span>
             </div>
             <div className="flex items-center gap-3">
               {getFooterContent().shortcuts.map((shortcut) => (
                 <div key={shortcut.key} className="flex items-center gap-1">
-                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                    <span className="text-xs">{shortcut.key}</span>
-                  </kbd>
+                  <Kbd>{shortcut.key}</Kbd>
                   <span>{shortcut.action}</span>
                 </div>
               ))}
