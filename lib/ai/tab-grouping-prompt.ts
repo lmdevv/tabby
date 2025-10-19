@@ -67,7 +67,8 @@ export const AI_GROUP_RESPONSE_SCHEMA = {
       items: {
         type: "number",
       },
-      description: "Optional array of tab IDs that don't belong to any group",
+      description:
+        "Array of tab IDs that don't belong to any group (required - always include this even if empty)",
     },
   },
   required: ["groups", "ungroupedTabs"],
@@ -108,15 +109,13 @@ export function validateAIGroupResponse(
       }
     }
 
-    // Validate ungrouped tabs if present
-    if (parsed.ungroupedTabs) {
-      if (!Array.isArray(parsed.ungroupedTabs)) {
+    // Validate ungrouped tabs (now required)
+    if (!parsed.ungroupedTabs || !Array.isArray(parsed.ungroupedTabs)) {
+      return null;
+    }
+    for (const tabId of parsed.ungroupedTabs) {
+      if (typeof tabId !== "number") {
         return null;
-      }
-      for (const tabId of parsed.ungroupedTabs) {
-        if (typeof tabId !== "number") {
-          return null;
-        }
       }
     }
 
