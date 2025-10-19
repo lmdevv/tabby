@@ -3,8 +3,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { ArrowUpDown, Bot, Group, Hash, Monitor, Ungroup } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { browser } from "wxt/browser";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -23,8 +21,14 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { aiGroupTabsInWorkspace } from "@/lib/ai/ai-grouping";
 import { db } from "@/lib/db/db";
+import {
+  aiGroupTabs,
+  groupTabs,
+  openWorkspace,
+  sortTabs,
+  ungroupTabs,
+} from "@/lib/helpers/tab-operations";
 
 interface CommandMenuProps {
   workspaceId: number | null;
@@ -103,80 +107,24 @@ export function CommandMenu({
     [],
   );
 
-  // TODO: This helpers might have to be moved to separate file and imported when needed
-  const handleSortTabs = async (sortType: "title" | "domain" | "recency") => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "sortTabs",
-        workspaceId,
-        sortType,
-      } as const);
-      toast.success("Tabs sorted successfully");
-      handleOpenChange(false);
-    } catch (error) {
-      console.error("Failed to sort tabs:", error);
-      toast.error("Failed to sort tabs");
-    }
+  const handleSortTabs = (sortType: "title" | "domain" | "recency") => {
+    sortTabs(sortType, { workspaceId, onClose: () => handleOpenChange(false) });
   };
 
-  const handleGroupTabs = async () => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "groupTabs",
-        workspaceId,
-        groupType: "domain",
-      } as const);
-      toast.success("Tabs grouped successfully");
-      handleOpenChange(false);
-    } catch (error) {
-      console.error("Failed to group tabs:", error);
-      toast.error("Failed to group tabs");
-    }
+  const handleGroupTabs = () => {
+    groupTabs({ workspaceId, onClose: () => handleOpenChange(false) });
   };
 
-  const handleAIGroupTabs = async () => {
-    if (!workspaceId) {
-      toast.error("No workspace selected");
-      return;
-    }
-
-    try {
-      toast.loading("Grouping tabs with AI...", { id: "ai-grouping" });
-      await aiGroupTabsInWorkspace(workspaceId);
-      toast.success("Tabs grouped with AI successfully", { id: "ai-grouping" });
-      handleOpenChange(false);
-    } catch (error) {
-      console.error("Failed to AI group tabs:", error);
-      toast.error("Failed to AI group tabs", { id: "ai-grouping" });
-    }
+  const handleAIGroupTabs = () => {
+    aiGroupTabs({ workspaceId, onClose: () => handleOpenChange(false) });
   };
 
-  const handleUngroupTabs = async () => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "ungroupTabs",
-        workspaceId,
-      } as const);
-      toast.success("Tabs ungrouped successfully");
-      handleOpenChange(false);
-    } catch (error) {
-      console.error("Failed to ungroup tabs:", error);
-      toast.error("Failed to ungroup tabs");
-    }
+  const handleUngroupTabs = () => {
+    ungroupTabs({ workspaceId, onClose: () => handleOpenChange(false) });
   };
 
-  const openWorkspace = async (workspaceIdToOpen: number) => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "openWorkspace",
-        workspaceId: workspaceIdToOpen,
-      });
-      toast.success("Workspace opened successfully");
-      handleOpenChange(false);
-    } catch (error) {
-      console.error("Failed to open workspace:", error);
-      toast.error("Failed to open workspace");
-    }
+  const handleOpenWorkspace = (workspaceIdToOpen: number) => {
+    openWorkspace(workspaceIdToOpen, () => handleOpenChange(false));
   };
 
   const showWorkspaces = () => {
@@ -327,7 +275,7 @@ export function CommandMenu({
                   <CommandItem
                     key={workspace.id}
                     value={`${workspace.name} ${workspace.groupId ? workspaceGroups?.find((g) => g.id === workspace.groupId)?.name : ""}`}
-                    onSelect={() => openWorkspace(workspace.id)}
+                    onSelect={() => handleOpenWorkspace(workspace.id)}
                   >
                     <Monitor className="mr-2 h-4 w-4" />
                     <span className="flex-1">

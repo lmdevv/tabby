@@ -30,8 +30,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import { aiGroupTabsInWorkspace } from "@/lib/ai/ai-grouping";
 import { db } from "@/lib/db/db";
+import {
+  aiGroupTabs,
+  groupTabs,
+  sortTabs,
+  ungroupTabs,
+} from "@/lib/helpers/tab-operations";
 
 interface TopToolbarProps {
   workspaceId: number | null;
@@ -89,58 +94,20 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
     setHistoryDialogOpen(true);
   };
 
-  const handleSortTabs = async (sortType: "title" | "domain" | "recency") => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "sortTabs",
-        workspaceId,
-        sortType,
-      } as const);
-      toast.success("Tabs sorted successfully");
-    } catch (error) {
-      console.error("Failed to sort tabs:", error);
-      toast.error("Failed to sort tabs");
-    }
+  const handleSortTabs = (sortType: "title" | "domain" | "recency") => {
+    sortTabs(sortType, { workspaceId });
   };
 
-  const handleGroupTabs = async () => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "groupTabs",
-        workspaceId,
-        groupType: "domain",
-      } as const);
-      toast.success("Tabs grouped successfully");
-    } catch (error) {
-      console.error("Failed to group tabs:", error);
-      toast.error("Failed to group tabs");
-    }
+  const handleGroupTabs = () => {
+    groupTabs({ workspaceId });
   };
 
-  const handleAIGroupTabs = async () => {
-    if (!workspaceId) return;
-
-    try {
-      toast.loading("Grouping tabs with AI...", { id: "ai-grouping" });
-      await aiGroupTabsInWorkspace(workspaceId);
-      toast.success("Tabs grouped with AI successfully", { id: "ai-grouping" });
-    } catch (error) {
-      console.error("Failed to AI group tabs:", error);
-      toast.error("Failed to AI group tabs", { id: "ai-grouping" });
-    }
+  const handleAIGroupTabs = () => {
+    aiGroupTabs({ workspaceId });
   };
 
-  const handleUngroupTabs = async () => {
-    try {
-      await browser.runtime.sendMessage({
-        type: "ungroupTabs",
-        workspaceId,
-      } as const);
-      toast.success("Tabs ungrouped successfully");
-    } catch (error) {
-      console.error("Failed to ungroup tabs:", error);
-      toast.error("Failed to ungroup tabs");
-    }
+  const handleUngroupTabs = () => {
+    ungroupTabs({ workspaceId });
   };
   return (
     <div className="flex gap-2">
