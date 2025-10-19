@@ -273,7 +273,7 @@ export function CommandMenu({
           value={searchValue}
           onValueChange={setSearchValue}
         />
-        <CommandList>
+        <CommandList className="scrollbar-none">
           <CommandEmpty>No results found.</CommandEmpty>
 
           {menuMode === "main" && (
