@@ -77,6 +77,19 @@ export async function ungroupTabs(
   }
 }
 
+export async function refreshTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({ type: "refreshTabs" });
+    toast.success("Tabs refreshed successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to refresh tabs:", error);
+    toast.error("Failed to refresh tabs");
+  }
+}
+
 export async function openWorkspace(
   workspaceId: number,
   onClose?: () => void,

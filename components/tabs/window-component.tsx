@@ -33,6 +33,7 @@ import {
   ungroupTabIfNeeded,
 } from "@/lib/helpers/tab-helpers";
 import { createTabKeyboardHandler } from "@/lib/helpers/tab-keyboard-navigation";
+import { refreshTabs } from "@/lib/helpers/tab-operations";
 
 import type { Tab } from "@/lib/types/types";
 
@@ -117,6 +118,10 @@ export function WindowComponent({
       console.error("Failed to activate tab:", error);
     }
   }, []);
+
+  const handleRefreshTabs = useCallback(async () => {
+    await refreshTabs({ workspaceId });
+  }, [workspaceId]);
 
   const handleAddToResourceGroup = useCallback(
     async (tab: Tab, groupId: number) => {
@@ -402,6 +407,7 @@ export function WindowComponent({
       moveTabToPosition,
       handleDeleteTab,
       handleActivateTab,
+      handleRefreshTabs,
       focusedTabId,
       clipboardTabId,
       setFocusedTabId,
@@ -425,6 +431,7 @@ export function WindowComponent({
     moveTabToPosition,
     handleDeleteTab,
     handleActivateTab,
+    handleRefreshTabs,
     isVisualMode,
     visualStartTabId,
     selectedTabs,

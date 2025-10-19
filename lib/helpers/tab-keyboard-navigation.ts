@@ -8,6 +8,7 @@ export interface TabKeyboardNavigationProps {
   ) => Promise<void>;
   handleDeleteTab: (id: number) => Promise<void>;
   handleActivateTab: (id: number) => Promise<void>;
+  handleRefreshTabs: () => Promise<void>;
   focusedTabId: number | null;
   clipboardTabId: number | null;
   setFocusedTabId: (id: number | null) => void;
@@ -30,6 +31,7 @@ export function createTabKeyboardHandler({
   moveTabToPosition,
   handleDeleteTab,
   handleActivateTab,
+  handleRefreshTabs,
   focusedTabId,
   clipboardTabId,
   setFocusedTabId,
@@ -261,6 +263,10 @@ export function createTabKeyboardHandler({
         if (navigableTabs.length > 0) {
           setFocusedTabId(navigableTabs[navigableTabs.length - 1].id);
         }
+        break;
+      case "r": // r for refresh tabs
+        // e.preventDefault();
+        handleRefreshTabs();
         break;
       case "Escape":
         setFocusedTabId(null);

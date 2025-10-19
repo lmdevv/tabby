@@ -12,8 +12,6 @@ import {
   Ungroup,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
-import { browser } from "wxt/browser";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +32,7 @@ import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
   groupTabs,
+  refreshTabs,
   sortTabs,
   ungroupTabs,
 } from "@/lib/helpers/tab-operations";
@@ -81,13 +80,7 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
   };
 
   const handleRefresh = async (): Promise<void> => {
-    try {
-      await browser.runtime.sendMessage({ type: "refreshTabs" });
-      toast.success("Tabs refreshed successfully");
-    } catch (error) {
-      console.error("Failed to refresh tabs:", error);
-      toast.error("Failed to refresh tabs");
-    }
+    await refreshTabs({ workspaceId });
   };
 
   const handleHistory = () => {
