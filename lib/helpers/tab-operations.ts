@@ -106,3 +106,68 @@ export async function openWorkspace(
     toast.error("Failed to open workspace");
   }
 }
+
+export async function cleanUnusedTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "cleanUnusedTabs",
+      workspaceId: options.workspaceId,
+      daysThreshold: 3,
+    } as const);
+    toast.success("Unused tabs cleaned successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to clean unused tabs:", error);
+    toast.error("Failed to clean unused tabs");
+  }
+}
+
+export async function cleanDuplicateTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "cleanDuplicateTabs",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("Duplicate tabs cleaned successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to clean duplicate tabs:", error);
+    toast.error("Failed to clean duplicate tabs");
+  }
+}
+
+export async function cleanResourceTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "cleanResourceTabs",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("Resource tabs cleaned successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to clean resource tabs:", error);
+    toast.error("Failed to clean resource tabs");
+  }
+}
+
+export async function cleanNonResourceTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "cleanNonResourceTabs",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("Non-resource tabs cleaned successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to clean non-resource tabs:", error);
+    toast.error("Failed to clean non-resource tabs");
+  }
+}

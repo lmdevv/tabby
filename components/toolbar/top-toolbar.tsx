@@ -9,6 +9,7 @@ import {
   Link2,
   RefreshCw,
   Tag,
+  Trash2,
   Ungroup,
 } from "lucide-react";
 import { useState } from "react";
@@ -31,6 +32,10 @@ import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
+  cleanDuplicateTabs,
+  cleanNonResourceTabs,
+  cleanResourceTabs,
+  cleanUnusedTabs,
   groupTabs,
   refreshTabs,
   sortTabs,
@@ -101,6 +106,22 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
 
   const handleUngroupTabs = () => {
     ungroupTabs({ workspaceId });
+  };
+
+  const handleCleanUnusedTabs = () => {
+    cleanUnusedTabs({ workspaceId });
+  };
+
+  const handleCleanDuplicateTabs = () => {
+    cleanDuplicateTabs({ workspaceId });
+  };
+
+  const handleCleanResourceTabs = () => {
+    cleanResourceTabs({ workspaceId });
+  };
+
+  const handleCleanNonResourceTabs = () => {
+    cleanNonResourceTabs({ workspaceId });
   };
   return (
     <div className="flex gap-2">
@@ -214,6 +235,23 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
           <DropdownMenuItem onClick={handleUngroupTabs}>
             <Ungroup className="h-4 w-4 mr-2" />
             Ungroup All Tabs
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleCleanUnusedTabs}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clean Unused Tabs (3+ days)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCleanDuplicateTabs}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clean Duplicate Tabs
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCleanResourceTabs}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clean Resource Tabs
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCleanNonResourceTabs}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clean Non-Resource Tabs
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

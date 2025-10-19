@@ -1,7 +1,15 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowUpDown, Bot, Group, Hash, Monitor, Ungroup } from "lucide-react";
+import {
+  ArrowUpDown,
+  Bot,
+  Group,
+  Hash,
+  Monitor,
+  Trash2,
+  Ungroup,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,6 +32,10 @@ import {
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
+  cleanDuplicateTabs,
+  cleanNonResourceTabs,
+  cleanResourceTabs,
+  cleanUnusedTabs,
   groupTabs,
   openWorkspace,
   sortTabs,
@@ -127,6 +139,25 @@ export function CommandMenu({
     openWorkspace(workspaceIdToOpen, () => handleOpenChange(false));
   };
 
+  const handleCleanUnusedTabs = () => {
+    cleanUnusedTabs({ workspaceId, onClose: () => handleOpenChange(false) });
+  };
+
+  const handleCleanDuplicateTabs = () => {
+    cleanDuplicateTabs({ workspaceId, onClose: () => handleOpenChange(false) });
+  };
+
+  const handleCleanResourceTabs = () => {
+    cleanResourceTabs({ workspaceId, onClose: () => handleOpenChange(false) });
+  };
+
+  const handleCleanNonResourceTabs = () => {
+    cleanNonResourceTabs({
+      workspaceId,
+      onClose: () => handleOpenChange(false),
+    });
+  };
+
   const showWorkspaces = () => {
     setMenuMode("workspaces");
     setSearchValue("");
@@ -165,6 +196,10 @@ export function CommandMenu({
       "group with tabby ai": "Group with Tabby",
       "ungroup all tabs": "Ungroup All Tabs",
       "workspaces browse": "Browse Workspaces",
+      "clean unused tabs 3 days": "Clean Unused Tabs (3+ days)",
+      "clean duplicate tabs": "Clean Duplicate Tabs",
+      "clean resource tabs": "Clean Resource Tabs",
+      "clean non resource tabs": "Clean Non-Resource Tabs",
     };
 
     const action = commandMap[selectedValue];
@@ -264,6 +299,34 @@ export function CommandMenu({
               <CommandItem value="workspaces browse" onSelect={showWorkspaces}>
                 <Monitor className="mr-2 h-4 w-4" />
                 <span>Workspaces</span>
+              </CommandItem>
+              <CommandItem
+                value="clean unused tabs 3 days"
+                onSelect={handleCleanUnusedTabs}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Clean Unused Tabs (3+ days)</span>
+              </CommandItem>
+              <CommandItem
+                value="clean duplicate tabs"
+                onSelect={handleCleanDuplicateTabs}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Clean Duplicate Tabs</span>
+              </CommandItem>
+              <CommandItem
+                value="clean resource tabs"
+                onSelect={handleCleanResourceTabs}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Clean Resource Tabs</span>
+              </CommandItem>
+              <CommandItem
+                value="clean non resource tabs"
+                onSelect={handleCleanNonResourceTabs}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Clean Non-Resource Tabs</span>
               </CommandItem>
             </CommandGroup>
           )}
