@@ -219,7 +219,7 @@ export function CommandMenu({
 
     if (isCustomGroupCommand && customGroupInstructions) {
       return {
-        enterText: `Group with custom AI: "${customGroupInstructions}"`,
+        enterText: `Group with Tabby (Custom): "${customGroupInstructions}"`,
         shortcuts: [],
       };
     }
