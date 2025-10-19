@@ -210,13 +210,13 @@ export function CommandMenu({
 
     // Main menu mode
     const commandMap: Record<string, string> = {
-      "sort-title": "Sort by Title (A-Z)",
-      "sort-domain": "Sort by Domain",
-      "sort-recency": "Sort by Recency (Newest First)",
-      "group-domain": "Group by Domain",
-      "group-ai": "Group with Tabby",
-      "ungroup-tabs": "Ungroup All Tabs",
-      workspaces: "Browse Workspaces",
+      "sort by title a-z": "Sort by Title (A-Z)",
+      "sort by domain": "Sort by Domain",
+      "sort by recency newest first": "Sort by Recency (Newest First)",
+      "group by domain": "Group by Domain",
+      "group with tabby ai": "Group with Tabby",
+      "ungroup all tabs": "Ungroup All Tabs",
+      "workspaces browse": "Browse Workspaces",
     };
 
     const action = commandMap[selectedValue];
@@ -259,10 +259,7 @@ export function CommandMenu({
 
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
-      <Command
-        value={selectedValue}
-        onValueChange={setSelectedValue}
-      >
+      <Command value={selectedValue} onValueChange={setSelectedValue}>
         <CommandInput
           placeholder={
             menuMode === "workspaces"
@@ -278,39 +275,45 @@ export function CommandMenu({
           {menuMode === "main" && (
             <CommandGroup>
               <CommandItem
-                value="sort-title"
+                value="sort by title a-z"
                 onSelect={() => handleSortTabs("title")}
               >
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <span>Sort by Title (A-Z)</span>
               </CommandItem>
               <CommandItem
-                value="sort-domain"
+                value="sort by domain"
                 onSelect={() => handleSortTabs("domain")}
               >
                 <Hash className="mr-2 h-4 w-4" />
                 <span>Sort by Domain</span>
               </CommandItem>
               <CommandItem
-                value="sort-recency"
+                value="sort by recency newest first"
                 onSelect={() => handleSortTabs("recency")}
               >
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <span>Sort by Recency (Newest First)</span>
               </CommandItem>
-              <CommandItem value="group-domain" onSelect={handleGroupTabs}>
+              <CommandItem value="group by domain" onSelect={handleGroupTabs}>
                 <Group className="mr-2 h-4 w-4" />
                 <span>Group by Domain</span>
               </CommandItem>
-              <CommandItem value="group-ai" onSelect={handleAIGroupTabs}>
+              <CommandItem
+                value="group with tabby ai"
+                onSelect={handleAIGroupTabs}
+              >
                 <Bot className="mr-2 h-4 w-4" />
                 <span>Group with Tabby</span>
               </CommandItem>
-              <CommandItem value="ungroup-tabs" onSelect={handleUngroupTabs}>
+              <CommandItem
+                value="ungroup all tabs"
+                onSelect={handleUngroupTabs}
+              >
                 <Ungroup className="mr-2 h-4 w-4" />
                 <span>Ungroup All Tabs</span>
               </CommandItem>
-              <CommandItem value="workspaces" onSelect={showWorkspaces}>
+              <CommandItem value="workspaces browse" onSelect={showWorkspaces}>
                 <Monitor className="mr-2 h-4 w-4" />
                 <span>Workspaces</span>
               </CommandItem>
