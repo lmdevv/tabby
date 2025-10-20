@@ -907,15 +907,6 @@ export default defineBackground(() => {
   //
   // Messages
   //
-  browser.runtime.onMessage.addListener((message: RuntimeMessage, _sender) => {
-    if (typeof message === "object" && message.type === "refreshTabs") {
-      console.log("Reconciling tabs ");
-      reconcileTabs().catch((err) => {
-        console.error("Reconciliation failed:", err);
-      });
-    }
-  });
-
   // Handle extension icon click
   browser.action.onClicked.addListener((_tab) => {
     handleActionClick().catch((err) => {
@@ -949,9 +940,58 @@ export default defineBackground(() => {
 
   // Maybe this could be done on dashboard? without relying on service worker? idk if that would be better or more reliable
   // TODO: Make one big ops for db for atomic updates
+  // TODO: modularize this code, maybe have a separate file for this
   // NOTE: on the logs, this updatetabgroup is getting logged on application console, not service worker, so this message comm doesnt even need to be necessary then
   browser.runtime.onMessage.addListener(
     async (message: RuntimeMessage, _sender) => {
+      // Internal helper to activate a workspace and optionally skip restoring from DB
+      async function activateWorkspace(
+        workspaceId: number,
+        opts?: { skipTabSwitching?: boolean },
+      ) {
+        // Get the current active workspace before switching
+        const currentActiveWorkspace = await db.workspaces
+          .where("active")
+          .equals(1)
+          .first();
+
+        // Archive all tabs from the current active workspace (only if there is one)
+        if (currentActiveWorkspace) {
+          await db.activeTabs
+            .where("workspaceId")
+            .equals(currentActiveWorkspace.id)
+            .modify({ tabStatus: "archived" });
+        }
+
+        // make active workspace the new workspace
+        await db.workspaces.where("id").equals(workspaceId).modify({
+          active: 1,
+          lastOpened: Date.now(),
+        });
+
+        // make all other workspaces inactive
+        await db.workspaces.where("id").notEqual(workspaceId).modify({
+          active: 0,
+        });
+
+        if (opts?.skipTabSwitching) {
+          // Close all non-dashboard tabs, keep dashboard focused
+          const allCurrentBrowserTabs = await browser.tabs.query({});
+          const nonDashboardTabIdsToClose: number[] = [];
+          for (const tab of allCurrentBrowserTabs) {
+            if (tab.id != null && !isDashboardTab(tab)) {
+              nonDashboardTabIdsToClose.push(tab.id);
+            }
+          }
+          if (nonDashboardTabIdsToClose.length > 0) {
+            await browser.tabs.remove(nonDashboardTabIdsToClose);
+          }
+          return;
+        }
+
+        // Normal workspace switching: close current tabs and open workspace tabs from DB
+        await switchWorkspaceTabs(workspaceId);
+      }
       if (typeof message === "object" && message.type === "updateTabGroup") {
         console.log("Updating tab group", message.groupId, "with", {
           title: message.title,
@@ -998,42 +1038,14 @@ export default defineBackground(() => {
         message.type === "openWorkspace"
       ) {
         console.log("Opening workspace", message.workspaceId);
-
-        // Get the current active workspace before switching
-        const currentActiveWorkspace = await db.workspaces
-          .where("active")
-          .equals(1)
-          .first();
-
-        // Special handling for undefined workspace conversion
-        const isConvertingFromUndefined =
-          !currentActiveWorkspace && message.skipTabSwitching;
-
-        // Archive all tabs from the current active workspace (only if there is one)
-        if (currentActiveWorkspace) {
-          await db.activeTabs
-            .where("workspaceId")
-            .equals(currentActiveWorkspace.id)
-            .modify({ tabStatus: "archived" });
-        }
-
-        // make active workspace the new workspace
-        await db.workspaces.where("id").equals(message.workspaceId).modify({
-          active: 1,
-        });
-
-        // make all other workspaces inactive
-        await db.workspaces.where("id").notEqual(message.workspaceId).modify({
-          active: 0,
-        });
-
-        if (isConvertingFromUndefined) {
-          // For undefined workspace conversion, just refresh to ensure fresh state
-          // without closing and reopening tabs
-          await reconcileTabs();
-        } else {
-          // Normal workspace switching: close current tabs and open workspace tabs
-          await switchWorkspaceTabs(message.workspaceId);
+        try {
+          await activateWorkspace(message.workspaceId, {
+            skipTabSwitching: message.skipTabSwitching === true,
+          });
+          return { success: true } as const;
+        } catch (error) {
+          console.error("Failed to open workspace:", error);
+          return { success: false, error: String(error) } as const;
         }
       } else if (
         typeof message === "object" &&
@@ -1100,6 +1112,17 @@ export default defineBackground(() => {
       ) {
         await deleteSnapshot(message.snapshotId);
         return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "refreshTabs"
+      ) {
+        try {
+          await reconcileTabs();
+          return { success: true } as const;
+        } catch (err) {
+          console.error("Reconciliation failed:", err);
+          return { success: false, error: String(err) } as const;
+        }
       } else if (typeof message === "object" && message.type === "sortTabs") {
         await sortTabsInWorkspace(message.workspaceId, message.sortType);
         return { success: true } as const;
@@ -1295,48 +1318,18 @@ export default defineBackground(() => {
             resourceGroupIds: [],
           } as Omit<Workspace, "id">);
 
-          // Deactivate all others and activate the new one atomically
-          await db.transaction("rw", db.workspaces, async () => {
-            await db.workspaces.where("active").equals(1).modify({ active: 0 });
-            await db.workspaces
-              .where("id")
-              .equals(newWorkspaceId)
-              .modify({ active: 1, lastOpened: now });
-          });
+          // Activate new workspace and close non-dashboard tabs without restoring from DB
+          await activateWorkspace(newWorkspaceId, { skipTabSwitching: true });
 
-          // Archive tabs from the previously active workspace so DB retains history
-          const previousActive = await db.workspaces
-            .where("active")
-            .equals(1)
-            .and((w) => w.id !== newWorkspaceId)
-            .first();
-          if (previousActive) {
-            await db.activeTabs
-              .where("workspaceId")
-              .equals(previousActive.id)
-              .modify({ tabStatus: "archived" });
-          }
-
-          // Close all non-dashboard tabs
+          // Find a target window (prefer dashboard window)
           const allCurrentBrowserTabs = await browser.tabs.query({});
-          const nonDashboardTabIdsToClose: number[] = [];
           let dashboardWindowId: number | undefined;
           for (const tab of allCurrentBrowserTabs) {
-            if (tab.id != null) {
-              if (isDashboardTab(tab)) {
-                if (!dashboardWindowId && tab.windowId != null) {
-                  dashboardWindowId = tab.windowId;
-                }
-              } else {
-                nonDashboardTabIdsToClose.push(tab.id);
-              }
+            if (tab.id != null && isDashboardTab(tab) && tab.windowId != null) {
+              dashboardWindowId = tab.windowId;
+              break;
             }
           }
-          if (nonDashboardTabIdsToClose.length > 0) {
-            await browser.tabs.remove(nonDashboardTabIdsToClose);
-          }
-
-          // Ensure we have a window to open in
           if (!dashboardWindowId) {
             const win = await browser.windows.create({ focused: true });
             if (win && win.id != null) dashboardWindowId = win.id;

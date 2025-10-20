@@ -234,7 +234,7 @@ export async function openResourcesAsTabs(urls: string[]): Promise<void> {
       type: "openResourcesAsTabs",
       urls,
     } as const);
-    if (res?.success) {
+    if (res?.success !== false) {
       toast.success("Opened tabs");
     } else {
       toast.error("Failed to open tabs");
@@ -259,7 +259,7 @@ export async function openResourcesAsGroup(
       title,
       urls,
     } as const);
-    if (res?.success) {
+    if (res?.success !== false) {
       toast.success("Opened as group");
     } else {
       toast.error("Failed to open as group");
@@ -284,7 +284,7 @@ export async function createWorkspaceFromResources(
       name,
       urls,
     } as const);
-    if (res?.success) {
+    if (res?.success !== false) {
       toast.success("Workspace created");
     } else {
       toast.error("Failed to create workspace");
