@@ -40,9 +40,14 @@ import {
 
 interface TopToolbarProps {
   workspaceId: number | null;
+  // When previewing a workspace that is not active, we also want to read archived tabs
+  isPreview?: boolean;
 }
 
-export function TopToolbar({ workspaceId }: TopToolbarProps) {
+export function TopToolbar({
+  workspaceId,
+  isPreview = false,
+}: TopToolbarProps) {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   // Get UI state directly from global state
@@ -63,12 +68,12 @@ export function TopToolbar({ workspaceId }: TopToolbarProps) {
   // Get tabs data directly from DB
   const tabs = useLiveQuery(() => {
     if (!workspaceId) return [];
-    return db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .and((tab) => tab.tabStatus === "active")
-      .toArray();
-  }, [workspaceId]);
+    const base = db.activeTabs.where("workspaceId").equals(workspaceId);
+    // In preview mode, include archived tabs so we can view the workspace contents
+    return isPreview
+      ? base.toArray()
+      : base.and((tab) => tab.tabStatus === "active").toArray();
+  }, [workspaceId, isPreview]);
 
   const tabsCount = tabs?.length || 0;
   const selectedTabsCount = selectedTabs.length;

@@ -23,12 +23,15 @@ interface AppContentProps {
   shownWorkspaceId: number | null;
   onTabClick: (tab: Tab) => Promise<void>;
   onEditGroup: (groupId: number) => Promise<void>;
+  // When previewing a workspace, we should include archived tabs
+  isPreview?: boolean;
 }
 
 export function AppContent({
   shownWorkspaceId,
   onTabClick,
   onEditGroup,
+  isPreview = false,
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
@@ -38,11 +41,12 @@ export function AppContent({
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {
     if (!shownWorkspaceId) return [];
-    return db.activeTabs
-      .where("workspaceId")
-      .equals(shownWorkspaceId)
-      .toArray();
-  }, [shownWorkspaceId]);
+    // In preview mode, include archived tabs; otherwise only active
+    const base = db.activeTabs.where("workspaceId").equals(shownWorkspaceId);
+    return isPreview
+      ? base.toArray()
+      : base.and((tab) => tab.tabStatus === "active").toArray();
+  }, [shownWorkspaceId, isPreview]);
 
   // Get tab groups data directly using Dexie
   const tabGroups = useLiveQuery(() => {
@@ -125,7 +129,10 @@ export function AppContent({
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2 min-w-0">
                       <div className="flex items-center justify-end mb-2">
-                        <TopToolbar workspaceId={shownWorkspaceId} />
+                        <TopToolbar
+                          workspaceId={shownWorkspaceId}
+                          isPreview={isPreview}
+                        />
                       </div>
                       {windowGroups.map((windowGroup) => {
                         return (
@@ -136,6 +143,7 @@ export function AppContent({
                                 workspaceId={shownWorkspaceId}
                                 onTabClick={onTabClick}
                                 onEditGroup={onEditGroup}
+                                isPreview={isPreview}
                               />
                             )}
                           </div>
@@ -175,7 +183,10 @@ export function AppContent({
                   <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
                     <div className="space-y-6 px-6 py-2 min-w-0">
                       <div className="flex items-center justify-end mb-2">
-                        <TopToolbar workspaceId={shownWorkspaceId} />
+                        <TopToolbar
+                          workspaceId={shownWorkspaceId}
+                          isPreview={isPreview}
+                        />
                       </div>
                       {windowGroups.map((windowGroup) => {
                         return (
@@ -186,6 +197,7 @@ export function AppContent({
                                 workspaceId={shownWorkspaceId}
                                 onTabClick={onTabClick}
                                 onEditGroup={onEditGroup}
+                                isPreview={isPreview}
                               />
                             )}
                           </div>

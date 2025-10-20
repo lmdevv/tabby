@@ -159,6 +159,11 @@ export default function App() {
           shownWorkspaceId={shownWorkspaceId || null}
           onTabClick={handleTabClick}
           onEditGroup={handleEditGroup}
+          // Preview mode is when a specific workspace is selected that differs from the active one
+          isPreview={
+            previewWorkspaceId !== null &&
+            previewWorkspaceId !== workspaceData?.activeWorkspace?.id
+          }
         />
       </SidebarInset>
 

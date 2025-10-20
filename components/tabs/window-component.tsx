@@ -42,6 +42,8 @@ interface WindowComponentProps {
   workspaceId: number;
   onTabClick: (tab: Tab) => void;
   onEditGroup: (groupId: number) => void;
+  // When previewing a workspace that is not active, we also want to read archived tabs
+  isPreview?: boolean;
 }
 
 export function WindowComponent({
@@ -49,6 +51,7 @@ export function WindowComponent({
   workspaceId,
   onTabClick,
   onEditGroup,
+  isPreview = false,
 }: WindowComponentProps) {
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
@@ -91,9 +94,13 @@ export function WindowComponent({
       db.activeTabs
         .where("workspaceId")
         .equals(workspaceId)
-        .and((tab) => tab.windowId === windowId && tab.tabStatus === "active")
+        .and(
+          (tab) =>
+            tab.windowId === windowId &&
+            (isPreview || tab.tabStatus === "active"),
+        )
         .sortBy("index"),
-    [workspaceId, windowId],
+    [workspaceId, windowId, isPreview],
   );
 
   const allTabGroups = useLiveQuery(
