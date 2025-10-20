@@ -45,6 +45,7 @@ export function ResourcesPanel() {
         groupId,
         name: group.name,
         description: group.description || "",
+        resourceIds: group.resourceIds,
       });
     }
   };
@@ -67,11 +68,13 @@ export function ResourcesPanel() {
     groupId?: number;
     name: string;
     description: string;
+    resourceIds: string[];
   }>({
     open: false,
     mode: "create",
     name: "",
     description: "",
+    resourceIds: [],
   });
 
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -130,6 +133,7 @@ export function ResourcesPanel() {
       groupId: undefined,
       name: "",
       description: "",
+      resourceIds: [],
     });
   };
 
@@ -147,21 +151,15 @@ export function ResourcesPanel() {
     if (!groupDialog.groupId) return;
 
     try {
-      // Only update fields that are provided (not empty)
+      // Update fields - allow empty descriptions to be cleared
       const updates: { name?: string; description?: string } = {};
 
       if (name.trim()) {
         updates.name = name.trim();
       }
 
-      if (description.trim()) {
-        updates.description = description.trim();
-      }
-
-      // If description is empty but we have a current group, preserve existing description
-      if (!description.trim() && groupDialog.description) {
-        updates.description = groupDialog.description;
-      }
+      // Always update description, even if empty (to allow clearing)
+      updates.description = description.trim();
 
       await updateResourceGroup(groupDialog.groupId, updates);
       toast.success("Resource group updated successfully");
@@ -293,6 +291,7 @@ export function ResourcesPanel() {
               mode: "create",
               name: "",
               description: "",
+              resourceIds: [],
             });
           } else {
             setGroupDialog({ ...groupDialog, open });
@@ -304,6 +303,7 @@ export function ResourcesPanel() {
         mode={groupDialog.mode}
         initialName={groupDialog.name}
         initialDescription={groupDialog.description}
+        resourceIds={groupDialog.resourceIds}
       />
 
       <AlertDialog
