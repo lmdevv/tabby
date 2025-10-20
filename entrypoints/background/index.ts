@@ -1157,6 +1157,205 @@ export default defineBackground(() => {
       ) {
         await convertTabGroupToResource(message.groupId);
         return { success: true } as const;
+      } else if (
+        typeof message === "object" &&
+        message.type === "openResourcesAsTabs"
+      ) {
+        try {
+          const urls = Array.from(
+            new Set(
+              (message.urls || []).filter((u): u is string => {
+                if (!u) return false;
+                try {
+                  // Validate URL
+                  const parsed = new URL(u);
+                  return Boolean(parsed.protocol && parsed.hostname);
+                } catch {
+                  return false;
+                }
+              }),
+            ),
+          );
+
+          if (urls.length === 0) return { success: false } as const;
+
+          // Prefer the last focused window
+          let targetWindowId: number | undefined;
+          try {
+            const lastFocused = await browser.windows.getLastFocused();
+            targetWindowId = lastFocused?.id ?? undefined;
+          } catch {
+            targetWindowId = undefined;
+          }
+
+          for (const url of urls) {
+            await browser.tabs.create({
+              url,
+              windowId: targetWindowId,
+              active: false,
+            });
+          }
+
+          return { success: true } as const;
+        } catch (error) {
+          console.error("Failed to open resources as tabs:", error);
+          return { success: false, error: String(error) } as const;
+        }
+      } else if (
+        typeof message === "object" &&
+        message.type === "openResourcesAsGroup"
+      ) {
+        try {
+          const urls = Array.from(
+            new Set(
+              (message.urls || []).filter((u): u is string => {
+                if (!u) return false;
+                try {
+                  const parsed = new URL(u);
+                  return Boolean(parsed.protocol && parsed.hostname);
+                } catch {
+                  return false;
+                }
+              }),
+            ),
+          );
+
+          if (urls.length === 0) return { success: false } as const;
+
+          // Determine target window
+          let targetWindowId: number | undefined;
+          try {
+            const lastFocused = await browser.windows.getLastFocused();
+            targetWindowId = lastFocused?.id ?? undefined;
+          } catch {
+            targetWindowId = undefined;
+          }
+
+          const createdTabIds: number[] = [];
+          for (const url of urls) {
+            const tab = await browser.tabs.create({
+              url,
+              windowId: targetWindowId,
+              active: false,
+            });
+            if (tab.id != null) {
+              createdTabIds.push(tab.id);
+              // Capture windowId for subsequent tabs if first create returned one
+              if (!targetWindowId && tab.windowId != null) {
+                targetWindowId = tab.windowId;
+              }
+            }
+          }
+
+          if (createdTabIds.length >= 2 && targetWindowId != null) {
+            const groupId = await browser.tabs.group({
+              tabIds: createdTabIds as [number, ...number[]],
+              createProperties: { windowId: targetWindowId },
+            });
+            await browser.tabGroups.update(groupId, {
+              title: message.title,
+              color: getRandomTabGroupColor(),
+            });
+          }
+
+          return { success: true } as const;
+        } catch (error) {
+          console.error("Failed to open resources as a group:", error);
+          return { success: false, error: String(error) } as const;
+        }
+      } else if (
+        typeof message === "object" &&
+        message.type === "createWorkspaceFromResources"
+      ) {
+        try {
+          const urls = Array.from(
+            new Set(
+              (message.urls || []).filter((u): u is string => {
+                if (!u) return false;
+                try {
+                  const parsed = new URL(u);
+                  return Boolean(parsed.protocol && parsed.hostname);
+                } catch {
+                  return false;
+                }
+              }),
+            ),
+          );
+
+          if (urls.length === 0) return { success: false } as const;
+
+          const now = Date.now();
+
+          // Create the new workspace (inactive initially)
+          const newWorkspaceId = await db.workspaces.add({
+            name: message.name || "New Workspace",
+            createdAt: now,
+            lastOpened: now,
+            active: 0,
+            resourceGroupIds: [],
+          } as Omit<Workspace, "id">);
+
+          // Deactivate all others and activate the new one atomically
+          await db.transaction("rw", db.workspaces, async () => {
+            await db.workspaces.where("active").equals(1).modify({ active: 0 });
+            await db.workspaces
+              .where("id")
+              .equals(newWorkspaceId)
+              .modify({ active: 1, lastOpened: now });
+          });
+
+          // Archive tabs from the previously active workspace so DB retains history
+          const previousActive = await db.workspaces
+            .where("active")
+            .equals(1)
+            .and((w) => w.id !== newWorkspaceId)
+            .first();
+          if (previousActive) {
+            await db.activeTabs
+              .where("workspaceId")
+              .equals(previousActive.id)
+              .modify({ tabStatus: "archived" });
+          }
+
+          // Close all non-dashboard tabs
+          const allCurrentBrowserTabs = await browser.tabs.query({});
+          const nonDashboardTabIdsToClose: number[] = [];
+          let dashboardWindowId: number | undefined;
+          for (const tab of allCurrentBrowserTabs) {
+            if (tab.id != null) {
+              if (isDashboardTab(tab)) {
+                if (!dashboardWindowId && tab.windowId != null) {
+                  dashboardWindowId = tab.windowId;
+                }
+              } else {
+                nonDashboardTabIdsToClose.push(tab.id);
+              }
+            }
+          }
+          if (nonDashboardTabIdsToClose.length > 0) {
+            await browser.tabs.remove(nonDashboardTabIdsToClose);
+          }
+
+          // Ensure we have a window to open in
+          if (!dashboardWindowId) {
+            const win = await browser.windows.create({ focused: true });
+            if (win && win.id != null) dashboardWindowId = win.id;
+          }
+
+          // Open the resource URLs as background tabs in the target window
+          for (const url of urls) {
+            await browser.tabs.create({
+              url,
+              windowId: dashboardWindowId,
+              active: false,
+            });
+          }
+
+          return { success: true, workspaceId: newWorkspaceId } as const;
+        } catch (error) {
+          console.error("Failed to create workspace from resources:", error);
+          return { success: false, error: String(error) } as const;
+        }
       }
     },
   );
