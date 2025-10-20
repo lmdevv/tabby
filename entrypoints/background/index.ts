@@ -955,6 +955,9 @@ export default defineBackground(() => {
           .equals(1)
           .first();
 
+        const isConvertingFromUndefined =
+          !currentActiveWorkspace && opts?.skipTabSwitching === true;
+
         // Archive all tabs from the current active workspace (only if there is one)
         if (currentActiveWorkspace) {
           // Remove any previous archived snapshot for this workspace to avoid accumulating duplicates
@@ -982,7 +985,12 @@ export default defineBackground(() => {
           active: 0,
         });
 
-        if (opts?.skipTabSwitching) {
+        if (isConvertingFromUndefined) {
+          // For undefined workspace conversion, just refresh to ensure fresh state
+          // without closing and reopening tabs
+          await reconcileTabs();
+          return;
+        } else if (opts?.skipTabSwitching) {
           // Close all non-dashboard tabs, keep dashboard focused
           const allCurrentBrowserTabs = await browser.tabs.query({});
           const nonDashboardTabIdsToClose: number[] = [];
