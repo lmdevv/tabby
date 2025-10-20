@@ -957,6 +957,13 @@ export default defineBackground(() => {
 
         // Archive all tabs from the current active workspace (only if there is one)
         if (currentActiveWorkspace) {
+          // Remove any previous archived snapshot for this workspace to avoid accumulating duplicates
+          await db.activeTabs
+            .where("workspaceId")
+            .equals(currentActiveWorkspace.id)
+            .and((t) => t.tabStatus === "archived")
+            .delete();
+
           await db.activeTabs
             .where("workspaceId")
             .equals(currentActiveWorkspace.id)
