@@ -205,6 +205,24 @@ export interface ConvertTabGroupToResourceMessage {
   groupId: number;
 }
 
+// Resource group actions
+export interface OpenResourcesAsTabsMessage {
+  type: "openResourcesAsTabs";
+  urls: string[];
+}
+
+export interface OpenResourcesAsGroupMessage {
+  type: "openResourcesAsGroup";
+  title: string;
+  urls: string[];
+}
+
+export interface CreateWorkspaceFromResourcesMessage {
+  type: "createWorkspaceFromResources";
+  name: string;
+  urls: string[];
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -222,7 +240,10 @@ export type RuntimeMessage =
   | CleanDuplicateTabsMessage
   | CleanResourceTabsMessage
   | CleanNonResourceTabsMessage
-  | ConvertTabGroupToResourceMessage;
+  | ConvertTabGroupToResourceMessage
+  | OpenResourcesAsTabsMessage
+  | OpenResourcesAsGroupMessage
+  | CreateWorkspaceFromResourcesMessage;
 
 export type {
   LanguageModelAvailability,

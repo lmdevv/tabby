@@ -1,7 +1,13 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { BookmarkPlus, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import {
+  BookmarkPlus,
+  ChevronDown,
+  FolderOpen,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { ResourceCard } from "@/components/resources/resource-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +16,18 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { db } from "@/lib/db/db";
+import {
+  createWorkspaceFromResources,
+  openResourcesAsGroup,
+  openResourcesAsTabs,
+} from "@/lib/helpers/tab-operations";
 import { cn } from "@/lib/helpers/utils";
 import type { Resource } from "@/lib/types/types";
 
@@ -101,6 +118,55 @@ export function ResourceGroupComponent({
                 <span className="sr-only">Delete group</span>
               </Button>
             )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="sr-only">Group actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const urls = resources
+                      .map((r) => r.url)
+                      .filter(Boolean) as string[];
+                    await openResourcesAsGroup(group.name, urls);
+                  }}
+                >
+                  Open as group
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const urls = resources
+                      .map((r) => r.url)
+                      .filter(Boolean) as string[];
+                    await openResourcesAsTabs(urls);
+                  }}
+                >
+                  Open tabs
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const urls = resources
+                      .map((r) => r.url)
+                      .filter(Boolean) as string[];
+                    await createWorkspaceFromResources(group.name, urls);
+                  }}
+                >
+                  Open as workspace
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <div className="size-8 flex items-center justify-center text-muted-foreground">
               <ChevronDown

@@ -223,3 +223,74 @@ export async function convertTabGroupToResource(
     toast.error("Failed to convert tab group to resource");
   }
 }
+
+export async function openResourcesAsTabs(urls: string[]): Promise<void> {
+  if (!urls.length) {
+    toast.error("No resources to open");
+    return;
+  }
+  try {
+    const res = await browser.runtime.sendMessage({
+      type: "openResourcesAsTabs",
+      urls,
+    } as const);
+    if (res?.success) {
+      toast.success("Opened tabs");
+    } else {
+      toast.error("Failed to open tabs");
+    }
+  } catch (error) {
+    console.error("Failed to open resources as tabs:", error);
+    toast.error("Failed to open resources as tabs");
+  }
+}
+
+export async function openResourcesAsGroup(
+  title: string,
+  urls: string[],
+): Promise<void> {
+  if (!urls.length) {
+    toast.error("No resources to open");
+    return;
+  }
+  try {
+    const res = await browser.runtime.sendMessage({
+      type: "openResourcesAsGroup",
+      title,
+      urls,
+    } as const);
+    if (res?.success) {
+      toast.success("Opened as group");
+    } else {
+      toast.error("Failed to open as group");
+    }
+  } catch (error) {
+    console.error("Failed to open resources as a group:", error);
+    toast.error("Failed to open resources as a group");
+  }
+}
+
+export async function createWorkspaceFromResources(
+  name: string,
+  urls: string[],
+): Promise<void> {
+  if (!urls.length) {
+    toast.error("No resources to move");
+    return;
+  }
+  try {
+    const res = await browser.runtime.sendMessage({
+      type: "createWorkspaceFromResources",
+      name,
+      urls,
+    } as const);
+    if (res?.success) {
+      toast.success("Workspace created");
+    } else {
+      toast.error("Failed to create workspace");
+    }
+  } catch (error) {
+    console.error("Failed to create workspace from resources:", error);
+    toast.error("Failed to create workspace from resources");
+  }
+}
