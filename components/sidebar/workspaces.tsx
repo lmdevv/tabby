@@ -23,6 +23,7 @@ import type { Workspace, WorkspaceGroup } from "@/lib/types/types";
 interface WorkspacesProps {
   previewWorkspaceId: number | null;
   setPreviewWorkspaceId: (id: number | null) => void;
+  onEditWorkspace?: (id: number) => void;
 }
 
 interface WorkspaceGroupItemProps {
@@ -30,6 +31,7 @@ interface WorkspaceGroupItemProps {
   workspaces: Workspace[];
   onPreview: (id: number) => void;
   previewWorkspaceId: number | null;
+  onEditWorkspace?: (id: number) => void;
 }
 
 function WorkspaceGroupItem({
@@ -37,6 +39,7 @@ function WorkspaceGroupItem({
   workspaces,
   onPreview,
   previewWorkspaceId,
+  onEditWorkspace,
 }: WorkspaceGroupItemProps) {
   const handleOpenChange = async (open: boolean) => {
     try {
@@ -71,6 +74,7 @@ function WorkspaceGroupItem({
                 workspace={workspace}
                 onPreview={onPreview}
                 isPreviewed={previewWorkspaceId === workspace.id}
+                onEdit={onEditWorkspace}
               />
             ))}
           </SidebarMenuSub>
@@ -83,6 +87,7 @@ function WorkspaceGroupItem({
 export function Workspaces({
   previewWorkspaceId,
   setPreviewWorkspaceId,
+  onEditWorkspace,
 }: WorkspacesProps) {
   // Get cached sidebar data for instant warm reload
   const cachedSidebarData = sidebarCache.getCachedData();
@@ -194,6 +199,7 @@ export function Workspaces({
             workspaces={groupedWorkspaces.get(group.id) || []}
             onPreview={setPreviewWorkspaceId}
             previewWorkspaceId={previewWorkspaceId}
+            onEditWorkspace={onEditWorkspace}
           />
         ))}
         {standaloneWorkspaces.map((workspace) => (
@@ -202,6 +208,7 @@ export function Workspaces({
             workspace={workspace}
             onPreview={setPreviewWorkspaceId}
             isPreviewed={previewWorkspaceId === workspace.id}
+            onEdit={onEditWorkspace}
           />
         ))}
       </SidebarMenu>

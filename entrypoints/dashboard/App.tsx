@@ -4,6 +4,7 @@ import { browser } from "wxt/browser";
 import { AppContent } from "@/components/app/AppContent";
 import { AppHeader } from "@/components/app/AppHeader";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
+import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { CommandMenu } from "@/components/toolbar/command-menu";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
@@ -20,6 +21,14 @@ export default function App() {
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
     groupId?: number;
+    tabIds?: number[];
+  }>({
+    open: false,
+  });
+
+  const [workspaceDialog, setWorkspaceDialog] = useState<{
+    open: boolean;
+    workspaceId?: number;
     tabIds?: number[];
   }>({
     open: false,
@@ -133,11 +142,49 @@ export default function App() {
     [groupDialog.groupId],
   );
 
+  const handleEditWorkspace = useCallback(async (workspaceId: number) => {
+    try {
+      // Get tab IDs for this workspace
+      const tabs = await db.activeTabs
+        .where("workspaceId")
+        .equals(workspaceId)
+        .toArray();
+
+      const tabIds = tabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
+      setWorkspaceDialog({
+        open: true,
+        workspaceId,
+        tabIds,
+      });
+    } catch (error) {
+      console.error("Failed to open edit workspace dialog:", error);
+    }
+  }, []);
+
+  const handleEditWorkspaceConfirm = useCallback(
+    async (name: string) => {
+      if (workspaceDialog.workspaceId) {
+        try {
+          await db.workspaces.update(workspaceDialog.workspaceId, {
+            name,
+          });
+        } catch (error) {
+          console.error("Failed to update workspace:", error);
+        }
+      }
+    },
+    [workspaceDialog.workspaceId],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
         previewWorkspaceId={previewWorkspaceId}
         setPreviewWorkspaceId={setPreviewWorkspaceId}
+        onEditWorkspace={handleEditWorkspace}
       />
       <SidebarInset>
         <AppHeader
@@ -188,6 +235,19 @@ export default function App() {
         title="Edit Tab Group"
         description="Edit the group name and color"
         tabIds={groupDialog.tabIds}
+      />
+
+      {/* Workspace Edit Dialog */}
+      <WorkspaceDialog
+        open={workspaceDialog.open}
+        onOpenChange={(open) =>
+          setWorkspaceDialog({ ...workspaceDialog, open })
+        }
+        onConfirm={handleEditWorkspaceConfirm}
+        workspaceId={workspaceDialog.workspaceId}
+        title="Edit Workspace"
+        description="Edit the workspace name"
+        tabIds={workspaceDialog.tabIds}
       />
     </SidebarProvider>
   );

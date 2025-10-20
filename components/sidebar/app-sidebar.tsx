@@ -13,11 +13,13 @@ import {
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   previewWorkspaceId: number | null;
   setPreviewWorkspaceId: (id: number | null) => void;
+  onEditWorkspace?: (id: number) => void;
 }
 
 export function AppSidebar({
   previewWorkspaceId,
   setPreviewWorkspaceId,
+  onEditWorkspace,
   ...props
 }: AppSidebarProps) {
   return (
@@ -26,6 +28,7 @@ export function AppSidebar({
         <Workspaces
           previewWorkspaceId={previewWorkspaceId}
           setPreviewWorkspaceId={setPreviewWorkspaceId}
+          onEditWorkspace={onEditWorkspace}
         />
       </SidebarContent>
       <SidebarFooter>

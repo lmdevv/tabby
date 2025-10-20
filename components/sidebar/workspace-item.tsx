@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder, MoreHorizontal, Trash2 } from "lucide-react";
+import { Edit, Folder, MoreHorizontal, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ interface WorkspaceItemProps {
   isActive?: boolean;
   onPreview?: (id: number) => void;
   isPreviewed?: boolean;
+  onEdit?: (id: number) => void;
 }
 
 export function WorkspaceItem({
@@ -28,6 +29,7 @@ export function WorkspaceItem({
   isActive = false,
   onPreview,
   isPreviewed = false,
+  onEdit,
 }: WorkspaceItemProps) {
   const handleDelete = async () => {
     try {
@@ -120,6 +122,11 @@ export function WorkspaceItem({
           >
             <Folder className="text-muted-foreground" />
             <span>Activate Workspace</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onEdit?.(workspace.id)}>
+            <Edit className="text-muted-foreground" />
+            <span>Edit Workspace</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleDelete}>
