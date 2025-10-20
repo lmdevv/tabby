@@ -142,25 +142,14 @@ export function ResourceGroupDialog({
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!name.trim() || isGenerating}
           >
-            {mode === "edit" ? (
-              <>
-                Save Changes
-              </>
-            ) : (
-              <>
-                Create Group
-              </>
-            )}
+            {mode === "edit" ? "Save Changes" : "Create Group"}
           </Button>
         </div>
       </DialogContent>

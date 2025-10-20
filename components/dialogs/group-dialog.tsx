@@ -1,4 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
+import { Loader2, Sparkles } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { generateTabGroupTitle } from "@/lib/ai/tab-group-ai";
 import { db } from "@/lib/db/db";
 import {
   browserColorToHex,
@@ -25,6 +27,7 @@ interface GroupDialogProps {
   groupId?: number;
   title: string;
   description: string;
+  tabIds?: number[]; // For AI generation - IDs of tabs in the group
 }
 
 export function GroupDialog({
@@ -34,6 +37,7 @@ export function GroupDialog({
   groupId,
   title,
   description,
+  tabIds = [],
 }: GroupDialogProps) {
   const nameId = useId();
   // Fetch group data directly from database
@@ -50,6 +54,7 @@ export function GroupDialog({
 
   const [name, setName] = useState(initialName);
   const [selectedColor, setSelectedColor] = useState(initialColor);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Sync form state when dialog opens or group data changes
   useEffect(() => {
@@ -80,6 +85,22 @@ export function GroupDialog({
     }
   };
 
+  const handleGenerateWithAI = async () => {
+    if (tabIds.length === 0) return;
+
+    setIsGenerating(true);
+    try {
+      const suggestion = await generateTabGroupTitle(tabIds);
+      if (suggestion) {
+        setName(suggestion.title);
+      }
+    } catch (error) {
+      console.error("Failed to generate with AI:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -92,13 +113,32 @@ export function GroupDialog({
             <Label htmlFor={nameId} className="text-right">
               Name
             </Label>
-            <Input
-              id={nameId}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter group name"
-            />
+            <div className="col-span-3 flex items-center gap-2">
+              <Input
+                id={nameId}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1"
+                placeholder="Enter group name"
+              />
+              {tabIds.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateWithAI}
+                  disabled={isGenerating}
+                  className="h-10 gap-1.5 text-xs shrink-0"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  {isGenerating ? "Thinking..." : "Tabby"}
+                </Button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Color</Label>
@@ -124,7 +164,10 @@ export function GroupDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!name.trim()}>
+          <Button
+            onClick={handleConfirm}
+            disabled={!name.trim() || isGenerating}
+          >
             {title.includes("Edit") ? "Save Changes" : "Create Group"}
           </Button>
         </DialogFooter>

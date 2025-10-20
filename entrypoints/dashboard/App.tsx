@@ -20,6 +20,7 @@ export default function App() {
   const [groupDialog, setGroupDialog] = useState<{
     open: boolean;
     groupId?: number;
+    tabIds?: number[];
   }>({
     open: false,
   });
@@ -93,9 +94,20 @@ export default function App() {
 
   const handleEditGroup = useCallback(async (groupId: number) => {
     try {
+      // Get tab IDs for this group
+      const tabs = await db.activeTabs
+        .where("groupId")
+        .equals(groupId)
+        .toArray();
+
+      const tabIds = tabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
       setGroupDialog({
         open: true,
         groupId,
+        tabIds,
       });
     } catch (error) {
       console.error("Failed to open edit group dialog:", error);
@@ -175,6 +187,7 @@ export default function App() {
         groupId={groupDialog.groupId}
         title="Edit Tab Group"
         description="Edit the group name and color"
+        tabIds={groupDialog.tabIds}
       />
     </SidebarProvider>
   );
