@@ -960,6 +960,7 @@ export default defineBackground(() => {
           await db.activeTabs
             .where("workspaceId")
             .equals(currentActiveWorkspace.id)
+            .and((t) => t.tabStatus === "active")
             .modify({ tabStatus: "archived" });
         }
 

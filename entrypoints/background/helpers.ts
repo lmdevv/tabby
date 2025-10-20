@@ -310,8 +310,7 @@ export async function reconcileTabs() {
     }
   }
 
-  // 8. Final cleanup - remove archived tabs from database to keep it clean
-  await db.activeTabs.where("tabStatus").equals("archived").delete();
+  // 8. Keep archived tabs for workspace state persistence across switches
 }
 
 export async function switchWorkspaceTabs(workspaceId: number) {
@@ -442,6 +441,7 @@ export async function switchWorkspaceTabs(workspaceId: number) {
                 id: newTab.id,
                 windowId: newTab.windowId,
                 index: newTab.index,
+                tabStatus: "active",
                 updatedAt: Date.now(),
                 // stableId is preserved from tabData
               });
@@ -516,25 +516,7 @@ export async function switchWorkspaceTabs(workspaceId: number) {
       }
     }
 
-    // Remove archived tabs from database
-    await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .and((t) => t.tabStatus === "archived")
-      .delete();
-
-    // Remove archived tabs and groups from database
-    await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .and((t) => t.tabStatus === "archived")
-      .delete();
-
-    await db.tabGroups
-      .where("workspaceId")
-      .equals(workspaceId)
-      .and((g) => g.groupStatus === "archived")
-      .delete();
+    // Do not delete archived tabs/groups; they are needed to restore other workspaces
 
     // Focus the first window (dashboard window)
     if (dashboardPersistenceInfo) {
