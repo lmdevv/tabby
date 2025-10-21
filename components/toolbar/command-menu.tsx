@@ -232,7 +232,7 @@ export function CommandMenu({
       "clean duplicate tabs": "Clean Duplicate Tabs",
       "clean resource tabs": "Clean Resource Tabs",
       "clean non resource tabs": "Clean Non-Resource Tabs",
-      settings: "Open Settings",
+      "settings": "Open Settings",
     };
 
     if (isCustomGroupCommand && customGroupInstructions) {
@@ -353,6 +353,7 @@ export function CommandMenu({
               </CommandItem>
               <CommandItem
                 value="create workspace"
+                keywords={["new workspace"]}
                 onSelect={handleCreateWorkspace}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -360,6 +361,7 @@ export function CommandMenu({
               </CommandItem>
               <CommandItem
                 value="clean unused tabs 3 days"
+                keywords={["remove unused tabs 3 days"]}
                 onSelect={handleCleanUnusedTabs}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -367,6 +369,7 @@ export function CommandMenu({
               </CommandItem>
               <CommandItem
                 value="clean duplicate tabs"
+                keywords={["remove duplicate tabs"]}
                 onSelect={handleCleanDuplicateTabs}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -374,6 +377,7 @@ export function CommandMenu({
               </CommandItem>
               <CommandItem
                 value="clean resource tabs"
+                keywords={["remove resource tabs"]}
                 onSelect={handleCleanResourceTabs}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -381,6 +385,7 @@ export function CommandMenu({
               </CommandItem>
               <CommandItem
                 value="clean non resource tabs"
+                keywords={["remove non resource tabs"]}
                 onSelect={handleCleanNonResourceTabs}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
