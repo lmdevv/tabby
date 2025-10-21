@@ -39,6 +39,36 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
+import { db } from "@/lib/db/db";
+import type {
+  Resource,
+  ResourceGroup,
+  SnapshotTab,
+  SnapshotTabGroup,
+  StateEntry,
+  Tab,
+  TabGroup,
+  Workspace,
+  WorkspaceGroup,
+  WorkspaceSnapshot,
+} from "@/lib/types/types";
+
+interface ExportData {
+  version: string;
+  exportedAt: string;
+  data: {
+    workspaceGroups: WorkspaceGroup[];
+    workspaces: Workspace[];
+    activeTabs: Tab[];
+    tabGroups: TabGroup[];
+    resourceGroups: ResourceGroup[];
+    resources: Resource[];
+    state: StateEntry[];
+    workspaceSnapshots: WorkspaceSnapshot[];
+    snapshotTabs: SnapshotTab[];
+    snapshotTabGroups: SnapshotTabGroup[];
+  };
+}
 
 const data = {
   nav: [
@@ -54,57 +84,199 @@ export function SettingsDialog() {
   const [isModelAvailable] = React.useState(true);
   const localAiId = React.useId();
 
-  const handleExport = () => {
-    const data = {
-      preferences: {
-        useLocalAI,
-      },
-      appData: {
-        // Placeholder for actual app data
-      },
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "app-export.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    try {
+      const exportData: ExportData = await db.transaction(
+        "r",
+        [
+          db.workspaceGroups,
+          db.workspaces,
+          db.activeTabs,
+          db.tabGroups,
+          db.resourceGroups,
+          db.resources,
+          db.state,
+          db.workspaceSnapshots,
+          db.snapshotTabs,
+          db.snapshotTabGroups,
+        ],
+        async () => {
+          const [
+            workspaceGroups,
+            workspaces,
+            activeTabs,
+            tabGroups,
+            resourceGroups,
+            resources,
+            state,
+            workspaceSnapshots,
+            snapshotTabs,
+            snapshotTabGroups,
+          ] = await Promise.all([
+            db.workspaceGroups.toArray(),
+            db.workspaces.toArray(),
+            db.activeTabs.toArray(),
+            db.tabGroups.toArray(),
+            db.resourceGroups.toArray(),
+            db.resources.toArray(),
+            db.state.toArray(),
+            db.workspaceSnapshots.toArray(),
+            db.snapshotTabs.toArray(),
+            db.snapshotTabGroups.toArray(),
+          ]);
+
+          return {
+            version: "1.0",
+            exportedAt: new Date().toISOString(),
+            data: {
+              workspaceGroups,
+              workspaces,
+              activeTabs,
+              tabGroups,
+              resourceGroups,
+              resources,
+              state,
+              workspaceSnapshots,
+              snapshotTabs,
+              snapshotTabGroups,
+            },
+          };
+        },
+      );
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tabby-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log("Export completed successfully");
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
   };
 
   const handleImport = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "application/json";
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const data = JSON.parse(event.target?.result as string);
-            if (data.preferences?.useLocalAI !== undefined) {
-              setUseLocalAI(data.preferences.useLocalAI);
-            }
-            // Handle other app data restoration here
-          } catch (error) {
-            console.error("Failed to parse JSON:", error);
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const parsed = JSON.parse(
+            event.target?.result as string,
+          ) as ExportData;
+
+          // Basic validation
+          if (!parsed.version || !parsed.data) {
+            throw new Error("Invalid export file format");
           }
-        };
-        reader.readAsText(file);
-      }
+
+          // Clear all tables and import new data
+          await db.transaction(
+            "rw",
+            [
+              db.workspaceGroups,
+              db.workspaces,
+              db.activeTabs,
+              db.tabGroups,
+              db.resourceGroups,
+              db.resources,
+              db.state,
+              db.workspaceSnapshots,
+              db.snapshotTabs,
+              db.snapshotTabGroups,
+            ],
+            async () => {
+              // Clear all tables
+              await Promise.all([
+                db.workspaceGroups.clear(),
+                db.workspaces.clear(),
+                db.activeTabs.clear(),
+                db.tabGroups.clear(),
+                db.resourceGroups.clear(),
+                db.resources.clear(),
+                db.state.clear(),
+                db.workspaceSnapshots.clear(),
+                db.snapshotTabs.clear(),
+                db.snapshotTabGroups.clear(),
+              ]);
+
+              // Bulk insert new data
+              await Promise.all([
+                db.workspaceGroups.bulkPut(parsed.data.workspaceGroups),
+                db.workspaces.bulkPut(parsed.data.workspaces),
+                db.activeTabs.bulkPut(parsed.data.activeTabs),
+                db.tabGroups.bulkPut(parsed.data.tabGroups),
+                db.resourceGroups.bulkPut(parsed.data.resourceGroups),
+                db.resources.bulkPut(parsed.data.resources),
+                db.state.bulkPut(parsed.data.state),
+                db.workspaceSnapshots.bulkPut(parsed.data.workspaceSnapshots),
+                db.snapshotTabs.bulkPut(parsed.data.snapshotTabs),
+                db.snapshotTabGroups.bulkPut(parsed.data.snapshotTabGroups),
+              ]);
+            },
+          );
+
+          console.log("Import completed successfully");
+          // Optionally reload the page or refresh state
+          window.location.reload();
+        } catch (error) {
+          console.error("Import failed:", error);
+        }
+      };
+      reader.readAsText(file);
     };
     input.click();
   };
 
-  const handleDeleteEverything = () => {
-    // Reset all state to defaults
-    setUseLocalAI(true);
-    // Clear any stored data here
-    console.log("[v0] All data deleted");
+  const handleDeleteEverything = async () => {
+    try {
+      await db.transaction(
+        "rw",
+        [
+          db.workspaceGroups,
+          db.workspaces,
+          db.activeTabs,
+          db.tabGroups,
+          db.resourceGroups,
+          db.resources,
+          db.state,
+          db.workspaceSnapshots,
+          db.snapshotTabs,
+          db.snapshotTabGroups,
+        ],
+        async () => {
+          await Promise.all([
+            db.workspaceGroups.clear(),
+            db.workspaces.clear(),
+            db.activeTabs.clear(),
+            db.tabGroups.clear(),
+            db.resourceGroups.clear(),
+            db.resources.clear(),
+            db.state.clear(),
+            db.workspaceSnapshots.clear(),
+            db.snapshotTabs.clear(),
+            db.snapshotTabGroups.clear(),
+          ]);
+        },
+      );
+
+      console.log("All data deleted successfully");
+      // Reset local state
+      setUseLocalAI(true);
+      // Optionally reload the page
+      window.location.reload();
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
   };
 
   return (
