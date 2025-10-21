@@ -8,41 +8,16 @@ import {
   setupTabGroupListeners,
   syncAllTabGroups,
 } from "@/entrypoints/background/listeners/tabGroup-listeners";
-import {
-  cleanDuplicateTabsInWorkspace,
-  cleanNonResourceTabsInWorkspace,
-  cleanResourceTabsInWorkspace,
-  cleanUnusedTabsInWorkspace,
-} from "@/entrypoints/background/operations/cleaning-operations";
+import { registerMessageHandlers } from "@/entrypoints/background/messages";
 import {
   reconcileTabs,
   refreshActiveTabs,
 } from "@/entrypoints/background/operations/db-operations";
-import { convertTabGroupToResource } from "@/entrypoints/background/operations/resource-operations";
-import {
-  groupTabsInWorkspace,
-  sortTabsInWorkspace,
-  ungroupTabsInWorkspace,
-} from "@/entrypoints/background/operations/tab-operations";
-import {
-  activateWorkspace,
-  createWorkspaceFromUrls,
-} from "@/entrypoints/background/operations/workspace-operations";
-import {
-  createWorkspaceSnapshot,
-  deleteSnapshot,
-  restoreSnapshot,
-  startSnapshotScheduler,
-} from "@/entrypoints/background/snapshots";
-import { isDashboardTab } from "@/entrypoints/background/utils";
-import { UNASSIGNED_WORKSPACE_ID } from "@/lib/types/constants";
+import { startSnapshotScheduler } from "@/entrypoints/background/snapshots";
 import { db } from "@/lib/db/db";
-import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
-import type { RuntimeMessage, Workspace } from "@/lib/types/types";
-import { registerMessageHandlers } from "@/entrypoints/background/messages";
 
 export default defineBackground(() => {
-  let activeWorkspace: Workspace | undefined;
+  let activeWorkspace: import("@/lib/types/types").Workspace | undefined;
   (async () => {
     try {
       const dashboardPageURL = browser.runtime.getURL("/dashboard.html");

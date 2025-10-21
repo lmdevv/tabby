@@ -1,7 +1,10 @@
 import { browser } from "wxt/browser";
 import { reconcileTabs } from "@/entrypoints/background/operations/db-operations";
-import { closeTabsSafely, getDashboardWindowId } from "@/entrypoints/background/utils";
-import { isDashboardTab } from "@/entrypoints/background/utils";
+import {
+  closeTabsSafely,
+  getDashboardWindowId,
+  isDashboardTab,
+} from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";
 
@@ -63,8 +66,8 @@ export async function activateWorkspace(
     return;
   } else if (opts?.skipTabSwitching) {
     // Close all non-dashboard tabs, keep dashboard focused
-    const allCurrentBrowserTabs = await browser.tabs.query({});
-    const toClose = allCurrentBrowserTabs
+    const _allCurrentBrowserTabs = await browser.tabs.query({});
+    const toClose = _allCurrentBrowserTabs
       .map((t) => (t.id != null && !isDashboardTab(t) ? t.id : undefined))
       .filter((id): id is number => id != null);
     await closeTabsSafely(toClose);
@@ -122,7 +125,6 @@ export async function createWorkspaceFromUrls(
     await activateWorkspace(newWorkspaceId, { skipTabSwitching: true });
 
     // Find a target window (prefer dashboard window)
-    const allCurrentBrowserTabs = await browser.tabs.query({});
     let dashboardWindowId = await getDashboardWindowId();
     if (!dashboardWindowId) {
       const win = await browser.windows.create({ focused: true });

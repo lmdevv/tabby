@@ -36,7 +36,6 @@ export async function createWorkspaceSnapshot(
     // Exclude dashboard/extension tabs
     return !isDashboardTab({
       url: t.url ?? undefined,
-      title: t.title ?? undefined,
     });
   });
   if (filteredTabs.length === 0) return -1; // nothing to snapshot

@@ -33,7 +33,9 @@ export async function getDashboardWindowId(): Promise<number | undefined> {
   return undefined;
 }
 
-export async function getLastFocusedWindowIdSafe(): Promise<number | undefined> {
+export async function getLastFocusedWindowIdSafe(): Promise<
+  number | undefined
+> {
   try {
     const w = await browser.windows.getLastFocused();
     return w?.id ?? undefined;
