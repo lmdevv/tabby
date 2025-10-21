@@ -1,8 +1,8 @@
 // TODO: cleanup unused exported functions
 import { browser } from "wxt/browser";
+import { getDomainFromUrl } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
-import { getDomainFromUrl } from "./utils";
 
 export async function sortTabsInWindow(
   windowId: number,

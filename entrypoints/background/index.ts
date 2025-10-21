@@ -1,51 +1,46 @@
 import { liveQuery } from "dexie";
 import { browser } from "wxt/browser";
 import {
+  setupTabListeners,
+  validateAllTabs,
+} from "@/entrypoints/background/listeners/tab-listeners";
+import {
+  setupTabGroupListeners,
+  syncAllTabGroups,
+} from "@/entrypoints/background/listeners/tabGroup-listeners";
+import {
   cleanDuplicateTabsInWorkspace,
   cleanNonResourceTabsInWorkspace,
   cleanResourceTabsInWorkspace,
   cleanUnusedTabsInWorkspace,
-} from "@/entrypoints/background/cleaning-operations";
+} from "@/entrypoints/background/operations/cleaning-operations";
 import {
   reconcileTabs,
   refreshActiveTabs,
-} from "@/entrypoints/background/db-operations";
-import { convertTabGroupToResource } from "@/entrypoints/background/resource-operations";
+} from "@/entrypoints/background/operations/db-operations";
+import { convertTabGroupToResource } from "@/entrypoints/background/operations/resource-operations";
+import {
+  groupTabsInWorkspace,
+  sortTabsInWorkspace,
+  ungroupTabsInWorkspace,
+} from "@/entrypoints/background/operations/tab-operations";
+import {
+  activateWorkspace,
+  createWorkspaceFromUrls,
+} from "@/entrypoints/background/operations/workspace-operations";
 import {
   createWorkspaceSnapshot,
   deleteSnapshot,
   restoreSnapshot,
   startSnapshotScheduler,
 } from "@/entrypoints/background/snapshots";
-import {
-  setupTabListeners,
-  validateAllTabs,
-} from "@/entrypoints/background/tab-listeners";
-import {
-  groupTabsInWorkspace,
-  sortTabsInWorkspace,
-  ungroupTabsInWorkspace,
-} from "@/entrypoints/background/tab-operations";
-import {
-  setupTabGroupListeners,
-  syncAllTabGroups,
-} from "@/entrypoints/background/tabGroup-listeners";
 import { isDashboardTab } from "@/entrypoints/background/utils";
-import {
-  activateWorkspace,
-  createWorkspaceFromUrls,
-} from "@/entrypoints/background/workspace-operations";
 import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 import type { RuntimeMessage, Workspace } from "@/lib/types/types";
 
 export default defineBackground(() => {
   let activeWorkspace: Workspace | undefined;
-  // TODO: maybe we can have some live query objects here that will be in memory and even if service worker dies, when they respawn they will still have latest state,
-  // So then we dont have to repeat similar transactions on service worker
-  // TODO: make it so that if there is an active workspace, open the tabs accordingly
-  // TODO: stop having so many db queries and operations, lets modualrize them, suing db.transactions and also reusing variables across functions so we dont
-  // have the same db across different sections when we are getting the same data
   (async () => {
     try {
       const dashboardPageURL = browser.runtime.getURL("/dashboard.html");

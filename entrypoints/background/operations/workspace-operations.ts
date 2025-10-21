@@ -1,5 +1,5 @@
 import { browser } from "wxt/browser";
-import { reconcileTabs } from "@/entrypoints/background/db-operations";
+import { reconcileTabs } from "@/entrypoints/background/operations/db-operations";
 import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";

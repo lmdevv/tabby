@@ -1,6 +1,6 @@
 import { browser } from "wxt/browser";
+import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
-import { isDashboardTab } from "./utils";
 
 /**
  * Cleans unused tabs in a workspace.
