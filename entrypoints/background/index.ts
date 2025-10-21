@@ -5,12 +5,12 @@ import {
   cleanNonResourceTabsInWorkspace,
   cleanResourceTabsInWorkspace,
   cleanUnusedTabsInWorkspace,
-  convertTabGroupToResource,
 } from "@/entrypoints/background/cleaning-operations";
 import {
   reconcileTabs,
   refreshActiveTabs,
-} from "@/entrypoints/background/helpers";
+} from "@/entrypoints/background/db-operations";
+import { convertTabGroupToResource } from "@/entrypoints/background/resource-operations";
 import {
   createWorkspaceSnapshot,
   deleteSnapshot,

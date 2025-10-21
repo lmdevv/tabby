@@ -1,8 +1,8 @@
 import { browser } from "wxt/browser";
+import { reconcileTabs } from "@/entrypoints/background/db-operations";
+import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";
-import { reconcileTabs } from "./helpers";
-import { isDashboardTab } from "./utils";
 
 /**
  * Activates a workspace and optionally skips restoring from the database.

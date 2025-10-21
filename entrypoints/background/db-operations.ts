@@ -52,11 +52,10 @@ export async function shiftIndices(
     });
 }
 
-// NOTE: this is for debug only
 export async function reconcileTabs() {
   const now = Date.now();
 
-  const activeWorkspace = await db.workspaces.where("active").equals(1).first(); // TODO: this is getting repeated, maybe send as param or check if dexie optimizes when we call multiple times the same stuff
+  const activeWorkspace = await db.workspaces.where("active").equals(1).first();
 
   // Use workspace ID -1 for undefined/unassigned tabs when no workspace is active
   const targetWorkspaceId = activeWorkspace ? activeWorkspace.id : -1;

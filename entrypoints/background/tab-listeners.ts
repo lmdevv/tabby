@@ -1,6 +1,6 @@
 import { browser } from "wxt/browser";
 import { cleanupEmptyTabGroup } from "@/entrypoints/background/cleaning-operations";
-import { shiftIndices } from "@/entrypoints/background/helpers";
+import { shiftIndices } from "@/entrypoints/background/db-operations";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";
 
