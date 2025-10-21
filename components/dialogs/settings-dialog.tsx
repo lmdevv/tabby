@@ -53,6 +53,11 @@ import type {
   WorkspaceSnapshot,
 } from "@/lib/types/types";
 
+interface SettingsDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
 interface ExportData {
   version: string;
   exportedAt: string;
@@ -77,8 +82,15 @@ const data = {
   ],
 };
 
-export function SettingsDialog() {
-  const [open, setOpen] = React.useState(false);
+export function SettingsDialog({
+  open: externalOpen,
+  onOpenChange,
+}: SettingsDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = React.useState(false);
+
+  const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
+  const open = isControlled ? externalOpen : internalOpen;
+  const setOpen = isControlled ? onOpenChange : setInternalOpen;
   const [activeTab, setActiveTab] = React.useState("Preferences");
   const [useLocalAI, setUseLocalAI] = React.useState(true);
   const [isModelAvailable] = React.useState(true);

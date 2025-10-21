@@ -13,12 +13,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   previewWorkspaceId: number | null;
   setPreviewWorkspaceId: (id: number | null) => void;
   onEditWorkspace?: (id: number) => void;
+  settingsDialogOpen?: boolean;
+  onSettingsDialogOpenChange?: (open: boolean) => void;
 }
 
 export function AppSidebar({
   previewWorkspaceId,
   setPreviewWorkspaceId,
   onEditWorkspace,
+  settingsDialogOpen,
+  onSettingsDialogOpenChange,
   ...props
 }: AppSidebarProps) {
   return (
@@ -32,7 +36,10 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <CreateWorkspace />
-        <SettingsDialog />
+        <SettingsDialog
+          open={settingsDialogOpen}
+          onOpenChange={onSettingsDialogOpenChange}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

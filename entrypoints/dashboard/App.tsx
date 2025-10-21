@@ -35,6 +35,7 @@ export default function App() {
   });
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
   // Listen for messages from background script
   useEffect(() => {
@@ -185,6 +186,8 @@ export default function App() {
         previewWorkspaceId={previewWorkspaceId}
         setPreviewWorkspaceId={setPreviewWorkspaceId}
         onEditWorkspace={handleEditWorkspace}
+        settingsDialogOpen={settingsDialogOpen}
+        onSettingsDialogOpenChange={setSettingsDialogOpen}
       />
       <SidebarInset>
         <AppHeader
@@ -212,6 +215,7 @@ export default function App() {
           workspaceId={shownWorkspaceId || null}
           open={commandMenuOpen}
           onOpenChange={setCommandMenuOpen}
+          onOpenSettings={() => setSettingsDialogOpen(true)}
         />
 
         <AppContent

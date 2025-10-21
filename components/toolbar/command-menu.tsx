@@ -7,6 +7,7 @@ import {
   Group,
   Hash,
   Monitor,
+  Settings2,
   Trash2,
   Ungroup,
 } from "lucide-react";
@@ -48,6 +49,7 @@ interface CommandMenuProps {
   workspaceId: number | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onOpenSettings?: () => void;
 }
 
 type MenuMode = "main" | "workspaces";
@@ -56,6 +58,7 @@ export function CommandMenu({
   workspaceId,
   open: externalOpen,
   onOpenChange,
+  onOpenSettings,
 }: CommandMenuProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [menuMode, setMenuMode] = useState<MenuMode>("main");
@@ -167,6 +170,11 @@ export function CommandMenu({
     });
   };
 
+  const handleOpenSettings = () => {
+    onOpenSettings?.();
+    handleOpenChange(false);
+  };
+
   const showWorkspaces = () => {
     setMenuMode("workspaces");
     setSearchValue("");
@@ -215,6 +223,7 @@ export function CommandMenu({
       "clean duplicate tabs": "Clean Duplicate Tabs",
       "clean resource tabs": "Clean Resource Tabs",
       "clean non resource tabs": "Clean Non-Resource Tabs",
+      settings: "Open Settings",
     };
 
     if (isCustomGroupCommand && customGroupInstructions) {
@@ -360,6 +369,10 @@ export function CommandMenu({
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 <span>Clean Non-Resource Tabs</span>
+              </CommandItem>
+              <CommandItem value="settings" onSelect={handleOpenSettings}>
+                <Settings2 className="mr-2 h-4 w-4" />
+                <span>Settings</span>
               </CommandItem>
             </CommandGroup>
           )}
