@@ -39,6 +39,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
+import { checkAIModelAvailability } from "@/lib/ai/ai-availability";
 import { db } from "@/lib/db/db";
 import type {
   Resource,
@@ -93,8 +94,23 @@ export function SettingsDialog({
   const setOpen = isControlled ? onOpenChange : setInternalOpen;
   const [activeTab, setActiveTab] = React.useState("Preferences");
   const [useLocalAI, setUseLocalAI] = React.useState(true);
-  const [isModelAvailable] = React.useState(true);
+  const [isModelAvailable, setIsModelAvailable] = React.useState(false);
   const localAiId = React.useId();
+
+  // Check AI model availability on component mount
+  React.useEffect(() => {
+    checkAIModelAvailability()
+      .then((availability) => {
+        setIsModelAvailable(
+          availability === "available" ||
+            availability === "downloadable" ||
+            availability === "downloading",
+        );
+      })
+      .catch(() => {
+        setIsModelAvailable(false);
+      });
+  }, []);
 
   const handleExport = async () => {
     try {
