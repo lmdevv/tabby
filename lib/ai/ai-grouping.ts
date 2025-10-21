@@ -34,14 +34,20 @@ export async function aiGroupTabsInWorkspaceCustom(
       return;
     }
 
-    // Filter out dashboard tabs and prepare tab info for AI
+    // Filter out non-active, dashboard and restricted tabs; prepare tab info for AI
     const tabInfo: TabInfo[] = tabs
       .filter((tab) => {
         const ourExtensionBaseURL = browser.runtime.getURL("");
         const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        const isRestrictedScheme =
+          tab.url?.startsWith("chrome://") ||
+          tab.url?.startsWith("chrome-extension://") ||
+          tab.url === "about:blank";
         return (
+          tab.tabStatus === "active" &&
           tab.url !== specificDashboardURL &&
           !tab.url?.startsWith(ourExtensionBaseURL) &&
+          !isRestrictedScheme &&
           tab.id !== undefined
         );
       })
@@ -182,14 +188,20 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
       return;
     }
 
-    // Filter out dashboard tabs and prepare tab info for AI
+    // Filter out non-active, dashboard and restricted tabs; prepare tab info for AI
     const tabInfo: TabInfo[] = tabs
       .filter((tab) => {
         const ourExtensionBaseURL = browser.runtime.getURL("");
         const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        const isRestrictedScheme =
+          tab.url?.startsWith("chrome://") ||
+          tab.url?.startsWith("chrome-extension://") ||
+          tab.url === "about:blank";
         return (
+          tab.tabStatus === "active" &&
           tab.url !== specificDashboardURL &&
           !tab.url?.startsWith(ourExtensionBaseURL) &&
+          !isRestrictedScheme &&
           tab.id !== undefined
         );
       })
@@ -345,8 +357,8 @@ async function applyAIGrouping(
 
     // Process each AI-suggested group
     for (const group of aiResponse.groups) {
-      // Filter tab IDs to only include tabs that exist both in our workspace DB and in the live browser
-      const candidateTabIds = group.tabIds.filter(
+      // Deduplicate, then filter tab IDs to only include tabs that exist both in our workspace DB and in the live browser
+      const candidateTabIds = Array.from(new Set(group.tabIds)).filter(
         (tabId) => tabMap.has(tabId) && liveTabIds.has(tabId),
       );
 

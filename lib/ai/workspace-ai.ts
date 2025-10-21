@@ -101,7 +101,16 @@ export async function generateWorkspaceTitle(
     const LanguageModel = (globalThis as Record<string, unknown>)
       .LanguageModel as {
       availability(): Promise<string>;
-      create(): Promise<{
+      create(options?: {
+        expectedInputs?: {
+          type: "text" | "image" | "audio";
+          languages?: string[];
+        }[];
+        expectedOutputs?: { type: "text"; languages?: string[] }[];
+        temperature?: number;
+        topK?: number;
+        signal?: AbortSignal;
+      }): Promise<{
         prompt(
           text: string,
           options?: {
@@ -129,8 +138,11 @@ export async function generateWorkspaceTitle(
       "Using Chrome's built-in LanguageModel for workspace title generation",
     );
 
-    // Create a session for the AI model
-    const session = await LanguageModel.create();
+    // Create a session for the AI model with explicit language expectations
+    const session = await LanguageModel.create({
+      expectedInputs: [{ type: "text", languages: ["en"] }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }],
+    });
 
     // Prepare the prompt with tab data
     const prompt = `${AI_WORKSPACE_PROMPT}\n\n${formatTabsForPrompt(tabs)}`;
