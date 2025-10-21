@@ -1,8 +1,7 @@
-import { Settings } from "lucide-react";
 import type * as React from "react";
+import { SettingsDialog } from "@/components/dialogs/settings-dialog";
 import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { Workspaces } from "@/components/sidebar/workspaces";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -33,10 +32,7 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <CreateWorkspace />
-        <Button variant="ghost">
-          <Settings />
-          Settings
-        </Button>
+        <SettingsDialog />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
