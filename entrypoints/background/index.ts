@@ -10,7 +10,6 @@ import {
 import {
   reconcileTabs,
   refreshActiveTabs,
-  switchWorkspaceTabs,
 } from "@/entrypoints/background/helpers";
 import {
   createWorkspaceSnapshot,
@@ -32,6 +31,10 @@ import {
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
 import { isDashboardTab } from "@/entrypoints/background/utils";
+import {
+  activateWorkspace,
+  createWorkspaceFromUrls,
+} from "@/entrypoints/background/workspace-operations";
 import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 import type { RuntimeMessage, Workspace } from "@/lib/types/types";
@@ -211,138 +214,6 @@ export default defineBackground(() => {
   // NOTE: on the logs, this updatetabgroup is getting logged on application console, not service worker, so this message comm doesnt even need to be necessary then
   browser.runtime.onMessage.addListener(
     async (message: RuntimeMessage, _sender) => {
-      // Internal helper to activate a workspace and optionally skip restoring from DB
-      async function activateWorkspace(
-        workspaceId: number,
-        opts?: { skipTabSwitching?: boolean },
-      ) {
-        // Get the current active workspace before switching
-        const currentActiveWorkspace = await db.workspaces
-          .where("active")
-          .equals(1)
-          .first();
-
-        const isConvertingFromUndefined =
-          !currentActiveWorkspace && opts?.skipTabSwitching === true;
-
-        // Archive all tabs from the current active workspace (only if there is one)
-        if (currentActiveWorkspace) {
-          // Remove any previous archived snapshot for this workspace to avoid accumulating duplicates
-          await db.activeTabs
-            .where("workspaceId")
-            .equals(currentActiveWorkspace.id)
-            .and((t) => t.tabStatus === "archived")
-            .delete();
-
-          await db.activeTabs
-            .where("workspaceId")
-            .equals(currentActiveWorkspace.id)
-            .and((t) => t.tabStatus === "active")
-            .modify({ tabStatus: "archived" });
-        }
-
-        // make active workspace the new workspace
-        await db.workspaces.where("id").equals(workspaceId).modify({
-          active: 1,
-          lastOpened: Date.now(),
-        });
-
-        // make all other workspaces inactive
-        await db.workspaces.where("id").notEqual(workspaceId).modify({
-          active: 0,
-        });
-
-        if (isConvertingFromUndefined) {
-          // For undefined workspace conversion, just refresh to ensure fresh state
-          // without closing and reopening tabs
-          await reconcileTabs();
-          return;
-        } else if (opts?.skipTabSwitching) {
-          // Close all non-dashboard tabs, keep dashboard focused
-          const allCurrentBrowserTabs = await browser.tabs.query({});
-          const nonDashboardTabIdsToClose: number[] = [];
-          for (const tab of allCurrentBrowserTabs) {
-            if (tab.id != null && !isDashboardTab(tab)) {
-              nonDashboardTabIdsToClose.push(tab.id);
-            }
-          }
-          if (nonDashboardTabIdsToClose.length > 0) {
-            await browser.tabs.remove(nonDashboardTabIdsToClose);
-          }
-          return;
-        }
-
-        // Normal workspace switching: close current tabs and open workspace tabs from DB
-        await switchWorkspaceTabs(workspaceId);
-      }
-
-      // Internal helper to create a workspace and open a list of URLs in it
-      async function createWorkspaceFromUrls(
-        name: string,
-        urls: string[],
-      ): Promise<{ success: boolean; workspaceId?: number; error?: string }> {
-        try {
-          const validUrls = Array.from(
-            new Set(
-              (urls || []).filter((u): u is string => {
-                if (!u) return false;
-                try {
-                  const parsed = new URL(u);
-                  return Boolean(parsed.protocol && parsed.hostname);
-                } catch {
-                  return false;
-                }
-              }),
-            ),
-          );
-
-          if (validUrls.length === 0) {
-            return { success: false, error: "No valid URLs" } as const;
-          }
-
-          const now = Date.now();
-
-          // Create the new workspace (inactive initially)
-          const newWorkspaceId = await db.workspaces.add({
-            name: name || "New Workspace",
-            createdAt: now,
-            lastOpened: now,
-            active: 0,
-            resourceGroupIds: [],
-          } as Omit<Workspace, "id">);
-
-          // Activate new workspace and close non-dashboard tabs without restoring from DB
-          await activateWorkspace(newWorkspaceId, { skipTabSwitching: true });
-
-          // Find a target window (prefer dashboard window)
-          const allCurrentBrowserTabs = await browser.tabs.query({});
-          let dashboardWindowId: number | undefined;
-          for (const tab of allCurrentBrowserTabs) {
-            if (tab.id != null && isDashboardTab(tab) && tab.windowId != null) {
-              dashboardWindowId = tab.windowId;
-              break;
-            }
-          }
-          if (!dashboardWindowId) {
-            const win = await browser.windows.create({ focused: true });
-            if (win && win.id != null) dashboardWindowId = win.id;
-          }
-
-          // Open the URLs as background tabs in the target window
-          for (const url of validUrls) {
-            await browser.tabs.create({
-              url,
-              windowId: dashboardWindowId,
-              active: false,
-            });
-          }
-
-          return { success: true, workspaceId: newWorkspaceId } as const;
-        } catch (error) {
-          console.error("Failed to create workspace from URLs:", error);
-          return { success: false, error: String(error) } as const;
-        }
-      }
       if (typeof message === "object" && message.type === "updateTabGroup") {
         console.log("Updating tab group", message.groupId, "with", {
           title: message.title,
