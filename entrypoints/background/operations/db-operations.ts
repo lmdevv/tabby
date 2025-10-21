@@ -1,13 +1,14 @@
 import { browser } from "wxt/browser";
 import { db } from "@/lib/db/db";
+import { UNASSIGNED_WORKSPACE_ID } from "@/lib/types/constants";
 import type { Tab } from "@/lib/types/types";
 
 export async function refreshActiveTabs() {
   const liveTabs = await browser.tabs.query({});
   const activeWorkspace = await db.workspaces.where("active").equals(1).first();
-
-  // Use workspace ID -1 for undefined/unassigned tabs when no workspace is active
-  const targetWorkspaceId = activeWorkspace ? activeWorkspace.id : -1;
+  const targetWorkspaceId = activeWorkspace
+    ? activeWorkspace.id
+    : UNASSIGNED_WORKSPACE_ID;
 
   // Include all tabs, including dashboard
   const allTabs = liveTabs;
@@ -53,12 +54,15 @@ export async function shiftIndices(
 }
 
 export async function reconcileTabs() {
+  // simple mutex to avoid concurrent reconciliations
+  if ((reconcileTabs as unknown as { _lock?: boolean })._lock) return;
+  (reconcileTabs as unknown as { _lock?: boolean })._lock = true;
   const now = Date.now();
 
   const activeWorkspace = await db.workspaces.where("active").equals(1).first();
-
-  // Use workspace ID -1 for undefined/unassigned tabs when no workspace is active
-  const targetWorkspaceId = activeWorkspace ? activeWorkspace.id : -1;
+  const targetWorkspaceId = activeWorkspace
+    ? activeWorkspace.id
+    : UNASSIGNED_WORKSPACE_ID;
 
   // 1. fetch live tabs from Chrome (including all tabs)
   const allLiveTabs = await browser.tabs.query({});
@@ -259,4 +263,5 @@ export async function reconcileTabs() {
   }
 
   // 8. Keep archived tabs for workspace state persistence across switches
+  (reconcileTabs as unknown as { _lock?: boolean })._lock = false;
 }

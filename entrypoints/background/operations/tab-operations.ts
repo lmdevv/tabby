@@ -24,8 +24,11 @@ export async function sortTabsInWindow(
 
     if (nonDashboardTabs.length <= 1) return; // Nothing to sort
 
-    // Sort the tabs based on the specified criteria
-    const sortedTabs = [...nonDashboardTabs].sort((a, b) => {
+    // Keep pinned tabs at the top and stable relative to each other
+    const pinned = nonDashboardTabs.filter((t) => t.pinned);
+    const unpinned = nonDashboardTabs.filter((t) => !t.pinned);
+
+    const sortCore = (a: Browser.tabs.Tab, b: Browser.tabs.Tab) => {
       switch (sortType) {
         case "title":
           return (a.title || "").localeCompare(b.title || "");
@@ -42,7 +45,12 @@ export async function sortTabsInWindow(
         default:
           return 0;
       }
-    });
+    };
+
+    const sortedTabs = [
+      ...pinned, // keep original order for pinned
+      ...[...unpinned].sort(sortCore),
+    ];
 
     // Update the index of each tab to reflect the new order
     for (let i = 0; i < sortedTabs.length; i++) {
@@ -247,11 +255,12 @@ export async function ungroupTabsInWindow(windowId: number) {
     if (groupedTabIds.length > 0) {
       try {
         // Ungroup the tabs using Chrome API
-        const tabsApi = browser.tabs as unknown as {
+        // wxt/browser types: Chrome supports tabs.ungroup
+        const anyTabs = browser.tabs as unknown as {
           ungroup?: (tabIds: number[]) => Promise<void>;
         };
-        if (tabsApi.ungroup) {
-          await tabsApi.ungroup(groupedTabIds);
+        if (anyTabs.ungroup) {
+          await anyTabs.ungroup(groupedTabIds);
           console.log(
             `✅ Ungrouped ${groupedTabIds.length} tabs in window ${windowId}`,
           );

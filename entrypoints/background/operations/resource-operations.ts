@@ -35,25 +35,21 @@ export async function convertTabGroupToResource(groupId: number) {
 
     // Create a resource group
     const timestamp = Date.now();
-    const resourceGroupId = (await db.resourceGroups.count()) + 1;
-    const resourceGroup = {
-      id: resourceGroupId,
+    const resourceGroupId = await db.resourceGroups.add({
+      // id will be auto-assigned by Dexie
       name: tabGroup.title || "Converted Tab Group",
       collapsed: 0 as const,
       resourceIds: [] as string[],
       createdAt: timestamp,
       updatedAt: timestamp,
-    };
-
-    await db.resourceGroups.add(resourceGroup);
+    } as Omit<import("@/lib/types/types").ResourceGroup, "id">);
 
     // Create resources from tabs
     const resourceIds: string[] = [];
     for (const tab of tabsInGroup) {
       if (!tab.url) continue;
 
-      const resource = {
-        id: (await db.resources.count()) + 1,
+      const newId = await db.resources.add({
         url: tab.url,
         title: tab.title,
         favIconUrl: tab.favIconUrl,
@@ -61,10 +57,9 @@ export async function convertTabGroupToResource(groupId: number) {
         description: tab.description,
         createdAt: timestamp,
         updatedAt: timestamp,
-      };
+      } as Omit<import("@/lib/types/types").Resource, "id">);
 
-      await db.resources.add(resource);
-      resourceIds.push(resource.id.toString());
+      resourceIds.push(String(newId));
     }
 
     // Update resource group with resource IDs

@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import { reconcileTabs } from "@/entrypoints/background/operations/db-operations";
+import { closeTabsSafely, getDashboardWindowId } from "@/entrypoints/background/utils";
 import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";
@@ -16,6 +17,8 @@ export async function activateWorkspace(
   workspaceId: number,
   opts?: { skipTabSwitching?: boolean },
 ) {
+  if ((activateWorkspace as unknown as { _lock?: boolean })._lock) return;
+  (activateWorkspace as unknown as { _lock?: boolean })._lock = true;
   // Get the current active workspace before switching
   const currentActiveWorkspace = await db.workspaces
     .where("active")
@@ -56,24 +59,22 @@ export async function activateWorkspace(
     // For undefined workspace conversion, just refresh to ensure fresh state
     // without closing and reopening tabs
     await reconcileTabs();
+    (activateWorkspace as unknown as { _lock?: boolean })._lock = false;
     return;
   } else if (opts?.skipTabSwitching) {
     // Close all non-dashboard tabs, keep dashboard focused
     const allCurrentBrowserTabs = await browser.tabs.query({});
-    const nonDashboardTabIdsToClose: number[] = [];
-    for (const tab of allCurrentBrowserTabs) {
-      if (tab.id != null && !isDashboardTab(tab)) {
-        nonDashboardTabIdsToClose.push(tab.id);
-      }
-    }
-    if (nonDashboardTabIdsToClose.length > 0) {
-      await browser.tabs.remove(nonDashboardTabIdsToClose);
-    }
+    const toClose = allCurrentBrowserTabs
+      .map((t) => (t.id != null && !isDashboardTab(t) ? t.id : undefined))
+      .filter((id): id is number => id != null);
+    await closeTabsSafely(toClose);
+    (activateWorkspace as unknown as { _lock?: boolean })._lock = false;
     return;
   }
 
   // Normal workspace switching: close current tabs and open workspace tabs from DB
   await switchWorkspaceTabs(workspaceId);
+  (activateWorkspace as unknown as { _lock?: boolean })._lock = false;
 }
 
 /**
@@ -122,13 +123,7 @@ export async function createWorkspaceFromUrls(
 
     // Find a target window (prefer dashboard window)
     const allCurrentBrowserTabs = await browser.tabs.query({});
-    let dashboardWindowId: number | undefined;
-    for (const tab of allCurrentBrowserTabs) {
-      if (tab.id != null && isDashboardTab(tab) && tab.windowId != null) {
-        dashboardWindowId = tab.windowId;
-        break;
-      }
-    }
+    let dashboardWindowId = await getDashboardWindowId();
     if (!dashboardWindowId) {
       const win = await browser.windows.create({ focused: true });
       if (win && win.id != null) dashboardWindowId = win.id;

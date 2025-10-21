@@ -1,6 +1,7 @@
 import { browser } from "wxt/browser";
 import { db } from "@/lib/db/db";
 import type { TabGroup, Workspace } from "@/lib/types/types";
+import { UNGROUPED_TAB_GROUP_ID } from "@/lib/types/constants";
 
 // Helper function to get the current workspace for tab groups
 async function getTabGroupWorkspace(
@@ -74,7 +75,7 @@ export async function syncAllTabGroups(
     );
 
     // Execute database operations
-    await db.transaction("rw", db.tabGroups, async () => {
+    await db.transaction("rw", db.tabGroups, db.activeTabs, async () => {
       if (newGroups.length > 0) {
         await db.tabGroups.bulkAdd(newGroups);
       }
@@ -90,6 +91,20 @@ export async function syncAllTabGroups(
           updatedAt: now,
         }));
         await db.tabGroups.bulkPut(archivedGroups);
+
+        // Unset groupId on tabs that referenced now-archived groups
+        const groupIds = groupsToArchive
+          .map((g) => g.id)
+          .filter((id): id is number => id != null);
+        if (groupIds.length > 0) {
+          await db.activeTabs
+            .where("groupId")
+            .anyOf(groupIds)
+            .modify((t) => {
+              t.groupId = UNGROUPED_TAB_GROUP_ID;
+              t.updatedAt = now;
+            });
+        }
       }
     });
   } catch (error) {

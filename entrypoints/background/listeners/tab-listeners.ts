@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { cleanupEmptyTabGroup } from "@/entrypoints/background/operations/cleaning-operations";
 import { shiftIndices } from "@/entrypoints/background/operations/db-operations";
 import { db } from "@/lib/db/db";
+import { UNGROUPED_TAB_GROUP_ID } from "@/lib/types/constants";
 import type { Tab, Workspace } from "@/lib/types/types";
 
 // Helper function to validate and correct tab state with current browser state
@@ -128,7 +129,7 @@ export function setupTabListeners(
     });
 
     // Check if the tab was in a group and if that group is now empty
-    if (dbTab.groupId && dbTab.groupId !== -1) {
+    if (dbTab.groupId && dbTab.groupId !== UNGROUPED_TAB_GROUP_ID) {
       await cleanupEmptyTabGroup(dbTab.groupId, dbTab.workspaceId);
     }
   });
@@ -149,7 +150,7 @@ export function setupTabListeners(
       );
 
       // Check if the old group is now empty and should be cleaned up
-      if (dbTab.groupId && dbTab.groupId !== -1) {
+      if (dbTab.groupId && dbTab.groupId !== UNGROUPED_TAB_GROUP_ID) {
         // We need to check excluding the current tab since it's being moved
         const remainingTabsInOldGroup = await db.activeTabs
           .where("workspaceId")
