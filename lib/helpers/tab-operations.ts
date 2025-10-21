@@ -12,6 +12,15 @@ export interface TabOperationsOptions {
   onClose?: () => void;
 }
 
+/**
+ * Sorts the tabs in a workspace.
+ *
+ * @param sortType - The type of sorting to apply.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to sort.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function sortTabs(
   sortType: SortType,
   options: TabOperationsOptions,
@@ -30,6 +39,14 @@ export async function sortTabs(
   }
 }
 
+/**
+ * Groups the tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to group.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function groupTabs(options: TabOperationsOptions): Promise<void> {
   try {
     await browser.runtime.sendMessage({
@@ -45,6 +62,14 @@ export async function groupTabs(options: TabOperationsOptions): Promise<void> {
   }
 }
 
+/**
+ * Groups the tabs in a workspace using AI.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to group.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function aiGroupTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -64,6 +89,15 @@ export async function aiGroupTabs(
   }
 }
 
+/**
+ * Groups the tabs in a workspace using custom AI instructions.
+ *
+ * @param customInstructions - The custom AI instructions to use.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to group.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function aiGroupTabsCustom(
   customInstructions: string,
   options: TabOperationsOptions,
@@ -98,6 +132,14 @@ export async function aiGroupTabsCustom(
   }
 }
 
+/**
+ * Ungroups the tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to ungroup.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function ungroupTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -114,6 +156,14 @@ export async function ungroupTabs(
   }
 }
 
+/**
+ * Refreshes the tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to refresh.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function refreshTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -127,6 +177,13 @@ export async function refreshTabs(
   }
 }
 
+/**
+ * Opens a workspace.
+ *
+ * @param workspaceId - The ID of the workspace to open.
+ * @param onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function openWorkspace(
   workspaceId: number,
   onClose?: () => void,
@@ -144,6 +201,14 @@ export async function openWorkspace(
   }
 }
 
+/**
+ * Cleans unused tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to clean.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function cleanUnusedTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -161,6 +226,14 @@ export async function cleanUnusedTabs(
   }
 }
 
+/**
+ * Cleans duplicate tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to clean.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function cleanDuplicateTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -177,6 +250,14 @@ export async function cleanDuplicateTabs(
   }
 }
 
+/**
+ * Cleans resource tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to clean.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function cleanResourceTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -193,6 +274,14 @@ export async function cleanResourceTabs(
   }
 }
 
+/**
+ * Cleans non-resource tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to clean.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function cleanNonResourceTabs(
   options: TabOperationsOptions,
 ): Promise<void> {
@@ -209,6 +298,15 @@ export async function cleanNonResourceTabs(
   }
 }
 
+/**
+ * Converts a tab group to a resource.
+ *
+ * @param groupId - The ID of the tab group to convert.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace the tab group belongs to.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function convertTabGroupToResource(
   groupId: number,
 ): Promise<void> {
@@ -224,6 +322,16 @@ export async function convertTabGroupToResource(
   }
 }
 
+/**
+ * Creates a workspace from a tab group.
+ *
+ * @param groupId - The ID of the tab group to create the workspace from.
+ * @param name - The name of the workspace to create.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace the tab group belongs to.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function createWorkspaceFromTabGroup(
   groupId: number,
   name?: string,
@@ -255,6 +363,15 @@ export async function createWorkspaceFromTabGroup(
   }
 }
 
+/**
+ * Opens resources as tabs.
+ *
+ * @param urls - An array of URLs to open as tabs.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to open the resources in.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function openResourcesAsTabs(urls: string[]): Promise<void> {
   if (!urls.length) {
     toast.error("No resources to open");
@@ -276,6 +393,16 @@ export async function openResourcesAsTabs(urls: string[]): Promise<void> {
   }
 }
 
+/**
+ * Opens resources as a group.
+ *
+ * @param title - The title of the group to open the resources in.
+ * @param urls - An array of URLs to open as tabs.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to open the resources in.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function openResourcesAsGroup(
   title: string,
   urls: string[],
@@ -301,6 +428,16 @@ export async function openResourcesAsGroup(
   }
 }
 
+/**
+ * Creates a workspace from resources.
+ *
+ * @param name - The name of the workspace to create.
+ * @param urls - An array of URLs to open in the workspace.
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to create.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
 export async function createWorkspaceFromResources(
   name: string,
   urls: string[],
