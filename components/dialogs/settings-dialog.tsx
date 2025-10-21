@@ -91,7 +91,13 @@ export function SettingsDialog({
 
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? externalOpen : internalOpen;
-  const setOpen = isControlled ? onOpenChange : setInternalOpen;
+  const setOpen = (newOpen: boolean) => {
+    if (isControlled && onOpenChange) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
   const [activeTab, setActiveTab] = React.useState("Preferences");
   const [useLocalAI, setUseLocalAI] = React.useState(true);
   const [isModelAvailable, setIsModelAvailable] = React.useState(false);

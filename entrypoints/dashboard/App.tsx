@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { CommandMenu } from "@/components/toolbar/command-menu";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -36,6 +37,7 @@ export default function App() {
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
   // Listen for messages from background script
   useEffect(() => {
@@ -216,6 +218,7 @@ export default function App() {
           open={commandMenuOpen}
           onOpenChange={setCommandMenuOpen}
           onOpenSettings={() => setSettingsDialogOpen(true)}
+          onOpenCreateWorkspace={() => setCreateWorkspaceOpen(true)}
         />
 
         <AppContent
@@ -252,6 +255,13 @@ export default function App() {
         title="Edit Workspace"
         description="Edit the workspace name"
         tabIds={workspaceDialog.tabIds}
+      />
+
+      {/* Create Workspace Dialog */}
+      <CreateWorkspace
+        open={createWorkspaceOpen}
+        onOpenChange={setCreateWorkspaceOpen}
+        showDefaultTrigger={false}
       />
     </SidebarProvider>
   );
