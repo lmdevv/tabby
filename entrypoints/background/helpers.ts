@@ -1,30 +1,7 @@
 import { browser } from "wxt/browser";
+import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab } from "@/lib/types/types";
-
-// Helper function to reliably identify dashboard tabs
-export function isDashboardTab(tab: { url?: string; title?: string }): boolean {
-  if (!tab.url) {
-    return false;
-  }
-
-  const ourExtensionBaseURL = browser.runtime.getURL("");
-  const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
-
-  if (tab.url === specificDashboardURL) {
-    return true;
-  }
-
-  if (tab.url.startsWith(ourExtensionBaseURL)) {
-    if (
-      tab.url.includes("/dashboard") ||
-      tab.title?.toLowerCase().includes("tab manager")
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
 
 // Helper function to clean up empty tab groups
 export async function cleanupEmptyTabGroup(
@@ -42,7 +19,7 @@ export async function cleanupEmptyTabGroup(
       const group = await db.tabGroups.get(groupId);
       if (group && group.groupStatus === "active") {
         await db.tabGroups.delete(groupId);
-        console.log(`🗑️ Cleaned up empty group: ${group.title || groupId}`);
+        console.log(`🗑 Cleaned up empty group: ${group.title || groupId}`);
         return true; // Group was cleaned up
       }
     }

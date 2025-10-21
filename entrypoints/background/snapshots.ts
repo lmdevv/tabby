@@ -5,7 +5,7 @@
 // Maybe add notes and titles to snapshots
 // Diff-based snapshot restoration
 import { browser } from "wxt/browser";
-import { isDashboardTab } from "@/entrypoints/background/helpers";
+import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type {
   SnapshotTab,

@@ -1,7 +1,6 @@
 import { liveQuery } from "dexie";
 import { browser } from "wxt/browser";
 import {
-  isDashboardTab,
   reconcileTabs,
   refreshActiveTabs,
   switchWorkspaceTabs,
@@ -20,6 +19,10 @@ import {
   setupTabGroupListeners,
   syncAllTabGroups,
 } from "@/entrypoints/background/tabGroup-listeners";
+import {
+  getDomainFromUrl,
+  isDashboardTab,
+} from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 import type { RuntimeMessage, Workspace } from "@/lib/types/types";
@@ -58,21 +61,6 @@ export default defineBackground(() => {
       }
     }
   })();
-
-  // Open dashboard in new windows
-  // browser.windows.onCreated.addListener(async (window) => {
-  //   try {
-  //     await browser.tabs.create({
-  //       windowId: window.id,
-  //       url: browser.runtime.getURL("/dashboard.html"),
-  //       pinned: true,
-  //       active: true,
-  //       index: 0,
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to open dashboard in new window:", err);
-  //   }
-  // });
 
   const aw = liveQuery(() => db.workspaces.where("active").equals(1).first());
   aw.subscribe({
@@ -139,18 +127,6 @@ export default defineBackground(() => {
     },
     10 * 60 * 1000,
   ); // 10 minutes
-
-  //
-  // Helper functions
-  //
-  function getDomainFromUrl(url: string): string {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.hostname;
-    } catch {
-      return "";
-    }
-  }
 
   async function sortTabsInWindow(
     windowId: number,
@@ -413,7 +389,7 @@ export default defineBackground(() => {
           );
         }
       } else {
-        console.log(`ℹ️ No grouped tabs found in window ${windowId}`);
+        console.log(`i No grouped tabs found in window ${windowId}`);
       }
     } catch (error) {
       console.error(`❌ Failed to ungroup tabs in window ${windowId}:`, error);
@@ -449,7 +425,7 @@ export default defineBackground(() => {
       });
 
       if (unusedTabs.length === 0) {
-        console.log(`ℹ️ No unused tabs found in workspace ${workspaceId}`);
+        console.log(`i No unused tabs found in workspace ${workspaceId}`);
         return;
       }
 
