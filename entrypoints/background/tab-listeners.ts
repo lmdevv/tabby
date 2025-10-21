@@ -1,8 +1,6 @@
 import { browser } from "wxt/browser";
-import {
-  cleanupEmptyTabGroup,
-  shiftIndices,
-} from "@/entrypoints/background/helpers";
+import { cleanupEmptyTabGroup } from "@/entrypoints/background/cleaning-operations";
+import { shiftIndices } from "@/entrypoints/background/helpers";
 import { db } from "@/lib/db/db";
 import type { Tab, Workspace } from "@/lib/types/types";
 
@@ -169,7 +167,7 @@ export function setupTabListeners(
           if (oldGroup && oldGroup.groupStatus === "active") {
             await db.tabGroups.delete(dbTab.groupId);
             console.log(
-              `🗑️ Cleaned up empty group after ungrouping: ${oldGroup.title || dbTab.groupId}`,
+              `🗑 Cleaned up empty group after ungrouping: ${oldGroup.title || dbTab.groupId}`,
             );
           }
         }
@@ -310,7 +308,7 @@ export function setupTabListeners(
       // Ensure windowId is current in our database
       if (dbTab.windowId !== windowId) {
         console.log(
-          `⚠️ [Tab ${tabId}] windowId mismatch in move event. DB: ${dbTab.windowId}, Event: ${windowId}. Updating...`,
+          `! [Tab ${tabId}] windowId mismatch in move event. DB: ${dbTab.windowId}, Event: ${windowId}. Updating...`,
         );
       }
 

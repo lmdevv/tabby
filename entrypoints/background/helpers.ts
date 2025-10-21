@@ -3,33 +3,6 @@ import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
 import type { Tab } from "@/lib/types/types";
 
-// Helper function to clean up empty tab groups
-export async function cleanupEmptyTabGroup(
-  groupId: number,
-  workspaceId: number,
-) {
-  try {
-    const remainingTabsInGroup = await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .and((t) => t.groupId === groupId && t.tabStatus === "active")
-      .toArray();
-
-    if (remainingTabsInGroup.length === 0) {
-      const group = await db.tabGroups.get(groupId);
-      if (group && group.groupStatus === "active") {
-        await db.tabGroups.delete(groupId);
-        console.log(`🗑 Cleaned up empty group: ${group.title || groupId}`);
-        return true; // Group was cleaned up
-      }
-    }
-    return false; // Group not cleaned up
-  } catch (error) {
-    console.error(`Error cleaning up group ${groupId}:`, error);
-    return false;
-  }
-}
-
 export async function refreshActiveTabs() {
   const liveTabs = await browser.tabs.query({});
   const activeWorkspace = await db.workspaces.where("active").equals(1).first();
