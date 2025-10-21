@@ -223,6 +223,12 @@ export interface CreateWorkspaceFromResourcesMessage {
   urls: string[];
 }
 
+export interface CreateWorkspaceFromTabGroupMessage {
+  type: "createWorkspaceFromTabGroup";
+  groupId: number;
+  name?: string;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -243,7 +249,8 @@ export type RuntimeMessage =
   | ConvertTabGroupToResourceMessage
   | OpenResourcesAsTabsMessage
   | OpenResourcesAsGroupMessage
-  | CreateWorkspaceFromResourcesMessage;
+  | CreateWorkspaceFromResourcesMessage
+  | CreateWorkspaceFromTabGroupMessage;
 
 export type {
   LanguageModelAvailability,

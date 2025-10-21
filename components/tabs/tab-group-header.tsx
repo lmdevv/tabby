@@ -10,11 +10,13 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { db } from "@/lib/db/db";
-import { convertTabGroupToResource } from "@/lib/helpers/tab-operations";
+import {
+  convertTabGroupToResource,
+  createWorkspaceFromTabGroup,
+} from "@/lib/helpers/tab-operations";
 
 const isDarkFromTheme = (theme: "light" | "dark" | "system"): boolean => {
   if (theme === "dark") return true;
@@ -105,11 +107,26 @@ export function TabGroupHeader({
         <ContextMenuItem onClick={onUngroupAll}>
           Ungroup All Tabs
         </ContextMenuItem>
-        <ContextMenuSeparator />
+        <ContextMenuItem
+          onClick={async () => {
+            const defaultName = groupInfo.title || "";
+            let nameToUse = defaultName;
+            if (!defaultName) {
+              const input = window.prompt(
+                "Name the new workspace",
+                "New Workspace",
+              );
+              if (!input) return; // cancel or empty
+              nameToUse = input;
+            }
+            await createWorkspaceFromTabGroup(groupId, nameToUse);
+          }}
+        >
+          Move to workspace
+        </ContextMenuItem>
         <ContextMenuItem onClick={() => convertTabGroupToResource(groupId)}>
           Move as resource group
         </ContextMenuItem>
-        <ContextMenuSeparator />
         <ContextMenuItem onClick={onCloseAll} className="text-destructive">
           Close All Tabs
         </ContextMenuItem>

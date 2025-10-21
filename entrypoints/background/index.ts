@@ -1008,6 +1008,74 @@ export default defineBackground(() => {
         // Normal workspace switching: close current tabs and open workspace tabs from DB
         await switchWorkspaceTabs(workspaceId);
       }
+
+      // Internal helper to create a workspace and open a list of URLs in it
+      async function createWorkspaceFromUrls(
+        name: string,
+        urls: string[],
+      ): Promise<{ success: boolean; workspaceId?: number; error?: string }> {
+        try {
+          const validUrls = Array.from(
+            new Set(
+              (urls || []).filter((u): u is string => {
+                if (!u) return false;
+                try {
+                  const parsed = new URL(u);
+                  return Boolean(parsed.protocol && parsed.hostname);
+                } catch {
+                  return false;
+                }
+              }),
+            ),
+          );
+
+          if (validUrls.length === 0) {
+            return { success: false, error: "No valid URLs" } as const;
+          }
+
+          const now = Date.now();
+
+          // Create the new workspace (inactive initially)
+          const newWorkspaceId = await db.workspaces.add({
+            name: name || "New Workspace",
+            createdAt: now,
+            lastOpened: now,
+            active: 0,
+            resourceGroupIds: [],
+          } as Omit<Workspace, "id">);
+
+          // Activate new workspace and close non-dashboard tabs without restoring from DB
+          await activateWorkspace(newWorkspaceId, { skipTabSwitching: true });
+
+          // Find a target window (prefer dashboard window)
+          const allCurrentBrowserTabs = await browser.tabs.query({});
+          let dashboardWindowId: number | undefined;
+          for (const tab of allCurrentBrowserTabs) {
+            if (tab.id != null && isDashboardTab(tab) && tab.windowId != null) {
+              dashboardWindowId = tab.windowId;
+              break;
+            }
+          }
+          if (!dashboardWindowId) {
+            const win = await browser.windows.create({ focused: true });
+            if (win && win.id != null) dashboardWindowId = win.id;
+          }
+
+          // Open the URLs as background tabs in the target window
+          for (const url of validUrls) {
+            await browser.tabs.create({
+              url,
+              windowId: dashboardWindowId,
+              active: false,
+            });
+          }
+
+          return { success: true, workspaceId: newWorkspaceId } as const;
+        } catch (error) {
+          console.error("Failed to create workspace from URLs:", error);
+          return { success: false, error: String(error) } as const;
+        }
+      }
       if (typeof message === "object" && message.type === "updateTabGroup") {
         console.log("Updating tab group", message.groupId, "with", {
           title: message.title,
@@ -1306,63 +1374,81 @@ export default defineBackground(() => {
         typeof message === "object" &&
         message.type === "createWorkspaceFromResources"
       ) {
+        const res = await createWorkspaceFromUrls(message.name, message.urls);
+        return res;
+      } else if (
+        typeof message === "object" &&
+        message.type === "createWorkspaceFromTabGroup"
+      ) {
         try {
-          const urls = Array.from(
-            new Set(
-              (message.urls || []).filter((u): u is string => {
-                if (!u) return false;
-                try {
-                  const parsed = new URL(u);
-                  return Boolean(parsed.protocol && parsed.hostname);
-                } catch {
-                  return false;
-                }
-              }),
-            ),
-          );
+          // Load tab group and its tabs
+          const tabGroup = await db.tabGroups.get(message.groupId);
+          if (!tabGroup) {
+            return { success: false, error: "Tab group not found" } as const;
+          }
 
-          if (urls.length === 0) return { success: false } as const;
+          const tabsInGroup = await db.activeTabs
+            .where("groupId")
+            .equals(message.groupId)
+            .toArray();
 
+          const urls = tabsInGroup
+            .map((t) => t.url)
+            .filter((u): u is string => Boolean(u));
+
+          const targetName = message.name || tabGroup.title || "New Workspace";
+          const created = await createWorkspaceFromUrls(targetName, urls);
+
+          if (!created.success || !created.workspaceId) {
+            return created;
+          }
+
+          // On success: close original tabs and archive group + tabs
           const now = Date.now();
+          const tabIdsToClose = tabsInGroup
+            .map((tab) => tab.id)
+            .filter((id): id is number => id !== undefined);
 
-          // Create the new workspace (inactive initially)
-          const newWorkspaceId = await db.workspaces.add({
-            name: message.name || "New Workspace",
-            createdAt: now,
-            lastOpened: now,
-            active: 0,
-            resourceGroupIds: [],
-          } as Omit<Workspace, "id">);
-
-          // Activate new workspace and close non-dashboard tabs without restoring from DB
-          await activateWorkspace(newWorkspaceId, { skipTabSwitching: true });
-
-          // Find a target window (prefer dashboard window)
-          const allCurrentBrowserTabs = await browser.tabs.query({});
-          let dashboardWindowId: number | undefined;
-          for (const tab of allCurrentBrowserTabs) {
-            if (tab.id != null && isDashboardTab(tab) && tab.windowId != null) {
-              dashboardWindowId = tab.windowId;
-              break;
+          if (tabIdsToClose.length > 0) {
+            try {
+              const existingTabs = await browser.tabs.query({});
+              const existingTabIds = new Set(
+                existingTabs
+                  .map((t) => t.id)
+                  .filter((id): id is number => id !== undefined),
+              );
+              const validTabIdsToClose = tabIdsToClose.filter((id) =>
+                existingTabIds.has(id),
+              );
+              if (validTabIdsToClose.length > 0) {
+                await browser.tabs.remove(validTabIdsToClose);
+              }
+            } catch (error) {
+              console.error(
+                "Error closing tabs while moving to workspace:",
+                error,
+              );
             }
           }
-          if (!dashboardWindowId) {
-            const win = await browser.windows.create({ focused: true });
-            if (win && win.id != null) dashboardWindowId = win.id;
-          }
 
-          // Open the resource URLs as background tabs in the target window
-          for (const url of urls) {
-            await browser.tabs.create({
-              url,
-              windowId: dashboardWindowId,
-              active: false,
+          // Archive tabs and group in DB
+          const stableIdsToArchive = tabsInGroup.map((tab) => tab.stableId);
+          await db.transaction("rw", db.activeTabs, db.tabGroups, async () => {
+            if (stableIdsToArchive.length > 0) {
+              await db.activeTabs
+                .where("stableId")
+                .anyOf(stableIdsToArchive)
+                .modify({ tabStatus: "archived" });
+            }
+            await db.tabGroups.update(message.groupId, {
+              groupStatus: "archived",
+              updatedAt: now,
             });
-          }
+          });
 
-          return { success: true, workspaceId: newWorkspaceId } as const;
+          return { success: true, workspaceId: created.workspaceId } as const;
         } catch (error) {
-          console.error("Failed to create workspace from resources:", error);
+          console.error("Failed to create workspace from tab group:", error);
           return { success: false, error: String(error) } as const;
         }
       }

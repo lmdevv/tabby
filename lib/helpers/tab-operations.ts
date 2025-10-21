@@ -224,6 +224,37 @@ export async function convertTabGroupToResource(
   }
 }
 
+export async function createWorkspaceFromTabGroup(
+  groupId: number,
+  name?: string,
+): Promise<void> {
+  try {
+    toast.loading("Moving group to workspace...", {
+      id: `move-group-${groupId}`,
+    });
+    const res = await browser.runtime.sendMessage({
+      type: "createWorkspaceFromTabGroup",
+      groupId,
+      name,
+    } as const);
+
+    if (res?.success !== false) {
+      toast.success("Workspace created and group moved", {
+        id: `move-group-${groupId}`,
+      });
+    } else {
+      toast.error(res?.error || "Failed to move group to workspace", {
+        id: `move-group-${groupId}`,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to move group to workspace:", error);
+    toast.error("Failed to move group to workspace", {
+      id: `move-group-${groupId}`,
+    });
+  }
+}
+
 export async function openResourcesAsTabs(urls: string[]): Promise<void> {
   if (!urls.length) {
     toast.error("No resources to open");
