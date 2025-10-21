@@ -67,7 +67,16 @@ export async function aiGroupTabsInWorkspaceCustom(
     const LanguageModel = (globalThis as Record<string, unknown>)
       .LanguageModel as {
       availability(): Promise<string>;
-      create(): Promise<{
+      create(options?: {
+        expectedInputs?: {
+          type: "text" | "image" | "audio";
+          languages?: string[];
+        }[];
+        expectedOutputs?: { type: "text"; languages?: string[] }[];
+        temperature?: number;
+        topK?: number;
+        signal?: AbortSignal;
+      }): Promise<{
         prompt(
           text: string,
           options?: {
@@ -93,8 +102,11 @@ export async function aiGroupTabsInWorkspaceCustom(
 
     console.log("Using Chrome's built-in LanguageModel");
 
-    // Create a session for the AI model
-    const session = await LanguageModel.create();
+    // Create a session for the AI model with explicit language expectations
+    const session = await LanguageModel.create({
+      expectedInputs: [{ type: "text", languages: ["en"] }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }],
+    });
 
     // Prepare the prompt with tab data and custom instructions
     const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customInstructions}\n\n${formatTabsForPrompt(tabInfo)}`;
@@ -203,7 +215,16 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     const LanguageModel = (globalThis as Record<string, unknown>)
       .LanguageModel as {
       availability(): Promise<string>;
-      create(): Promise<{
+      create(options?: {
+        expectedInputs?: {
+          type: "text" | "image" | "audio";
+          languages?: string[];
+        }[];
+        expectedOutputs?: { type: "text"; languages?: string[] }[];
+        temperature?: number;
+        topK?: number;
+        signal?: AbortSignal;
+      }): Promise<{
         prompt(
           text: string,
           options?: {
@@ -229,8 +250,11 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
 
     console.log("Using Chrome's built-in LanguageModel");
 
-    // Create a session for the AI model
-    const session = await LanguageModel.create();
+    // Create a session for the AI model with explicit language expectations
+    const session = await LanguageModel.create({
+      expectedInputs: [{ type: "text", languages: ["en"] }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }],
+    });
 
     // Prepare the prompt with tab data
     const prompt = `${AI_GROUP_PROMPT}\n\n${formatTabsForPrompt(tabInfo)}`;
@@ -297,36 +321,53 @@ async function applyAIGrouping(
   aiResponse: AIGroupResponse,
 ) {
   try {
-    // Get all tabs in the workspace to verify they exist
+    // Get all tabs in the workspace to verify they exist (DB-side)
     const workspaceTabs = await db.activeTabs
       .where("workspaceId")
       .equals(workspaceId)
       .toArray();
 
-    // Create a map of tab IDs for quick lookup
-    const tabMap = new Map(workspaceTabs.map((tab) => [tab.id, tab]));
+    // Only consider tabs that are currently active in DB
+    const activeWorkspaceTabs = workspaceTabs.filter(
+      (t) => t.tabStatus === "active",
+    );
+
+    // Create a map of tab IDs for quick lookup (DB-side)
+    const tabMap = new Map(activeWorkspaceTabs.map((tab) => [tab.id, tab]));
+
+    // Query currently existing browser tabs and build a set of live tab IDs
+    const allBrowserTabs = await browser.tabs.query({});
+    const liveTabIds = new Set(
+      allBrowserTabs
+        .map((t) => t.id)
+        .filter((id): id is number => id !== undefined),
+    );
 
     // Process each AI-suggested group
     for (const group of aiResponse.groups) {
-      // Filter tab IDs to only include tabs that exist in our workspace
-      const validTabIds = group.tabIds.filter((tabId) => tabMap.has(tabId));
+      // Filter tab IDs to only include tabs that exist both in our workspace DB and in the live browser
+      const candidateTabIds = group.tabIds.filter(
+        (tabId) => tabMap.has(tabId) && liveTabIds.has(tabId),
+      );
 
-      if (validTabIds.length >= 2) {
-        // Group tabs by their window (tabs in same group should be in same window)
-        const tabsByWindow = new Map<number, number[]>();
-
-        for (const tabId of validTabIds) {
-          const tab = tabMap.get(tabId);
-          if (tab) {
-            if (!tabsByWindow.has(tab.windowId)) {
-              tabsByWindow.set(tab.windowId, []);
+      if (candidateTabIds.length >= 2) {
+        // Resolve windowIds from live browser state to avoid stale DB windowIds
+        const byWindow = new Map<number, number[]>();
+        for (const tabId of candidateTabIds) {
+          try {
+            const liveTab = await browser.tabs.get(tabId);
+            if (typeof liveTab.windowId === "number") {
+              if (!byWindow.has(liveTab.windowId))
+                byWindow.set(liveTab.windowId, []);
+              byWindow.get(liveTab.windowId)?.push(tabId);
             }
-            tabsByWindow.get(tab.windowId)?.push(tabId);
+          } catch {
+            // Skip tabs that no longer exist between query and action
           }
         }
 
         // Create groups for each window
-        for (const [windowId, windowTabIds] of tabsByWindow) {
+        for (const [windowId, windowTabIds] of byWindow) {
           if (windowTabIds.length >= 2) {
             try {
               // Create the browser tab group
@@ -354,7 +395,7 @@ async function applyAIGrouping(
         }
       } else {
         console.log(
-          `⚠️ Skipping group "${group.name}" - not enough valid tabs (${validTabIds.length})`,
+          `⚠️ Skipping group "${group.name}" - not enough valid tabs (${candidateTabIds.length})`,
         );
       }
     }

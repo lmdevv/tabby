@@ -86,7 +86,8 @@ export function setupTabListeners(
   getActiveWorkspace: () => Workspace | undefined,
 ) {
   browser.tabs.onCreated.addListener(async (tab) => {
-    if (!tab.id || !tab.index) return;
+    // Allow index 0; only bail if id or index is undefined/null
+    if (tab.id == null || tab.index == null) return;
 
     const activeWorkspace = getActiveWorkspace();
     if (activeWorkspace) {
