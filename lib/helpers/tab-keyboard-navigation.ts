@@ -24,6 +24,8 @@ export interface TabKeyboardNavigationProps {
   // Copy functions
   copySingleLink: (tabId: number) => Promise<void>;
   copyMultipleLinks: (tabIds: number[]) => Promise<void>;
+  // Resource panel toggle
+  toggleShowResources: () => void;
 }
 
 export function createTabKeyboardHandler({
@@ -44,6 +46,7 @@ export function createTabKeyboardHandler({
   updateSelectedTabs,
   copySingleLink,
   copyMultipleLinks,
+  toggleShowResources,
 }: TabKeyboardNavigationProps) {
   // Helper function to update visual selection range
   const updateVisualSelection = (startId: number, endId: number) => {
@@ -267,6 +270,10 @@ export function createTabKeyboardHandler({
       case "r": // r for refresh tabs
         // e.preventDefault();
         handleRefreshTabs();
+        break;
+      case "R": // R for toggle show resources
+        e.preventDefault();
+        toggleShowResources();
         break;
       case "Escape":
         setFocusedTabId(null);

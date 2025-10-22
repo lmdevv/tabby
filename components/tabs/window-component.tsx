@@ -20,7 +20,7 @@ import { SortableActiveTabCard } from "@/components/tabs/sortable-active-tab-car
 import { TabGroupHeader } from "@/components/tabs/tab-group-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppState, useUpdateState } from "@/hooks/use-state";
+import { useAppState, useToggleState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import {
   copyMultipleTabLinks,
@@ -60,6 +60,9 @@ export function WindowComponent({
   // Visual selection mode state
   const [isVisualMode, setIsVisualMode] = useState(false);
   const [visualStartTabId, setVisualStartTabId] = useState<number | null>(null);
+
+  // Resource panel toggle
+  const { toggle: toggleShowResources } = useToggleState("showResources");
   // Set up sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -427,6 +430,7 @@ export function WindowComponent({
       updateSelectedTabs: updateSelectedTabsState,
       copySingleLink,
       copyMultipleLinks,
+      toggleShowResources,
     });
 
     document.addEventListener("keydown", handleKeyDown);
@@ -445,6 +449,7 @@ export function WindowComponent({
     updateSelectedTabsState,
     copySingleLink,
     copyMultipleLinks,
+    toggleShowResources,
   ]);
 
   return (
