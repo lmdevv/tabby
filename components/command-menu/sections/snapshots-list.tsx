@@ -5,6 +5,7 @@ import { History } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 import { browser } from "wxt/browser";
+import { SnapshotItem } from "@/components/snapshots/snapshot-item";
 import {
   CommandEmpty,
   CommandGroup,
@@ -36,6 +37,21 @@ export function SnapshotsList({
       .sortBy("createdAt");
   }, [workspaceId]);
 
+  // Get tab counts for snapshots
+  const tabCounts = useLiveQuery(async () => {
+    if (!snapshots?.length) return new Map<number, number>();
+    const counts = await Promise.all(
+      snapshots.map(async (s) => {
+        const count = await db.snapshotTabs
+          .where("snapshotId")
+          .equals(s.id)
+          .count();
+        return [s.id, count] as const;
+      }),
+    );
+    return new Map(counts);
+  }, [snapshots?.map((s) => s.id).join(",")]);
+
   const handleRestoreSnapshot = async (snapshotId: number) => {
     try {
       const result = await browser.runtime.sendMessage({
@@ -60,8 +76,25 @@ export function SnapshotsList({
       (s) => `snapshot ${s.id}` === selectedValue,
     );
     if (selectedSnapshot) {
+      const date = new Date(selectedSnapshot.createdAt).toLocaleDateString(
+        "en-US",
+        {
+          weekday: "short",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        },
+      );
+      const time = new Date(selectedSnapshot.createdAt).toLocaleTimeString(
+        "en-US",
+        {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        },
+      );
       setFooterProps({
-        enterText: `Restore snapshot from ${new Date(selectedSnapshot.createdAt).toLocaleString()}`,
+        enterText: `Restore snapshot from ${date} at ${time}`,
         shortcuts: [
           { key: "⌃H", action: "Back" },
           { key: "⌃←", action: "Back" },
@@ -86,21 +119,20 @@ export function SnapshotsList({
       )}
 
       <CommandGroup>
-        {snapshots?.map((snapshot) => (
-          <CommandItem
-            key={snapshot.id}
-            value={`snapshot ${snapshot.id}`}
-            onSelect={() => handleRestoreSnapshot(snapshot.id)}
-          >
-            <History className="mr-2 h-4 w-4" />
-            <div className="flex flex-col">
-              <span>{new Date(snapshot.createdAt).toLocaleString()}</span>
-              <span className="text-xs text-muted-foreground">
-                {snapshot.reason === "manual" ? "Manual" : "Auto"} snapshot
-              </span>
-            </div>
-          </CommandItem>
-        ))}
+        {snapshots?.map((snapshot) => {
+          const tabCount = tabCounts?.get(snapshot.id) ?? 0;
+
+          return (
+            <CommandItem
+              key={snapshot.id}
+              value={`snapshot ${snapshot.id}`}
+              onSelect={() => handleRestoreSnapshot(snapshot.id)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              <SnapshotItem snapshot={snapshot} tabCount={tabCount} />
+            </CommandItem>
+          );
+        })}
         {snapshots && snapshots.length === 0 && (
           <div className="text-sm text-muted-foreground p-2">
             No snapshots available

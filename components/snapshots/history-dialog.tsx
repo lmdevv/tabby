@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Info, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { browser } from "wxt/browser";
+import { SnapshotItem } from "@/components/snapshots/snapshot-item";
 import { TabCard } from "@/components/tabs/tab-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { db } from "@/lib/db/db";
-import { getRelativeTime } from "@/lib/helpers/utils";
 import type { SnapshotTab, WorkspaceSnapshot } from "@/lib/types/types";
 
 export function HistoryDialog({
@@ -123,11 +123,20 @@ export function HistoryDialog({
             </div>
           ) : (
             (snapshots ?? []).map((s) => {
-              const preview = previewDataMap?.get(s.id)?.preview ?? [];
-              const absoluteTime = new Date(s.createdAt).toLocaleString();
-              const relativeTime = getRelativeTime(s.createdAt);
               const isSelected = selectedId === s.id;
               const isExpanded = expandedId === s.id;
+              const tabCount = previewDataMap?.get(s.id)?.tabCount;
+              const date = new Date(s.createdAt).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              });
+              const time = new Date(s.createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
 
               return (
                 // biome-ignore lint/a11y/useSemanticElements: Need div due to nested interactive elements
@@ -148,34 +157,11 @@ export function HistoryDialog({
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSelected}
-                  aria-label={`Select snapshot from ${absoluteTime}`}
+                  aria-label={`Select snapshot from ${date} at ${time}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-1">
-                        <div className="font-medium text-sm">
-                          {absoluteTime}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{relativeTime}</span>
-                          {previewDataMap?.get(s.id) && (
-                            <>
-                              <span>•</span>
-                              <span>
-                                {previewDataMap.get(s.id)?.tabCount} tabs,{" "}
-                                {previewDataMap.get(s.id)?.windowCount} windows,{" "}
-                                {previewDataMap.get(s.id)?.groupCount} groups
-                              </span>
-                              {preview.length > 4 && (
-                                <>
-                                  <span>•</span>
-                                  <span>+{preview.length - 4} more</span>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
+                      <SnapshotItem snapshot={s} tabCount={tabCount} />
                     </div>
                     <div className="shrink-0 flex items-center gap-1">
                       <Collapsible
@@ -208,7 +194,7 @@ export function HistoryDialog({
                           e.stopPropagation();
                           deleteSnapshot(s.id);
                         }}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -217,9 +203,6 @@ export function HistoryDialog({
 
                   <Collapsible open={isExpanded} onOpenChange={() => {}}>
                     <CollapsibleContent className="mt-3">
-                      <div className="text-xs text-muted-foreground mb-2">
-                        {expandedTabs?.length ?? 0} tabs
-                      </div>
                       <div className="max-h-48 overflow-auto pr-1 scrollbar-none space-y-1">
                         {(expandedTabs ?? []).map((t) => {
                           const cardData = {
@@ -247,7 +230,7 @@ export function HistoryDialog({
                                     }
                                   }}
                                 >
-                                  Open this tab in current workspace
+                                  Open tab in current workspace
                                 </ContextMenuItem>
                               )}
                             />

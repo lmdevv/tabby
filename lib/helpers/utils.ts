@@ -38,7 +38,10 @@ export function getRelativeTime(timestamp: number): string {
     value = Math.round(deltaSeconds / (60 * 60 * 24 * 365.25));
   }
 
-  const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en";
-  const rtf = new window.Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" });
+  const locale = navigator?.language ? navigator.language : "en";
+  const rtf = new window.Intl.RelativeTimeFormat(locale, {
+    numeric: "auto",
+    style: "short",
+  });
   return rtf.format(value, unit);
 }
