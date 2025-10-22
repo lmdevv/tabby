@@ -1,16 +1,18 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { browser } from "wxt/browser";
 import { AppContent } from "@/components/app/AppContent";
 import { AppHeader } from "@/components/app/AppHeader";
 import { CommandMenu } from "@/components/command-menu/command-menu";
+import { AICleanDialog } from "@/components/dialogs/ai-clean-dialog";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-
+import { useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import type { Tab } from "@/lib/types/types";
 import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
@@ -36,9 +38,21 @@ export default function App() {
     open: false,
   });
 
+  const [aiCleanDialog, setAiCleanDialog] = useState<{
+    open: boolean;
+    proposedTabIds: number[];
+    instructions: string;
+  }>({
+    open: false,
+    proposedTabIds: [],
+    instructions: "",
+  });
+
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+
+  const { updateState } = useUpdateState();
 
   // Listen for messages from background script
   useEffect(() => {
@@ -197,6 +211,53 @@ export default function App() {
     [workspaceDialog.workspaceId],
   );
 
+  const handleOpenAICleanReview = useCallback(
+    (tabIds: number[], instructions: string) => {
+      setAiCleanDialog({
+        open: true,
+        proposedTabIds: tabIds,
+        instructions,
+      });
+    },
+    [],
+  );
+
+  const handleAICleanConfirm = useCallback(
+    async (tabIds: number[], dontAskAgain: boolean) => {
+      const workspaceId = shownWorkspaceId;
+      if (!workspaceId) {
+        console.error("No workspace selected for AI clean");
+        return;
+      }
+
+      try {
+        // Update the global setting if "Don't ask again" was checked
+        if (dontAskAgain) {
+          updateState("confirmAIClean", false);
+        }
+
+        // Send message to background to close the tabs
+        const result = await browser.runtime.sendMessage({
+          type: "closeTabsByIds",
+          workspaceId,
+          tabIds,
+        });
+
+        if (result?.success) {
+          toast.success(
+            `Cleaned ${tabIds.length} tab${tabIds.length !== 1 ? "s" : ""} successfully`,
+          );
+        } else {
+          toast.error(result?.error || "Failed to clean tabs");
+        }
+      } catch (error) {
+        console.error("Failed to clean tabs:", error);
+        toast.error("Failed to clean tabs");
+      }
+    },
+    [shownWorkspaceId, updateState],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -234,6 +295,7 @@ export default function App() {
           onOpenChange={setCommandMenuOpen}
           onOpenSettings={() => setSettingsDialogOpen(true)}
           onOpenCreateWorkspace={() => setCreateWorkspaceOpen(true)}
+          onOpenAICleanReview={handleOpenAICleanReview}
         />
 
         <AppContent
@@ -278,6 +340,16 @@ export default function App() {
         open={createWorkspaceOpen}
         onOpenChange={setCreateWorkspaceOpen}
         showDefaultTrigger={false}
+      />
+
+      {/* AI Clean Dialog */}
+      <AICleanDialog
+        open={aiCleanDialog.open}
+        onOpenChange={(open) => setAiCleanDialog({ ...aiCleanDialog, open })}
+        onConfirm={handleAICleanConfirm}
+        workspaceId={shownWorkspaceId || null}
+        proposedTabIds={aiCleanDialog.proposedTabIds}
+        instructions={aiCleanDialog.instructions}
       />
     </SidebarProvider>
   );

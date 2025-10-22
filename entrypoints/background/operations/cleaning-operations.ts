@@ -382,3 +382,97 @@ export async function cleanupEmptyTabGroup(
     return false;
   }
 }
+
+/**
+ * Closes specific tabs by their IDs in a workspace.
+ *
+ * @param workspaceId - The ID of the workspace the tabs belong to.
+ * @param tabIds - Array of tab IDs to close.
+ * @returns A Promise that resolves when the tabs are closed.
+ */
+export async function closeTabsByIdsInWorkspace(
+  workspaceId: number,
+  tabIds: number[],
+) {
+  try {
+    console.log(`🧹 Closing ${tabIds.length} tabs in workspace ${workspaceId}`);
+
+    if (tabIds.length === 0) {
+      console.log("No tabs to close");
+      return;
+    }
+
+    // Get tabs in the workspace to verify they exist and are active
+    const workspaceTabs = await db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((tab) => tab.tabStatus === "active")
+      .toArray();
+
+    // Create a map of tab IDs for quick lookup
+    const tabMap = new Map(workspaceTabs.map((tab) => [tab.id, tab]));
+
+    // Filter to only include tabs that exist in our workspace
+    const validTabIds = tabIds.filter((tabId) => tabMap.has(tabId));
+
+    if (validTabIds.length !== tabIds.length) {
+      console.log(
+        `⚠️ Filtered out ${
+          tabIds.length - validTabIds.length
+        } tab IDs that don't exist in workspace ${workspaceId}`,
+      );
+    }
+
+    if (validTabIds.length === 0) {
+      console.log("No valid tabs to close after filtering");
+      return;
+    }
+
+    // Query currently existing browser tabs
+    const allBrowserTabs = await browser.tabs.query({});
+    const liveTabIds = new Set(
+      allBrowserTabs
+        .map((t) => t.id)
+        .filter((id): id is number => id !== undefined),
+    );
+
+    // Filter to only include tabs that are still live in the browser
+    const liveTabIdsToClose = validTabIds.filter((id) => liveTabIds.has(id));
+
+    if (liveTabIdsToClose.length !== validTabIds.length) {
+      console.log(
+        `⚠️ ${validTabIds.length - liveTabIdsToClose.length} tabs were already closed`,
+      );
+    }
+
+    // Close browser tabs
+    if (liveTabIdsToClose.length > 0) {
+      await browser.tabs.remove(liveTabIdsToClose);
+    }
+
+    // Archive all tabs in database (including ones that were already closed)
+    const stableIdsToArchive = validTabIds
+      .map((tabId) => {
+        const tab = tabMap.get(tabId);
+        return tab?.stableId;
+      })
+      .filter((stableId): stableId is string => stableId !== undefined);
+
+    if (stableIdsToArchive.length > 0) {
+      await db.activeTabs
+        .where("stableId")
+        .anyOf(stableIdsToArchive)
+        .modify({ tabStatus: "archived" });
+
+      console.log(
+        `✅ Closed ${liveTabIdsToClose.length} and archived ${stableIdsToArchive.length} tabs from workspace ${workspaceId}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ Failed to close tabs by IDs in workspace ${workspaceId}:`,
+      error,
+    );
+    throw error;
+  }
+}

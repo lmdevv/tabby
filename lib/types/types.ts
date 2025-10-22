@@ -210,6 +210,12 @@ export interface CleanNonResourceTabsMessage {
   workspaceId: number;
 }
 
+export interface CloseTabsByIdsMessage {
+  type: "closeTabsByIds";
+  workspaceId: number;
+  tabIds: number[];
+}
+
 export interface ConvertTabGroupToResourceMessage {
   type: "convertTabGroupToResource";
   groupId: number;
@@ -258,6 +264,7 @@ export type RuntimeMessage =
   | CleanDuplicateTabsMessage
   | CleanResourceTabsMessage
   | CleanNonResourceTabsMessage
+  | CloseTabsByIdsMessage
   | ConvertTabGroupToResourceMessage
   | OpenResourcesAsTabsMessage
   | OpenResourcesAsGroupMessage

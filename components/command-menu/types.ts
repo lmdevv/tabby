@@ -6,6 +6,7 @@ export interface CommandMenuProps {
   onOpenChange?: (open: boolean) => void;
   onOpenSettings?: () => void;
   onOpenCreateWorkspace?: () => void;
+  onOpenAICleanReview?: (tabIds: number[], instructions: string) => void;
 }
 
 export interface FooterProps {

@@ -4,6 +4,7 @@ import {
   cleanNonResourceTabsInWorkspace,
   cleanResourceTabsInWorkspace,
   cleanUnusedTabsInWorkspace,
+  closeTabsByIdsInWorkspace,
 } from "@/entrypoints/background/operations/cleaning-operations";
 import { reconcileTabs } from "@/entrypoints/background/operations/db-operations";
 import { convertTabGroupToResource } from "@/entrypoints/background/operations/resource-operations";
@@ -224,6 +225,11 @@ const handlers: Partial<HandlersMap> = {
 
   async cleanNonResourceTabs(message) {
     await cleanNonResourceTabsInWorkspace(message.workspaceId);
+    return { success: true };
+  },
+
+  async closeTabsByIds(message) {
+    await closeTabsByIdsInWorkspace(message.workspaceId, message.tabIds);
     return { success: true };
   },
 

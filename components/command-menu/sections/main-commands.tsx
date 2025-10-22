@@ -23,6 +23,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
+import { getAIProposedTabsToClean } from "@/lib/ai/ai-cleaning";
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
@@ -42,7 +43,10 @@ import type { CommandMenuProps, FooterProps } from "../types";
 interface MainCommandsProps
   extends Pick<
     CommandMenuProps,
-    "workspaceId" | "onOpenSettings" | "onOpenCreateWorkspace"
+    | "workspaceId"
+    | "onOpenSettings"
+    | "onOpenCreateWorkspace"
+    | "onOpenAICleanReview"
   > {
   searchValue: string;
   setMenuMode: (mode: "main" | "workspaces" | "snapshots") => void;
@@ -54,6 +58,7 @@ export function MainCommands({
   workspaceId,
   onOpenSettings,
   onOpenCreateWorkspace,
+  onOpenAICleanReview,
   searchValue,
   setMenuMode,
   onClose,
@@ -76,6 +81,36 @@ export function MainCommands({
       workspaceId,
       onClose,
     });
+  };
+
+  const handleCustomAICleanTabs = async (customInstructions: string) => {
+    if (!workspaceId) {
+      toast.error("No workspace selected");
+      return;
+    }
+
+    try {
+      toast.loading("Analyzing tabs with AI...", { id: "ai-clean-analysis" });
+      const proposedTabIds = await getAIProposedTabsToClean(
+        workspaceId,
+        customInstructions,
+      );
+      toast.dismiss("ai-clean-analysis");
+
+      if (proposedTabIds.length === 0) {
+        toast.success("No tabs match the cleaning criteria");
+        onClose();
+        return;
+      }
+
+      // Open the review dialog
+      onOpenAICleanReview?.(proposedTabIds, customInstructions);
+    } catch (error) {
+      console.error("Failed to analyze tabs for cleaning:", error);
+      toast.error("Failed to analyze tabs for cleaning", {
+        id: "ai-clean-analysis",
+      });
+    }
   };
 
   const handleUngroupTabs = () => {
@@ -204,6 +239,15 @@ export function MainCommands({
     ? searchValue.trim()
     : "";
 
+  // Check if search is a custom clean command
+  const cleanKeywords = ["clean ", "close ", "remove ", "delete "];
+  const isCustomCleanCommand = cleanKeywords.some((keyword) =>
+    searchValue.toLowerCase().startsWith(keyword),
+  );
+  const customCleanInstructions = isCustomCleanCommand
+    ? searchValue.trim()
+    : "";
+
   // Update footer props when selection changes
   React.useEffect(() => {
     const commandMap: Record<string, string> = {
@@ -232,13 +276,23 @@ export function MainCommands({
         enterText: `Group with Tabby (Custom): "${customGroupInstructions}"`,
         shortcuts: [],
       });
+    } else if (customCleanInstructions) {
+      setFooterProps({
+        enterText: `Clean with Tabby (Custom): "${customCleanInstructions}"`,
+        shortcuts: [],
+      });
     } else {
       setFooterProps({
         enterText: commandMap[searchValue] || "Select command",
         shortcuts: [],
       });
     }
-  }, [searchValue, customGroupInstructions, setFooterProps]);
+  }, [
+    searchValue,
+    customGroupInstructions,
+    customCleanInstructions,
+    setFooterProps,
+  ]);
 
   return (
     <>
@@ -281,6 +335,15 @@ export function MainCommands({
           >
             <Bot className="mr-2 h-4 w-4" />
             <span>Group: "{customGroupInstructions}"</span>
+          </CommandItem>
+        )}
+        {isCustomCleanCommand && customCleanInstructions && (
+          <CommandItem
+            value={`clean ${customCleanInstructions}`}
+            onSelect={() => handleCustomAICleanTabs(customCleanInstructions)}
+          >
+            <Bot className="mr-2 h-4 w-4" />
+            <span>Clean: "{customCleanInstructions}"</span>
           </CommandItem>
         )}
         <CommandItem value="ungroup all tabs" onSelect={handleUngroupTabs}>

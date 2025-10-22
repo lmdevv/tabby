@@ -15,6 +15,7 @@ export function CommandMenu({
   onOpenChange,
   onOpenSettings,
   onOpenCreateWorkspace,
+  onOpenAICleanReview,
 }: CommandMenuProps) {
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
 
@@ -87,6 +88,7 @@ export function CommandMenu({
               workspaceId={workspaceId}
               onOpenSettings={onOpenSettings}
               onOpenCreateWorkspace={onOpenCreateWorkspace}
+              onOpenAICleanReview={onOpenAICleanReview}
               searchValue={searchValue}
               setMenuMode={(mode) => {
                 // Clear search and selection when switching modes to avoid
