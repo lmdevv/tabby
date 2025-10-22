@@ -175,17 +175,14 @@ export function Workspaces({
     }
   }
 
-  // Show undefined workspace if there are tabs OR if no workspace is active (meaning undefined workspace is active)
+  // Show undefined workspace only when no workspace is active (meaning undefined workspace is active)
   const isUndefinedWorkspaceActive = !activeWorkspace;
-  const shouldShowUndefinedWorkspace =
-    typeof undefinedTabsCount === "number" &&
-    (undefinedTabsCount > 0 || isUndefinedWorkspaceActive);
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Workspaces</SidebarGroupLabel>
       <SidebarMenu>
-        {shouldShowUndefinedWorkspace && (
+        {isUndefinedWorkspaceActive && (
           <UndefinedWorkspaceItem
             tabsCount={undefinedTabsCount || 0}
             onPreview={() => setPreviewWorkspaceId(-1)}
