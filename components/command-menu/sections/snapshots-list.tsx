@@ -80,7 +80,8 @@ export function SnapshotsList({
 
   return (
     <>
-      <CommandEmpty>No results found.</CommandEmpty>
+      {/* Avoid flashing "No results" while the query is initializing */}
+      {snapshots !== undefined && <CommandEmpty>No results found.</CommandEmpty>}
 
       <CommandGroup>
         {snapshots?.map((snapshot) => (
@@ -98,7 +99,7 @@ export function SnapshotsList({
             </div>
           </CommandItem>
         ))}
-        {(!snapshots || snapshots.length === 0) && (
+        {snapshots && snapshots.length === 0 && (
           <div className="text-sm text-muted-foreground p-2">
             No snapshots available
           </div>

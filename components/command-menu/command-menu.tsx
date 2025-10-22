@@ -88,7 +88,13 @@ export function CommandMenu({
               onOpenSettings={onOpenSettings}
               onOpenCreateWorkspace={onOpenCreateWorkspace}
               searchValue={searchValue}
-              setMenuMode={setMenuMode}
+              setMenuMode={(mode) => {
+                // Clear search and selection when switching modes to avoid
+                // transient empty states while Dexie queries initialize.
+                setSearchValue("");
+                setSelectedValue("");
+                setMenuMode(mode);
+              }}
               onClose={handleOpenChange.bind(null, false)}
               setFooterProps={setFooterProps}
             />
