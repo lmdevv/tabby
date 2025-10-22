@@ -25,8 +25,11 @@ export function WorkspacesList({
   onClose,
   setFooterProps,
 }: WorkspacesListProps) {
-  // Fetch all workspaces
-  const workspaces = useLiveQuery(() => db.workspaces.toArray(), []);
+  // Fetch all workspaces sorted by lastOpened (most recent first)
+  const workspaces = useLiveQuery(
+    () => db.workspaces.orderBy("lastOpened").reverse().toArray(),
+    [],
+  );
 
   // Fetch all workspace groups
   const workspaceGroups = useLiveQuery(() => db.workspaceGroups.toArray(), []);
