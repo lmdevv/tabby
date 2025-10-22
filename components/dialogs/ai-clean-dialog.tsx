@@ -190,7 +190,7 @@ export function AICleanDialog({
               onCheckedChange={(checked) => setDontAskAgain(checked === true)}
             />
             <Label htmlFor={dontAskAgainId} className="text-sm">
-              Don't ask again for AI cleaning
+              Don't ask again
             </Label>
           </div>
         </div>

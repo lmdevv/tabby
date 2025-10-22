@@ -395,18 +395,19 @@ export function SettingsDialog({
                   <div className="flex gap-4 items-center">
                     <div className="flex-1">
                       <div className="text-sm font-medium">
-                        Automatic AI Cleaning
+                        Confirm on cleaning
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Skip confirmation dialogs when AI suggests cleaning tabs
+                        Show confirmation dialogs when Tabby suggests cleaning
+                        tabs
                       </div>
                     </div>
                     <div className="flex-none self-center">
                       <Switch
                         id={autoAiCleanId}
-                        checked={confirmAIClean === false}
+                        checked={confirmAIClean === true}
                         onCheckedChange={(checked) =>
-                          updateState("confirmAIClean", !checked)
+                          updateState("confirmAIClean", checked)
                         }
                       />
                     </div>
