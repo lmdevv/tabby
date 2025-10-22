@@ -105,19 +105,48 @@ const handlers: Partial<HandlersMap> = {
   },
 
   async createSnapshot(message, ctx) {
-    const ws = message.workspaceId ?? ctx.getActiveWorkspace()?.id;
-    if (!ws) return { success: false, error: "No workspace" };
-    const id = await createWorkspaceSnapshot(ws, message.reason ?? "manual");
-    return { success: id > 0, snapshotId: id };
+    try {
+      const ws = message.workspaceId ?? ctx.getActiveWorkspace()?.id;
+      if (!ws) return { success: false, error: "No workspace" };
+      const id = await createWorkspaceSnapshot(ws, message.reason ?? "manual");
+      if (id <= 0) return { success: false, error: "Nothing to snapshot" };
+      return { success: true, snapshotId: id } as const;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      } satisfies HandlerResult;
+    }
   },
 
   async restoreSnapshot(message) {
-    return await restoreSnapshot(message.snapshotId, message.mode ?? "replace");
+    try {
+      const result = await restoreSnapshot(
+        message.snapshotId,
+        message.mode ?? "replace",
+      );
+      return {
+        success: Boolean(result?.success),
+        error: result?.error,
+      } as const;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      } satisfies HandlerResult;
+    }
   },
 
   async deleteSnapshot(message) {
-    await deleteSnapshot(message.snapshotId);
-    return { success: true };
+    try {
+      await deleteSnapshot(message.snapshotId);
+      return { success: true } as const;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      } satisfies HandlerResult;
+    }
   },
 
   async refreshTabs() {
@@ -254,27 +283,46 @@ const handlers: Partial<HandlersMap> = {
 export function registerMessageHandlers(
   getActiveWorkspace: () => Workspace | undefined,
 ) {
-  browser.runtime.onMessage.addListener(async (message: RuntimeMessage) => {
-    try {
-      if (typeof message !== "object" || !message) return;
-      const handler = handlers[message.type] as
-        | ((
-            m: Extract<RuntimeMessage, { type: typeof message.type }>,
-            ctx: Ctx,
-          ) => Promise<HandlerResult>)
-        | undefined;
-      if (!handler) return;
-      const res = await handler(
-        message as Extract<RuntimeMessage, { type: typeof message.type }>,
-        { getActiveWorkspace },
-      );
-      return res as HandlerResult;
-    } catch (error) {
-      console.error("Message handler error:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      } satisfies HandlerResult;
-    }
-  });
+  browser.runtime.onMessage.addListener(
+    (message: RuntimeMessage, _sender, sendResponse) => {
+      try {
+        if (typeof message !== "object" || !message) return false;
+        const handler = handlers[message.type] as
+          | ((
+              m: Extract<RuntimeMessage, { type: typeof message.type }>,
+              ctx: Ctx,
+            ) => Promise<HandlerResult>)
+          | undefined;
+        if (!handler) {
+          sendResponse({
+            success: false,
+            error: "Unknown message type",
+          } satisfies HandlerResult);
+          return true;
+        }
+        (async () => {
+          try {
+            const res = await handler(
+              message as Extract<RuntimeMessage, { type: typeof message.type }>,
+              { getActiveWorkspace },
+            );
+            sendResponse(res as HandlerResult);
+          } catch (error) {
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            } satisfies HandlerResult);
+          }
+        })();
+        // Return true to indicate we'll respond asynchronously
+        return true;
+      } catch (error) {
+        sendResponse({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        } satisfies HandlerResult);
+        return true;
+      }
+    },
+  );
 }

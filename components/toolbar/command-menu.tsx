@@ -198,10 +198,10 @@ export function CommandMenu({
         workspaceId,
         reason: "manual",
       });
-      if (result.success) {
+      if (result?.success) {
         toast.success("Snapshot created successfully");
       } else {
-        toast.error(result.error || "Failed to create snapshot");
+        toast.error(result?.error || "Failed to create snapshot");
       }
     } catch (_error) {
       toast.error("Failed to create snapshot");
@@ -233,11 +233,10 @@ export function CommandMenu({
         snapshotId: latestSnapshot.id,
         mode: "replace",
       });
-
-      if (result.success) {
+      if (result?.success) {
         toast.success("Rolled back to previous snapshot");
       } else {
-        toast.error(result.error || "Failed to rollback snapshot");
+        toast.error(result?.error || "Failed to rollback snapshot");
       }
     } catch (_error) {
       toast.error("Failed to rollback snapshot");
@@ -563,11 +562,11 @@ export function CommandMenu({
                         snapshotId: snapshot.id,
                         mode: "replace",
                       });
-                      if (result.success) {
+                      if (result?.success) {
                         toast.success("Snapshot restored successfully");
                       } else {
                         toast.error(
-                          result.error || "Failed to restore snapshot",
+                          result?.error || "Failed to restore snapshot",
                         );
                       }
                     } catch (_error) {

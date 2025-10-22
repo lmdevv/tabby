@@ -296,7 +296,7 @@ export async function restoreSnapshot(
     }
   }
 
-  return { success: true };
+  return { success: true } as const;
 }
 
 export async function deleteSnapshot(snapshotId: number): Promise<void> {
