@@ -1,0 +1,119 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Command, CommandDialog, CommandList } from "@/components/ui/command";
+import { Footer } from "./presentation/footer";
+import { SearchInput } from "./presentation/search-input";
+import { MainCommands } from "./sections/main-commands";
+import { SnapshotsList } from "./sections/snapshots-list";
+import { WorkspacesList } from "./sections/workspaces-list";
+import type { CommandMenuProps, FooterProps, MenuMode } from "./types";
+
+export function CommandMenu({
+  workspaceId,
+  open: externalOpen,
+  onOpenChange,
+  onOpenSettings,
+  onOpenCreateWorkspace,
+}: CommandMenuProps) {
+  const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
+
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [menuMode, setMenuMode] = useState<MenuMode>("main");
+  const [searchValue, setSearchValue] = useState("");
+  const [selectedValue, setSelectedValue] = useState("");
+  const [footerProps, setFooterProps] = useState<FooterProps>({
+    enterText: "Select command",
+    shortcuts: [],
+  });
+
+  const open = isControlled ? externalOpen : internalOpen;
+
+  const goBackToMain = useCallback(() => {
+    setMenuMode("main");
+    setSelectedValue("");
+    setSearchValue("");
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (isControlled && onOpenChange) {
+        onOpenChange(newOpen);
+      } else {
+        setInternalOpen(newOpen);
+      }
+      // Reset to main menu and clear search when closing
+      if (!newOpen) {
+        setMenuMode("main");
+        setSearchValue("");
+        setSelectedValue("");
+      }
+    },
+    [isControlled, onOpenChange],
+  );
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!open) return;
+
+      // Ctrl+H or Ctrl+Left Arrow to go back in workspaces or snapshots mode
+      if (menuMode === "workspaces" || menuMode === "snapshots") {
+        if (
+          (event.ctrlKey && event.key === "h") ||
+          (event.ctrlKey && event.key === "ArrowLeft")
+        ) {
+          event.preventDefault();
+          goBackToMain();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, menuMode, goBackToMain]);
+
+  return (
+    <CommandDialog open={open} onOpenChange={handleOpenChange}>
+      <Command value={selectedValue} onValueChange={setSelectedValue}>
+        <SearchInput
+          menuMode={menuMode}
+          searchValue={searchValue}
+          setSearchValue={setSearchValue}
+        />
+        <CommandList className="scrollbar-none">
+          {menuMode === "main" && (
+            <MainCommands
+              workspaceId={workspaceId}
+              onOpenSettings={onOpenSettings}
+              onOpenCreateWorkspace={onOpenCreateWorkspace}
+              searchValue={searchValue}
+              setMenuMode={setMenuMode}
+              onClose={handleOpenChange.bind(null, false)}
+              setFooterProps={setFooterProps}
+            />
+          )}
+
+          {menuMode === "workspaces" && (
+            <WorkspacesList
+              selectedValue={selectedValue}
+              onClose={handleOpenChange.bind(null, false)}
+              setFooterProps={setFooterProps}
+            />
+          )}
+
+          {menuMode === "snapshots" && (
+            <SnapshotsList
+              workspaceId={workspaceId}
+              selectedValue={selectedValue}
+              onClose={handleOpenChange.bind(null, false)}
+              setFooterProps={setFooterProps}
+            />
+          )}
+        </CommandList>
+
+        <Footer {...footerProps} />
+      </Command>
+    </CommandDialog>
+  );
+}

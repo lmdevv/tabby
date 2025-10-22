@@ -3,11 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { browser } from "wxt/browser";
 import { AppContent } from "@/components/app/AppContent";
 import { AppHeader } from "@/components/app/AppHeader";
+import { CommandMenu } from "@/components/command-menu/command-menu";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { CreateWorkspace } from "@/components/sidebar/create-workspace";
-import { CommandMenu } from "@/components/toolbar/command-menu";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
