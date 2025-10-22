@@ -1,8 +1,15 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { browser } from "wxt/browser";
+import { TabCard } from "@/components/tabs/tab-card";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ContextMenuItem } from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { db } from "@/lib/db/db";
+import { getRelativeTime } from "@/lib/helpers/utils";
 import type { SnapshotTab, WorkspaceSnapshot } from "@/lib/types/types";
 
 export function HistoryDialog({
@@ -72,6 +80,9 @@ export function HistoryDialog({
   // Expanded snapshot state
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  // Selected snapshot state
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
   // Load full tabs for the expanded snapshot
   const expandedTabs = useLiveQuery(async () => {
     if (expandedId == null) return [] as SnapshotTab[];
@@ -89,8 +100,9 @@ export function HistoryDialog({
         snapshotId,
       });
       if (expandedId === snapshotId) setExpandedId(null);
+      if (selectedId === snapshotId) setSelectedId(null);
     },
-    [expandedId],
+    [expandedId, selectedId],
   );
 
   return (
@@ -112,154 +124,144 @@ export function HistoryDialog({
           ) : (
             (snapshots ?? []).map((s) => {
               const preview = previewDataMap?.get(s.id)?.preview ?? [];
-              const when = new Date(s.createdAt).toLocaleString();
+              const absoluteTime = new Date(s.createdAt).toLocaleString();
+              const relativeTime = getRelativeTime(s.createdAt);
+              const isSelected = selectedId === s.id;
+              const isExpanded = expandedId === s.id;
+
               return (
+                // biome-ignore lint/a11y/useSemanticElements: Need div due to nested interactive elements
                 <div
                   key={s.id}
-                  className="flex flex-col gap-2 rounded border p-3"
+                  className={`rounded-lg border p-4 cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? "ring-2 ring-primary border-primary bg-primary/5"
+                      : "border-border hover:bg-accent/50"
+                  }`}
+                  onClick={() => setSelectedId(s.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(s.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  aria-label={`Select snapshot from ${absoluteTime}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <Button
-                      variant="ghost"
-                      className="min-w-0 text-left w-full justify-start p-0 h-auto"
-                      onClick={() =>
-                        setExpandedId((prev) => (prev === s.id ? null : s.id))
-                      }
-                      aria-expanded={expandedId === s.id}
-                    >
-                      <div className="font-medium truncate">
-                        {when}
-                        {previewDataMap?.get(s.id) ? (
-                          <span className="text-muted-foreground font-normal">
-                            {" "}
-                            · {previewDataMap.get(s.id)?.tabCount} tabs,{" "}
-                            {previewDataMap.get(s.id)?.windowCount} windows,{" "}
-                            {previewDataMap.get(s.id)?.groupCount} groups
-                          </span>
-                        ) : null}
-                      </div>
-                      {expandedId !== s.id && preview.length > 0 && (
-                        <div className="flex gap-2 mt-1 overflow-hidden">
-                          {preview.map((t) => (
-                            <div
-                              key={`${t.snapshotId}:${t.url}:${t.index}`}
-                              className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[12rem]"
-                            >
-                              {t.favIconUrl && (
-                                <img
-                                  src={t.favIconUrl}
-                                  alt=""
-                                  className="size-4 rounded-sm"
-                                />
-                              )}
-                              <span className="truncate">
-                                {t.title || t.url}
-                              </span>
-                            </div>
-                          ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-1">
+                        <div className="font-medium text-sm">
+                          {absoluteTime}
                         </div>
-                      )}
-                    </Button>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{relativeTime}</span>
+                          {previewDataMap?.get(s.id) && (
+                            <>
+                              <span>•</span>
+                              <span>
+                                {previewDataMap.get(s.id)?.tabCount} tabs,{" "}
+                                {previewDataMap.get(s.id)?.windowCount} windows,{" "}
+                                {previewDataMap.get(s.id)?.groupCount} groups
+                              </span>
+                              {preview.length > 4 && (
+                                <>
+                                  <span>•</span>
+                                  <span>+{preview.length - 4} more</span>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div className="shrink-0 flex items-center gap-1">
+                      <Collapsible
+                        open={isExpanded}
+                        onOpenChange={(open) =>
+                          setExpandedId(open ? s.id : null)
+                        }
+                      >
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedId(isExpanded ? null : s.id);
+                            }}
+                            aria-label="Toggle snapshot details"
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </Collapsible>
                       <Button
                         variant="ghost"
                         size="icon"
                         aria-label="Delete snapshot"
                         title="Delete snapshot"
-                        onClick={() => deleteSnapshot(s.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSnapshot(s.id);
+                        }}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  {expandedId === s.id && (
-                    <div className="mt-1 border-t pt-2">
-                      <div className="text-xs text-muted-foreground mb-1">
+                  <Collapsible open={isExpanded} onOpenChange={() => {}}>
+                    <CollapsibleContent className="mt-3">
+                      <div className="text-xs text-muted-foreground mb-2">
                         {expandedTabs?.length ?? 0} tabs
                       </div>
-                      <div className="max-h-48 overflow-auto pr-1 scrollbar-none">
-                        <ul className="space-y-1">
-                          {(expandedTabs ?? []).map((t) => (
-                            <li
-                              key={`${t.id}`}
-                              className="flex flex-col gap-1 text-xs"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                {t.favIconUrl && (
-                                  <img
-                                    src={t.favIconUrl}
-                                    alt=""
-                                    className="size-3.5 rounded-sm"
-                                  />
-                                )}
-                                <span className="truncate">
-                                  {t.title || t.url}
-                                </span>
-                              </div>
-                              {(t.tags?.length || t.description) && (
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                  {t.tags?.length ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {t.tags.map((tag) => (
-                                        <span
-                                          key={tag}
-                                          className="rounded bg-muted px-1.5 py-0.5"
-                                        >
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  ) : null}
-                                  {t.description && (
-                                    <span className="truncate">
-                                      {t.description}
-                                    </span>
-                                  )}
-                                </div>
+                      <div className="max-h-48 overflow-auto pr-1 scrollbar-none space-y-1">
+                        {(expandedTabs ?? []).map((t) => {
+                          const cardData = {
+                            title: t.title || "Untitled",
+                            url: t.url,
+                            favIconUrl: t.favIconUrl,
+                            tags: t.tags,
+                          };
+
+                          return (
+                            <TabCard
+                              key={t.id}
+                              data={cardData}
+                              onClick={() => {}}
+                              ariaLabel={`Tab: ${t.title || t.url}`}
+                              isInteractive={false}
+                              renderContextMenu={() => (
+                                <ContextMenuItem
+                                  onClick={async () => {
+                                    if (t.url) {
+                                      await browser.runtime.sendMessage({
+                                        type: "openResourcesAsTabs",
+                                        urls: [t.url],
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Open this tab in current workspace
+                                </ContextMenuItem>
                               )}
-                            </li>
-                          ))}
-                        </ul>
+                            />
+                          );
+                        })}
                       </div>
-                      <div className="mt-2 flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            await browser.runtime.sendMessage({
-                              type: "restoreSnapshot",
-                              snapshotId: s.id,
-                              mode: "append",
-                            });
-                            onOpenChange(false);
-                          }}
-                        >
-                          Append
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={async () => {
-                            await browser.runtime.sendMessage({
-                              type: "restoreSnapshot",
-                              snapshotId: s.id,
-                              mode: "replace",
-                            });
-                            onOpenChange(false);
-                          }}
-                        >
-                          Replace
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               );
             })
           )}
         </div>
-        <div className="mt-3 flex items-center justify-end">
+        <div className="mt-3 flex items-center justify-between">
           <Button
             size="sm"
             variant="outline"
@@ -272,6 +274,23 @@ export function HistoryDialog({
             }}
           >
             Take Snapshot
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={selectedId === null}
+            onClick={async () => {
+              if (selectedId !== null) {
+                await browser.runtime.sendMessage({
+                  type: "restoreSnapshot",
+                  snapshotId: selectedId,
+                  mode: "replace",
+                });
+                onOpenChange(false);
+              }
+            }}
+          >
+            Restore Snapshot
           </Button>
         </div>
       </DialogContent>
