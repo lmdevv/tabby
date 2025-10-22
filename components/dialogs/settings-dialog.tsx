@@ -39,6 +39,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { checkAIModelAvailability } from "@/lib/ai/ai-availability";
 import { db } from "@/lib/db/db";
 import type {
@@ -102,6 +103,10 @@ export function SettingsDialog({
   const [useLocalAI, setUseLocalAI] = React.useState(true);
   const [isModelAvailable, setIsModelAvailable] = React.useState(false);
   const localAiId = React.useId();
+  const autoAiCleanId = React.useId();
+
+  const { data: confirmAIClean } = useAppState("confirmAIClean");
+  const { updateState } = useUpdateState();
 
   // Check AI model availability on component mount
   React.useEffect(() => {
@@ -369,20 +374,42 @@ export function SettingsDialog({
             </header>
             <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
               {activeTab === "Preferences" && (
-                <div className="flex gap-4 items-center">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Use Local AI</div>
-                    <div className="text-sm text-muted-foreground">
-                      Enable local AI processing for enhanced privacy (
-                      {isModelAvailable ? "available" : "unavailable"})
+                <div className="space-y-6">
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Use Local AI</div>
+                      <div className="text-sm text-muted-foreground">
+                        Enable local AI processing for enhanced privacy (
+                        {isModelAvailable ? "available" : "unavailable"})
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Switch
+                        id={localAiId}
+                        checked={useLocalAI}
+                        onCheckedChange={setUseLocalAI}
+                      />
                     </div>
                   </div>
-                  <div className="flex-none self-center">
-                    <Switch
-                      id={localAiId}
-                      checked={useLocalAI}
-                      onCheckedChange={setUseLocalAI}
-                    />
+
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Automatic AI Cleaning
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Skip confirmation dialogs when AI suggests cleaning tabs
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Switch
+                        id={autoAiCleanId}
+                        checked={confirmAIClean === false}
+                        onCheckedChange={(checked) =>
+                          updateState("confirmAIClean", !checked)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}

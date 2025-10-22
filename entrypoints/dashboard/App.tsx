@@ -12,7 +12,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { useUpdateState } from "@/hooks/use-state";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import type { Tab } from "@/lib/types/types";
 import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
@@ -53,6 +53,7 @@ export default function App() {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
   const { updateState } = useUpdateState();
+  const { data: confirmAIClean } = useAppState("confirmAIClean");
 
   // Listen for messages from background script
   useEffect(() => {
@@ -211,17 +212,6 @@ export default function App() {
     [workspaceDialog.workspaceId],
   );
 
-  const handleOpenAICleanReview = useCallback(
-    (tabIds: number[], instructions: string) => {
-      setAiCleanDialog({
-        open: true,
-        proposedTabIds: tabIds,
-        instructions,
-      });
-    },
-    [],
-  );
-
   const handleAICleanConfirm = useCallback(
     async (tabIds: number[], dontAskAgain: boolean) => {
       const workspaceId = shownWorkspaceId;
@@ -256,6 +246,24 @@ export default function App() {
       }
     },
     [shownWorkspaceId, updateState],
+  );
+
+  const handleOpenAICleanReview = useCallback(
+    async (tabIds: number[], instructions: string) => {
+      // If user has disabled confirmations, proceed directly with cleaning
+      if (confirmAIClean === false) {
+        await handleAICleanConfirm(tabIds, false);
+        return;
+      }
+
+      // Otherwise, show the confirmation dialog
+      setAiCleanDialog({
+        open: true,
+        proposedTabIds: tabIds,
+        instructions,
+      });
+    },
+    [confirmAIClean, handleAICleanConfirm],
   );
 
   return (
