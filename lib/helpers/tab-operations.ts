@@ -157,6 +157,54 @@ export async function ungroupTabs(
 }
 
 /**
+ * Collapses all tab groups in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function collapseAllGroups(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "collapseAllGroups",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("All groups collapsed successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to collapse all groups:", error);
+    toast.error("Failed to collapse all groups");
+  }
+}
+
+/**
+ * Uncollapses all tab groups in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function uncollapseAllGroups(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "uncollapseAllGroups",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("All groups uncollapsed successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to uncollapse all groups:", error);
+    toast.error("Failed to uncollapse all groups");
+  }
+}
+
+/**
  * Refreshes the tabs in a workspace.
  *
  * @param options - An object containing options.

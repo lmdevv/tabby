@@ -3,6 +3,8 @@
 import {
   ArrowUpDown,
   Bot,
+  ChevronDown,
+  ChevronUp,
   Group,
   Hash,
   History,
@@ -29,8 +31,10 @@ import {
   cleanNonResourceTabs,
   cleanResourceTabs,
   cleanUnusedTabs,
+  collapseAllGroups,
   groupTabs,
   sortTabs,
+  uncollapseAllGroups,
   ungroupTabs,
 } from "@/lib/helpers/tab-operations";
 import type { CommandMenuProps, FooterProps } from "../types";
@@ -76,6 +80,14 @@ export function MainCommands({
 
   const handleUngroupTabs = () => {
     ungroupTabs({ workspaceId, onClose });
+  };
+
+  const handleCollapseAllGroups = () => {
+    collapseAllGroups({ workspaceId, onClose });
+  };
+
+  const handleUncollapseAllGroups = () => {
+    uncollapseAllGroups({ workspaceId, onClose });
   };
 
   const handleCleanUnusedTabs = () => {
@@ -201,6 +213,8 @@ export function MainCommands({
       "group by domain": "Group by Domain",
       "group with tabby ai": "Group with Tabby",
       "ungroup all tabs": "Ungroup All Tabs",
+      "collapse all groups": "Collapse All Groups",
+      "uncollapse all groups": "Uncollapse All Groups",
       "workspaces browse": "Browse Workspaces",
       "create workspace": "Create Workspace",
       "clean unused tabs 3 days": "Clean Unused Tabs (3+ days)",
@@ -272,6 +286,20 @@ export function MainCommands({
         <CommandItem value="ungroup all tabs" onSelect={handleUngroupTabs}>
           <Ungroup className="mr-2 h-4 w-4" />
           <span>Ungroup All Tabs</span>
+        </CommandItem>
+        <CommandItem
+          value="collapse all groups"
+          onSelect={handleCollapseAllGroups}
+        >
+          <ChevronDown className="mr-2 h-4 w-4" />
+          <span>Collapse All Groups</span>
+        </CommandItem>
+        <CommandItem
+          value="uncollapse all groups"
+          onSelect={handleUncollapseAllGroups}
+        >
+          <ChevronUp className="mr-2 h-4 w-4" />
+          <span>Uncollapse All Groups</span>
         </CommandItem>
         <CommandItem value="workspaces browse" onSelect={showWorkspaces}>
           <Monitor className="mr-2 h-4 w-4" />

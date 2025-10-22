@@ -141,6 +141,16 @@ export interface ToggleGroupCollapseMessage {
   groupId: number;
 }
 
+export interface CollapseAllGroupsMessage {
+  type: "collapseAllGroups";
+  workspaceId: number;
+}
+
+export interface UncollapseAllGroupsMessage {
+  type: "uncollapseAllGroups";
+  workspaceId: number;
+}
+
 export interface CreateSnapshotMessage {
   type: "createSnapshot";
   workspaceId?: number;
@@ -235,6 +245,8 @@ export type RuntimeMessage =
   | RefreshTabsMessage
   | UpdateTabGroupMessage
   | ToggleGroupCollapseMessage
+  | CollapseAllGroupsMessage
+  | UncollapseAllGroupsMessage
   | CreateSnapshotMessage
   | RestoreSnapshotMessage
   | DeleteSnapshotMessage

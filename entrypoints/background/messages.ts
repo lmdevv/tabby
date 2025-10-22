@@ -72,6 +72,36 @@ const handlers: Partial<HandlersMap> = {
     return { success: true };
   },
 
+  async collapseAllGroups(message) {
+    const tabGroups = await db.tabGroups
+      .where("workspaceId")
+      .equals(message.workspaceId)
+      .and((group) => group.groupStatus === "active")
+      .toArray();
+
+    for (const group of tabGroups) {
+      if (!group.collapsed) {
+        await browser.tabGroups.update(group.id, { collapsed: true });
+      }
+    }
+    return { success: true };
+  },
+
+  async uncollapseAllGroups(message) {
+    const tabGroups = await db.tabGroups
+      .where("workspaceId")
+      .equals(message.workspaceId)
+      .and((group) => group.groupStatus === "active")
+      .toArray();
+
+    for (const group of tabGroups) {
+      if (group.collapsed) {
+        await browser.tabGroups.update(group.id, { collapsed: false });
+      }
+    }
+    return { success: true };
+  },
+
   async openWorkspace(message) {
     await activateWorkspace(message.workspaceId, {
       skipTabSwitching: message.skipTabSwitching === true,
