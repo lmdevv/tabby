@@ -81,7 +81,9 @@ export function SnapshotsList({
   return (
     <>
       {/* Avoid flashing "No results" while the query is initializing */}
-      {snapshots !== undefined && <CommandEmpty>No results found.</CommandEmpty>}
+      {snapshots !== undefined && (
+        <CommandEmpty>No results found.</CommandEmpty>
+      )}
 
       <CommandGroup>
         {snapshots?.map((snapshot) => (

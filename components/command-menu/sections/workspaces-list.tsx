@@ -68,7 +68,9 @@ export function WorkspacesList({
   return (
     <>
       {/* Avoid flashing "No results" while queries are initializing */}
-      {workspaces !== undefined && <CommandEmpty>No results found.</CommandEmpty>}
+      {workspaces !== undefined && (
+        <CommandEmpty>No results found.</CommandEmpty>
+      )}
 
       <CommandGroup>
         {workspaces?.map((workspace) =>
