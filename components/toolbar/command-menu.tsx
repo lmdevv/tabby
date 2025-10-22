@@ -6,13 +6,17 @@ import {
   Bot,
   Group,
   Hash,
+  History,
   Monitor,
   PlusCircle,
+  RotateCcw,
   Settings2,
   Trash2,
   Ungroup,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { browser } from "wxt/browser";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -54,7 +58,7 @@ interface CommandMenuProps {
   onOpenCreateWorkspace?: () => void;
 }
 
-type MenuMode = "main" | "workspaces";
+type MenuMode = "main" | "workspaces" | "snapshots";
 
 export function CommandMenu({
   workspaceId,
@@ -99,8 +103,8 @@ export function CommandMenu({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!open) return;
 
-      // Ctrl+H or Ctrl+Left Arrow to go back in workspaces mode
-      if (menuMode === "workspaces") {
+      // Ctrl+H or Ctrl+Left Arrow to go back in workspaces or snapshots mode
+      if (menuMode === "workspaces" || menuMode === "snapshots") {
         if (
           (event.ctrlKey && event.key === "h") ||
           (event.ctrlKey && event.key === "ArrowLeft")
@@ -126,6 +130,16 @@ export function CommandMenu({
     () => db.workspaces.where("active").equals(1).first(),
     [],
   );
+
+  // Fetch snapshots for the current workspace
+  const snapshots = useLiveQuery(async () => {
+    if (!workspaceId || workspaceId <= 0) return [];
+    return db.workspaceSnapshots
+      .where("workspaceId")
+      .equals(workspaceId)
+      .reverse()
+      .sortBy("createdAt");
+  }, [workspaceId]);
 
   const handleSortTabs = (sortType: "title" | "domain" | "recency") => {
     sortTabs(sortType, { workspaceId, onClose: () => handleOpenChange(false) });
@@ -173,6 +187,64 @@ export function CommandMenu({
     });
   };
 
+  const handleCreateSnapshot = async () => {
+    if (!workspaceId) {
+      toast.error("No active workspace");
+      return;
+    }
+    try {
+      const result = await browser.runtime.sendMessage({
+        type: "createSnapshot",
+        workspaceId,
+        reason: "manual",
+      });
+      if (result.success) {
+        toast.success("Snapshot created successfully");
+      } else {
+        toast.error(result.error || "Failed to create snapshot");
+      }
+    } catch (_error) {
+      toast.error("Failed to create snapshot");
+    }
+    handleOpenChange(false);
+  };
+
+  const handleRollbackToPrevious = async () => {
+    if (!workspaceId) {
+      toast.error("No active workspace");
+      return;
+    }
+    try {
+      // Get the most recent snapshot for the current workspace
+      const snapshots = await db.workspaceSnapshots
+        .where("workspaceId")
+        .equals(workspaceId)
+        .reverse()
+        .sortBy("createdAt");
+
+      if (snapshots.length === 0) {
+        toast.error("No snapshots available");
+        return;
+      }
+
+      const latestSnapshot = snapshots[0];
+      const result = await browser.runtime.sendMessage({
+        type: "restoreSnapshot",
+        snapshotId: latestSnapshot.id,
+        mode: "replace",
+      });
+
+      if (result.success) {
+        toast.success("Rolled back to previous snapshot");
+      } else {
+        toast.error(result.error || "Failed to rollback snapshot");
+      }
+    } catch (_error) {
+      toast.error("Failed to rollback snapshot");
+    }
+    handleOpenChange(false);
+  };
+
   const handleOpenSettings = () => {
     onOpenSettings?.();
     handleOpenChange(false);
@@ -185,6 +257,11 @@ export function CommandMenu({
 
   const showWorkspaces = () => {
     setMenuMode("workspaces");
+    setSearchValue("");
+  };
+
+  const showSnapshots = () => {
+    setMenuMode("snapshots");
     setSearchValue("");
   };
 
@@ -218,6 +295,28 @@ export function CommandMenu({
       };
     }
 
+    if (menuMode === "snapshots") {
+      const selectedSnapshot = snapshots?.find(
+        (s) => `snapshot ${s.id}` === selectedValue,
+      );
+      if (selectedSnapshot) {
+        return {
+          enterText: `Restore snapshot from ${new Date(selectedSnapshot.createdAt).toLocaleString()}`,
+          shortcuts: [
+            { key: "⌃H", action: "Back" },
+            { key: "⌃←", action: "Back" },
+          ],
+        };
+      }
+      return {
+        enterText: "Select snapshot to restore",
+        shortcuts: [
+          { key: "⌃H", action: "Back" },
+          { key: "⌃←", action: "Back" },
+        ],
+      };
+    }
+
     // Main menu mode
     const commandMap: Record<string, string> = {
       "sort by title a-z": "Sort by Title (A-Z)",
@@ -232,7 +331,10 @@ export function CommandMenu({
       "clean duplicate tabs": "Clean Duplicate Tabs",
       "clean resource tabs": "Clean Resource Tabs",
       "clean non resource tabs": "Clean Non-Resource Tabs",
-      "settings": "Open Settings",
+      settings: "Open Settings",
+      "create snapshot": "Create Snapshot",
+      "rollback to previous snapshot": "Rollback to Previous Snapshot",
+      "view snapshots": "View Snapshots",
     };
 
     if (isCustomGroupCommand && customGroupInstructions) {
@@ -287,7 +389,9 @@ export function CommandMenu({
           placeholder={
             menuMode === "workspaces"
               ? "Search workspaces..."
-              : "Type a command..."
+              : menuMode === "snapshots"
+                ? "Search snapshots..."
+                : "Type a command..."
           }
           value={searchValue}
           onValueChange={setSearchValue}
@@ -395,6 +499,30 @@ export function CommandMenu({
                 <Settings2 className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </CommandItem>
+              <CommandItem
+                value="create snapshot"
+                keywords={["take snapshot", "snapshot create"]}
+                onSelect={handleCreateSnapshot}
+              >
+                <History className="mr-2 h-4 w-4" />
+                <span>Create Snapshot</span>
+              </CommandItem>
+              <CommandItem
+                value="rollback to previous snapshot"
+                keywords={["restore snapshot", "snapshot rollback"]}
+                onSelect={handleRollbackToPrevious}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                <span>Rollback to Previous Snapshot</span>
+              </CommandItem>
+              <CommandItem
+                value="view snapshots"
+                keywords={["snapshot history", "snapshot viewer"]}
+                onSelect={showSnapshots}
+              >
+                <History className="mr-2 h-4 w-4" />
+                <span>View Snapshots</span>
+              </CommandItem>
             </CommandGroup>
           )}
 
@@ -418,6 +546,50 @@ export function CommandMenu({
                     )}
                   </CommandItem>
                 ) : null,
+              )}
+            </CommandGroup>
+          )}
+
+          {menuMode === "snapshots" && (
+            <CommandGroup>
+              {snapshots?.map((snapshot) => (
+                <CommandItem
+                  key={snapshot.id}
+                  value={`snapshot ${snapshot.id}`}
+                  onSelect={async () => {
+                    try {
+                      const result = await browser.runtime.sendMessage({
+                        type: "restoreSnapshot",
+                        snapshotId: snapshot.id,
+                        mode: "replace",
+                      });
+                      if (result.success) {
+                        toast.success("Snapshot restored successfully");
+                      } else {
+                        toast.error(
+                          result.error || "Failed to restore snapshot",
+                        );
+                      }
+                    } catch (_error) {
+                      toast.error("Failed to restore snapshot");
+                    }
+                    handleOpenChange(false);
+                  }}
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span>{new Date(snapshot.createdAt).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {snapshot.reason === "manual" ? "Manual" : "Auto"}{" "}
+                      snapshot
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+              {(!snapshots || snapshots.length === 0) && (
+                <div className="text-sm text-muted-foreground p-2">
+                  No snapshots available
+                </div>
               )}
             </CommandGroup>
           )}
