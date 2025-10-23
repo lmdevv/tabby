@@ -129,8 +129,7 @@ export function AICleanDialog({
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-destructive" />
-            Confirm Tab Cleaning
+            Confirm Tabby Cleaning
           </DialogTitle>
           <DialogDescription>
             Tabby analyzed your tabs with the instruction: "{instructions}"
@@ -156,7 +155,7 @@ export function AICleanDialog({
             </div>
           </div>
 
-          <ScrollArea className="max-h-96 border rounded-md p-4">
+          <ScrollArea className="max-h-96 p-4">
             <div className="space-y-3">
               {tabsWithSelection.map((tab) => {
                 const cardData: CardData = {
