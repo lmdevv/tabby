@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import { TabCard } from "@/components/tabs/tab-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -15,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { db } from "@/lib/db/db";
+import type { CardData } from "@/lib/helpers/card-helpers";
 
 interface AICleanDialogProps {
   open: boolean;
@@ -29,6 +31,7 @@ interface TabWithSelection {
   id: number;
   title: string;
   url: string;
+  favIconUrl?: string;
   selected: boolean;
 }
 
@@ -69,6 +72,7 @@ export function AICleanDialog({
           id: tab.id,
           title: tab.title || "Untitled",
           url: tab.url || "",
+          favIconUrl: tab.favIconUrl,
           selected: true, // Default to selected
         }));
       setTabsWithSelection(initialTabsWithSelection);
@@ -154,32 +158,32 @@ export function AICleanDialog({
 
           <ScrollArea className="max-h-96 border rounded-md p-4">
             <div className="space-y-3">
-              {tabsWithSelection.map((tab) => (
-                <div key={tab.id} className="flex items-start space-x-3">
-                  <Checkbox
-                    id={`tab-${tab.id}`}
-                    checked={tab.selected}
-                    onCheckedChange={(checked) =>
-                      handleTabSelectionChange(tab.id, checked as boolean)
+              {tabsWithSelection.map((tab) => {
+                const cardData: CardData = {
+                  title: tab.title,
+                  url: tab.url,
+                  favIconUrl: tab.favIconUrl,
+                };
+
+                return (
+                  <TabCard
+                    key={tab.id}
+                    data={cardData}
+                    onClick={() => {}}
+                    ariaLabel={`Tab: ${tab.title}`}
+                    isInteractive={true}
+                    beforeFavicon={
+                      <Checkbox
+                        id={`tab-${tab.id}`}
+                        checked={tab.selected}
+                        onCheckedChange={(checked) =>
+                          handleTabSelectionChange(tab.id, checked as boolean)
+                        }
+                      />
                     }
                   />
-                  <div className="flex-1 min-w-0">
-                    <Label
-                      htmlFor={`tab-${tab.id}`}
-                      className="text-sm font-medium cursor-pointer block truncate"
-                      title={tab.title}
-                    >
-                      {tab.title}
-                    </Label>
-                    <p
-                      className="text-xs text-muted-foreground truncate"
-                      title={tab.url}
-                    >
-                      {tab.url}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
 
