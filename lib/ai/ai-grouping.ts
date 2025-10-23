@@ -14,42 +14,31 @@ import {
 } from "@/lib/ai/tab-grouping-prompt";
 import { db } from "@/lib/db/db";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
+import type { LanguageModel } from "@/lib/types/ai-types";
 
 /**
  * Main function to group tabs in a workspace using AI with custom instructions
  */
 export async function aiGroupTabsInWorkspaceCustom(
   workspaceId: number,
-  customInstructions: string,
-) {
+  customPrompt?: string,
+): Promise<void> {
   try {
     // Get all tabs in the workspace
-    const tabs = await db.activeTabs
+    const workspaceTabs = await db.activeTabs
       .where("workspaceId")
       .equals(workspaceId)
       .toArray();
 
-    if (tabs.length <= 1) {
-      console.log("Not enough tabs to group");
-      return;
-    }
-
-    // Filter out non-active, dashboard and restricted tabs; prepare tab info for AI
-    const tabInfo: TabInfo[] = tabs
+    // Filter out restricted schemes and tabs without IDs
+    const tabInfo: TabInfo[] = workspaceTabs
       .filter((tab) => {
-        const ourExtensionBaseURL = browser.runtime.getURL("");
-        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
+        const url = tab.url || "";
         const isRestrictedScheme =
-          tab.url?.startsWith("chrome://") ||
-          tab.url?.startsWith("chrome-extension://") ||
-          tab.url === "about:blank";
-        return (
-          tab.tabStatus === "active" &&
-          tab.url !== specificDashboardURL &&
-          !tab.url?.startsWith(ourExtensionBaseURL) &&
-          !isRestrictedScheme &&
-          tab.id !== undefined
-        );
+          url.startsWith("chrome://") ||
+          url.startsWith("chrome-extension://") ||
+          url.startsWith("about:");
+        return !isRestrictedScheme && tab.id !== undefined;
       })
       .map((tab) => ({
         id: tab.id as number,
@@ -70,35 +59,9 @@ export async function aiGroupTabsInWorkspaceCustom(
       throw new Error("Chrome Prompt API not available");
     }
 
-    const LanguageModel = (globalThis as Record<string, unknown>)
-      .LanguageModel as {
-      availability(): Promise<string>;
-      create(options?: {
-        expectedInputs?: {
-          type: "text" | "image" | "audio";
-          languages?: string[];
-        }[];
-        expectedOutputs?: { type: "text"; languages?: string[] }[];
-        temperature?: number;
-        topK?: number;
-        signal?: AbortSignal;
-      }): Promise<{
-        prompt(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): Promise<string>;
-        promptStreaming(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): ReadableStream<string>;
-      }>;
-    };
+    const LanguageModel = (
+      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
+    ).LanguageModel;
 
     // Check model availability
     const availability = await LanguageModel.availability();
@@ -112,13 +75,15 @@ export async function aiGroupTabsInWorkspaceCustom(
     const session = await LanguageModel.create({
       expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }],
+      temperature: 0.3,
+      topK: 40,
     });
 
     // Prepare the prompt with tab data and custom instructions
-    const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customInstructions}\n\n${formatTabsForPrompt(tabInfo)}`;
+    const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customPrompt}\n\n${formatTabsForPrompt(tabInfo)}`;
 
     console.log("=== AI CUSTOM GROUP DEBUG ===");
-    console.log("Custom instructions:", customInstructions);
+    console.log("Custom instructions:", customPrompt);
     console.log("Sending prompt to AI model:");
     console.log(prompt);
     console.log("Using JSON Schema constraint:");
@@ -127,7 +92,6 @@ export async function aiGroupTabsInWorkspaceCustom(
 
     // Use streaming for better performance
     const stream = session.promptStreaming(prompt, {
-      temperature: 0.3,
       responseConstraint: AI_GROUP_RESPONSE_SCHEMA,
     });
 
@@ -224,35 +188,9 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
       throw new Error("Chrome Prompt API not available");
     }
 
-    const LanguageModel = (globalThis as Record<string, unknown>)
-      .LanguageModel as {
-      availability(): Promise<string>;
-      create(options?: {
-        expectedInputs?: {
-          type: "text" | "image" | "audio";
-          languages?: string[];
-        }[];
-        expectedOutputs?: { type: "text"; languages?: string[] }[];
-        temperature?: number;
-        topK?: number;
-        signal?: AbortSignal;
-      }): Promise<{
-        prompt(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): Promise<string>;
-        promptStreaming(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): ReadableStream<string>;
-      }>;
-    };
+    const LanguageModel = (
+      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
+    ).LanguageModel;
 
     // Check model availability
     const availability = await LanguageModel.availability();
@@ -266,6 +204,8 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     const session = await LanguageModel.create({
       expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }],
+      temperature: 0.3,
+      topK: 40,
     });
 
     // Prepare the prompt with tab data
@@ -280,7 +220,6 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
 
     // Use streaming for better performance
     const stream = session.promptStreaming(prompt, {
-      temperature: 0.3,
       responseConstraint: AI_GROUP_RESPONSE_SCHEMA,
     });
 

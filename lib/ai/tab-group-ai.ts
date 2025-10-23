@@ -4,6 +4,7 @@
  */
 
 import { db } from "@/lib/db/db";
+import type { LanguageModel } from "@/lib/types/ai-types";
 import type { Tab } from "@/lib/types/types";
 
 export interface TabGroupSuggestion {
@@ -98,35 +99,9 @@ export async function generateTabGroupTitle(
       throw new Error("Chrome Prompt API not available");
     }
 
-    const LanguageModel = (globalThis as Record<string, unknown>)
-      .LanguageModel as {
-      availability(): Promise<string>;
-      create(options?: {
-        expectedInputs?: {
-          type: "text" | "image" | "audio";
-          languages?: string[];
-        }[];
-        expectedOutputs?: { type: "text"; languages?: string[] }[];
-        temperature?: number;
-        topK?: number;
-        signal?: AbortSignal;
-      }): Promise<{
-        prompt(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): Promise<string>;
-        promptStreaming(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): ReadableStream<string>;
-      }>;
-    };
+    const LanguageModel = (
+      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
+    ).LanguageModel;
 
     // Check model availability
     const availability = await LanguageModel.availability();
@@ -142,6 +117,8 @@ export async function generateTabGroupTitle(
     const session = await LanguageModel.create({
       expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }],
+      temperature: 0.3,
+      topK: 40,
     });
 
     // Prepare the prompt with tab data
@@ -157,7 +134,6 @@ export async function generateTabGroupTitle(
 
     // Use streaming for better performance
     const stream = session.promptStreaming(prompt, {
-      temperature: 0.3,
       responseConstraint: AI_TAB_GROUP_RESPONSE_SCHEMA,
     });
 

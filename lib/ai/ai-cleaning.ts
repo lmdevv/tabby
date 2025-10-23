@@ -12,6 +12,7 @@ import {
   validateAICleanResponse,
 } from "@/lib/ai/tab-cleaning-prompt";
 import { db } from "@/lib/db/db";
+import type { LanguageModel } from "@/lib/types/ai-types";
 
 /**
  * Get AI-proposed tabs to clean in a workspace using custom instructions
@@ -69,35 +70,9 @@ export async function getAIProposedTabsToClean(
       throw new Error("Chrome Prompt API not available");
     }
 
-    const LanguageModel = (globalThis as Record<string, unknown>)
-      .LanguageModel as {
-      availability(): Promise<string>;
-      create(options?: {
-        expectedInputs?: {
-          type: "text" | "image" | "audio";
-          languages?: string[];
-        }[];
-        expectedOutputs?: { type: "text"; languages?: string[] }[];
-        temperature?: number;
-        topK?: number;
-        signal?: AbortSignal;
-      }): Promise<{
-        prompt(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): Promise<string>;
-        promptStreaming(
-          text: string,
-          options?: {
-            temperature?: number;
-            responseConstraint?: Record<string, unknown>;
-          },
-        ): ReadableStream<string>;
-      }>;
-    };
+    const LanguageModel = (
+      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
+    ).LanguageModel;
 
     // Check model availability
     const availability = await LanguageModel.availability();
@@ -111,6 +86,8 @@ export async function getAIProposedTabsToClean(
     const session = await LanguageModel.create({
       expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }],
+      temperature: 0.3,
+      topK: 40,
     });
 
     // Prepare the prompt with tab data and custom instructions
@@ -126,7 +103,6 @@ export async function getAIProposedTabsToClean(
 
     // Use streaming for better performance
     const stream = session.promptStreaming(prompt, {
-      temperature: 0.3,
       responseConstraint: AI_CLEAN_RESPONSE_SCHEMA,
     });
 
