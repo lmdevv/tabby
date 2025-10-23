@@ -12,6 +12,7 @@ import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { db } from "@/lib/db/db";
+import type { Tab } from "@/lib/types/types";
 import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
 
 export default function App() {
@@ -103,6 +104,20 @@ export default function App() {
     },
     [],
   );
+
+  const handlePreviewTabClick = useCallback(async (tab: Tab) => {
+    try {
+      // Create the tab in the current window - the background listeners will handle adding it to the database
+      if (tab.url) {
+        await browser.tabs.create({
+          url: tab.url,
+          active: true,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to handle preview tab click:", error);
+    }
+  }, []);
 
   const handleEditGroup = useCallback(async (groupId: number) => {
     try {
@@ -230,6 +245,7 @@ export default function App() {
             previewWorkspaceId !== null &&
             previewWorkspaceId !== workspaceData?.activeWorkspace?.id
           }
+          onPreviewTabClick={handlePreviewTabClick}
         />
       </SidebarInset>
 

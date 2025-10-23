@@ -25,6 +25,8 @@ interface AppContentProps {
   onEditGroup: (groupId: number) => Promise<void>;
   // When previewing a workspace, we should include archived tabs
   isPreview?: boolean;
+  // In preview mode, clicking a tab should activate the workspace and focus the tab
+  onPreviewTabClick?: (tab: Tab) => Promise<void>;
 }
 
 export function AppContent({
@@ -32,6 +34,7 @@ export function AppContent({
   onTabClick,
   onEditGroup,
   isPreview = false,
+  onPreviewTabClick,
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
@@ -141,7 +144,11 @@ export function AppContent({
                               <WindowComponent
                                 windowId={windowGroup.windowId}
                                 workspaceId={shownWorkspaceId}
-                                onTabClick={onTabClick}
+                                onTabClick={
+                                  isPreview && onPreviewTabClick
+                                    ? (tab) => onPreviewTabClick(tab)
+                                    : onTabClick
+                                }
                                 onEditGroup={onEditGroup}
                                 isPreview={isPreview}
                               />
@@ -195,7 +202,11 @@ export function AppContent({
                               <WindowComponent
                                 windowId={windowGroup.windowId}
                                 workspaceId={shownWorkspaceId}
-                                onTabClick={onTabClick}
+                                onTabClick={
+                                  isPreview && onPreviewTabClick
+                                    ? (tab) => onPreviewTabClick(tab)
+                                    : onTabClick
+                                }
                                 onEditGroup={onEditGroup}
                                 isPreview={isPreview}
                               />
