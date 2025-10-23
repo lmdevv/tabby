@@ -10,6 +10,7 @@ import {
   type CardData,
   formatDisplayUrl,
   getDomainInitial,
+  truncateText,
 } from "@/lib/helpers/card-helpers";
 
 interface TabCardProps {
@@ -54,11 +55,12 @@ export function TabCard({
   const { title, url, favIconUrl, tags } = data;
 
   // Format display values (no truncation - let CSS handle it)
-  const displayTitle = title || "Untitled";
-  const displayUrl = formatDisplayUrl(url);
+  const rawTitle = title || "Untitled";
+  const displayTitle = truncateText(rawTitle, 140);
+  const displayUrl = truncateText(formatDisplayUrl(url), 120);
   const domainInitial = getDomainInitial(url);
 
-  const baseClasses = `flex h-auto w-full min-w-0 items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-1 sm:gap-3 ${
+  const baseClasses = `flex h-auto w-full min-w-0 max-w-full items-center justify-start rounded-lg border p-2 text-left transition-all duration-200 hover:border-accent hover:bg-accent/50 hover:shadow-sm group relative cursor-pointer select-none gap-1 sm:gap-3 overflow-hidden ${
     isInClipboard
       ? "border-destructive bg-destructive/10 shadow-md ring-2 ring-destructive/20 opacity-60"
       : isFocused
@@ -99,10 +101,10 @@ export function TabCard({
       </div>
 
       {/* Card info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+      <div className="min-w-0 flex-1 max-w-full w-0">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2 min-w-0 w-full">
+          <div className="min-w-0 basis-0 flex-1 w-0">
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden w-full">
               <h3
                 className="truncate font-medium text-xs leading-tight min-w-0"
                 title={displayTitle}
@@ -126,7 +128,7 @@ export function TabCard({
 
           {/* Tags */}
           {showTags && tags && tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 sm:justify-end">
+            <div className="flex flex-wrap gap-1 sm:justify-end flex-shrink-0">
               {tags.slice(0, 2).map((tag) => (
                 <Badge
                   key={tag}

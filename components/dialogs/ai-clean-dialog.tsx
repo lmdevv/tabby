@@ -155,8 +155,8 @@ export function AICleanDialog({
             </div>
           </div>
 
-          <ScrollArea className="max-h-96 p-4">
-            <div className="space-y-3">
+          <ScrollArea className="max-h-96 overflow-x-hidden">
+            <div className="space-y-3 min-w-0 max-w-full">
               {tabsWithSelection.map((tab) => {
                 const cardData: CardData = {
                   title: tab.title,
@@ -165,22 +165,23 @@ export function AICleanDialog({
                 };
 
                 return (
-                  <TabCard
-                    key={tab.id}
-                    data={cardData}
-                    onClick={() => {}}
-                    ariaLabel={`Tab: ${tab.title}`}
-                    isInteractive={true}
-                    beforeFavicon={
-                      <Checkbox
-                        id={`tab-${tab.id}`}
-                        checked={tab.selected}
-                        onCheckedChange={(checked) =>
-                          handleTabSelectionChange(tab.id, checked as boolean)
-                        }
-                      />
-                    }
-                  />
+                  <div key={tab.id} className="min-w-0 max-w-full">
+                    <TabCard
+                      data={cardData}
+                      onClick={() => {}}
+                      ariaLabel={`Tab: ${tab.title}`}
+                      isInteractive={true}
+                      beforeFavicon={
+                        <Checkbox
+                          id={`tab-${tab.id}`}
+                          checked={tab.selected}
+                          onCheckedChange={(checked) =>
+                            handleTabSelectionChange(tab.id, checked as boolean)
+                          }
+                        />
+                      }
+                    />
+                  </div>
                 );
               })}
             </div>

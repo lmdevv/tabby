@@ -465,8 +465,8 @@ export function WindowComponent({
         <Card className="w-full max-w-full min-w-0 gap-0 border py-0 shadow-sm flex flex-col min-h-[220px] m-1 overflow-hidden">
           <CardContent className="p-0 flex-1 overflow-hidden">
             {/* Add horizontal scroll as last resort */}
-            <ScrollArea className="w-full">
-              <div className="space-y-1 p-3 min-w-0 w-full">
+            <ScrollArea className="w-full overflow-x-hidden">
+              <div className="space-y-1 p-3 min-w-0 w-full max-w-full">
                 {orderedElements.map((element, _index) => {
                   if (
                     element.type === "groupHeader" &&
@@ -474,7 +474,10 @@ export function WindowComponent({
                     element.groupInfo
                   ) {
                     return (
-                      <div key={`group-${element.group.groupId}`}>
+                      <div
+                        key={`group-${element.group.groupId}`}
+                        className="min-w-0 max-w-full"
+                      >
                         <TabGroupHeader
                           groupId={element.group.groupId}
                           onEditGroup={() =>
@@ -511,7 +514,10 @@ export function WindowComponent({
                     if (element.groupInfo?.collapsed) return null;
 
                     return (
-                      <div key={`tab-${element.tab.id}`} className="ml-6">
+                      <div
+                        key={`tab-${element.tab.id}`}
+                        className="ml-6 min-w-0 max-w-full"
+                      >
                         {element.tab.id !== undefined && (
                           <SortableActiveTabCard
                             id={element.tab.id.toString()}
@@ -533,16 +539,22 @@ export function WindowComponent({
                   if (element.type === "tab" && element.tab) {
                     return (
                       element.tab.id !== undefined && (
-                        <SortableActiveTabCard
+                        <div
                           key={`tab-${element.tab.id}`}
-                          id={element.tab.id.toString()}
-                          tabId={element.tab.id}
-                          onClick={() => element.tab && onTabClick(element.tab)}
-                          onDelete={handleDeleteTab}
-                          onAddToResourceGroup={handleAddToResourceGroup}
-                          isFocused={focusedTabId === element.tab.id}
-                          isInClipboard={clipboardTabId === element.tab.id}
-                        />
+                          className="min-w-0 max-w-full"
+                        >
+                          <SortableActiveTabCard
+                            id={element.tab.id.toString()}
+                            tabId={element.tab.id}
+                            onClick={() =>
+                              element.tab && onTabClick(element.tab)
+                            }
+                            onDelete={handleDeleteTab}
+                            onAddToResourceGroup={handleAddToResourceGroup}
+                            isFocused={focusedTabId === element.tab.id}
+                            isInClipboard={clipboardTabId === element.tab.id}
+                          />
+                        </div>
                       )
                     );
                   }
