@@ -23,8 +23,7 @@ export async function createResourceGroup(
 ): Promise<ResourceGroup> {
   return db.transaction("rw", db.resourceGroups, async () => {
     const timestamp = Date.now();
-    const newGroup: ResourceGroup = {
-      id: (await db.resourceGroups.count()) + 1, // Simple ID generation
+    const newGroup: Omit<ResourceGroup, "id"> = {
       name,
       description,
       collapsed: 0,
@@ -33,8 +32,8 @@ export async function createResourceGroup(
       updatedAt: timestamp,
     };
 
-    await db.resourceGroups.add(newGroup);
-    return newGroup;
+    const id = await db.resourceGroups.add(newGroup);
+    return { ...newGroup, id: id as number };
   });
 }
 
@@ -145,8 +144,7 @@ export async function createResource(
       return existingResource;
     }
 
-    const newResource: Resource = {
-      id: (await db.resources.count()) + 1, // Simple ID generation
+    const newResource: Omit<Resource, "id"> = {
       url: data.url,
       title: data.title,
       favIconUrl: data.favIconUrl,
@@ -157,15 +155,12 @@ export async function createResource(
     };
 
     // Add the resource
-    await db.resources.add(newResource);
+    const id = await db.resources.add(newResource);
 
     // Get the current group to update its resourceIds
     const group = await db.resourceGroups.get(data.groupId);
     if (group) {
-      const updatedResourceIds = [
-        ...(group.resourceIds || []),
-        newResource.id.toString(),
-      ];
+      const updatedResourceIds = [...(group.resourceIds || []), id.toString()];
 
       // Add resource ID to the group
       await db.resourceGroups.update(data.groupId, {
@@ -174,7 +169,7 @@ export async function createResource(
       });
     }
 
-    return newResource;
+    return { ...newResource, id: id as number };
   });
 }
 
