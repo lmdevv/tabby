@@ -286,6 +286,15 @@ export function createTabKeyboardHandler({
         e.preventDefault();
         toggleShowResources();
         break;
+      case "a": {
+        // a for select/unselect all tabs
+        e.preventDefault();
+        const allTabIds = navigableTabs.map((tab) => tab.id);
+        updateSelectedTabs(
+          selectedTabs.length === allTabIds.length ? [] : allTabIds,
+        );
+        break;
+      }
       case "Escape":
         setFocusedTabId(null);
         setClipboardTabId(null);
