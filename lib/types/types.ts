@@ -219,6 +219,7 @@ export interface CloseTabsByIdsMessage {
 export interface ConvertTabGroupToResourceMessage {
   type: "convertTabGroupToResource";
   groupId: number;
+  deleteOriginal?: boolean;
 }
 
 // Resource group actions
@@ -243,6 +244,7 @@ export interface CreateWorkspaceFromTabGroupMessage {
   type: "createWorkspaceFromTabGroup";
   groupId: number;
   name?: string;
+  deleteOriginal?: boolean;
 }
 
 export type RuntimeMessage =

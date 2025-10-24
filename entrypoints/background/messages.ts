@@ -293,25 +293,27 @@ const handlers: Partial<HandlersMap> = {
       .map((t) => t.url)
       .filter((u): u is string => Boolean(u));
     const targetName = message.name || tabGroup.title || "New Workspace";
+    if (message.deleteOriginal !== false) {
+      const tabIdsToClose = tabsInGroup
+        .map((t) => t.id)
+        .filter((id): id is number => id != null);
+      await closeTabsSafely(tabIdsToClose);
+      const stableIdsToArchive = tabsInGroup.map((t) => t.stableId);
+      await db.transaction("rw", db.activeTabs, db.tabGroups, async () => {
+        if (stableIdsToArchive.length > 0) {
+          await db.activeTabs
+            .where("stableId")
+            .anyOf(stableIdsToArchive)
+            .modify({ tabStatus: "archived" });
+        }
+        await db.tabGroups.update(message.groupId, {
+          groupStatus: "archived",
+          updatedAt: Date.now(),
+        });
+      });
+    }
     const created = await createWorkspaceFromUrls(targetName, urls);
     if (!created.success || !created.workspaceId) return created;
-    const tabIdsToClose = tabsInGroup
-      .map((t) => t.id)
-      .filter((id): id is number => id != null);
-    await closeTabsSafely(tabIdsToClose);
-    const stableIdsToArchive = tabsInGroup.map((t) => t.stableId);
-    await db.transaction("rw", db.activeTabs, db.tabGroups, async () => {
-      if (stableIdsToArchive.length > 0) {
-        await db.activeTabs
-          .where("stableId")
-          .anyOf(stableIdsToArchive)
-          .modify({ tabStatus: "archived" });
-      }
-      await db.tabGroups.update(message.groupId, {
-        groupStatus: "archived",
-        updatedAt: Date.now(),
-      });
-    });
     return { success: true, workspaceId: created.workspaceId };
   },
 };

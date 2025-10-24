@@ -350,18 +350,18 @@ export async function cleanNonResourceTabs(
  * Converts a tab group to a resource.
  *
  * @param groupId - The ID of the tab group to convert.
- * @param options - An object containing options.
- * @param options.workspaceId - The ID of the workspace the tab group belongs to.
- * @param options.onClose - A function to be called when the operation is complete.
+ * @param deleteOriginal - Whether to delete the original tab group and tabs after conversion.
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function convertTabGroupToResource(
   groupId: number,
+  deleteOriginal: boolean = true,
 ): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       type: "convertTabGroupToResource",
       groupId,
+      deleteOriginal,
     } as const);
     toast.success("Tab group converted to resource successfully");
   } catch (error) {
@@ -375,14 +375,13 @@ export async function convertTabGroupToResource(
  *
  * @param groupId - The ID of the tab group to create the workspace from.
  * @param name - The name of the workspace to create.
- * @param options - An object containing options.
- * @param options.workspaceId - The ID of the workspace the tab group belongs to.
- * @param options.onClose - A function to be called when the operation is complete.
+ * @param deleteOriginal - Whether to delete the original tab group and tabs after conversion.
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function createWorkspaceFromTabGroup(
   groupId: number,
   name?: string,
+  deleteOriginal: boolean = true,
 ): Promise<void> {
   try {
     toast.loading("Moving group to workspace...", {
@@ -392,6 +391,7 @@ export async function createWorkspaceFromTabGroup(
       type: "createWorkspaceFromTabGroup",
       groupId,
       name,
+      deleteOriginal,
     } as const);
 
     if (res?.success !== false) {

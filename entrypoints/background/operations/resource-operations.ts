@@ -5,9 +5,13 @@ import { db } from "@/lib/db/db";
  * Converts a tab group to a resource.
  *
  * @param groupId - The ID of the tab group to convert.
+ * @param deleteOriginal - Whether to delete the original tab group and tabs after conversion.
  * @returns A Promise that resolves when the tab group is converted.
  */
-export async function convertTabGroupToResource(groupId: number) {
+export async function convertTabGroupToResource(
+  groupId: number,
+  deleteOriginal: boolean = true,
+) {
   try {
     console.log(`Converting tab group ${groupId} to resource`);
 
@@ -102,18 +106,20 @@ export async function convertTabGroupToResource(groupId: number) {
       }
     }
 
-    // Archive all tabs in the database
-    const stableIdsToArchive = tabsInGroup.map((tab) => tab.stableId);
-    await db.activeTabs
-      .where("stableId")
-      .anyOf(stableIdsToArchive)
-      .modify({ tabStatus: "archived" });
+    if (deleteOriginal) {
+      // Archive all tabs in the database
+      const stableIdsToArchive = tabsInGroup.map((tab) => tab.stableId);
+      await db.activeTabs
+        .where("stableId")
+        .anyOf(stableIdsToArchive)
+        .modify({ tabStatus: "archived" });
 
-    // Archive the tab group
-    await db.tabGroups.update(groupId, {
-      groupStatus: "archived",
-      updatedAt: timestamp,
-    });
+      // Archive the tab group
+      await db.tabGroups.update(groupId, {
+        groupStatus: "archived",
+        updatedAt: timestamp,
+      });
+    }
 
     console.log(
       `✅ Converted tab group ${groupId} to resource group ${resourceGroupId} with ${resourceIds.length} resources`,

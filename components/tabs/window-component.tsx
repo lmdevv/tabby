@@ -108,7 +108,12 @@ export function WindowComponent({
   );
 
   const allTabGroups = useLiveQuery(
-    () => db.tabGroups.where("workspaceId").equals(workspaceId).toArray(),
+    () =>
+      db.tabGroups
+        .where("workspaceId")
+        .equals(workspaceId)
+        .and((g) => g.groupStatus === "active")
+        .toArray(),
     [workspaceId],
   );
 

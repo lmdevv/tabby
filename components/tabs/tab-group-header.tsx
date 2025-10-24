@@ -119,12 +119,14 @@ export function TabGroupHeader({
               if (!input) return; // cancel or empty
               nameToUse = input;
             }
-            await createWorkspaceFromTabGroup(groupId, nameToUse);
+            await createWorkspaceFromTabGroup(groupId, nameToUse, true);
           }}
         >
           Move to workspace
         </ContextMenuItem>
-        <ContextMenuItem onClick={() => convertTabGroupToResource(groupId)}>
+        <ContextMenuItem
+          onClick={() => convertTabGroupToResource(groupId, true)}
+        >
           Move as resource group
         </ContextMenuItem>
         <ContextMenuItem onClick={onCloseAll} className="text-destructive">
