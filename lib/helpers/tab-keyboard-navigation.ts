@@ -1,3 +1,4 @@
+import { browser } from "wxt/browser";
 import type { Tab } from "@/lib/types/types";
 
 export interface TabKeyboardNavigationProps {
@@ -65,7 +66,7 @@ export function createTabKeyboardHandler({
     updateSelectedTabs(selectedIds);
   };
 
-  return (e: KeyboardEvent) => {
+  return async (e: KeyboardEvent) => {
     // Only handle if we have tabs and no input is focused
     if (
       !navigableTabs.length ||
@@ -180,9 +181,19 @@ export function createTabKeyboardHandler({
           setClipboardTabId(null);
         }
         break;
-      case "x": // x for delete focused tab
+      case "x": // x for delete tab(s)
         e.preventDefault();
-        if (focusedTabId) {
+        if (selectedTabs.length > 0) {
+          // Close all selected tabs
+          try {
+            await browser.tabs.remove(selectedTabs);
+            // Clear selection after closing
+            updateSelectedTabs([]);
+          } catch (error) {
+            console.error("Failed to close selected tabs:", error);
+          }
+        } else if (focusedTabId) {
+          // Close single focused tab (original behavior)
           // Calculate next focus position before deletion
           const currentIndex = navigableTabs.findIndex(
             (tab) => tab.id === focusedTabId,
