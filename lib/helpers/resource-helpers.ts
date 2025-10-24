@@ -311,3 +311,71 @@ export function tabToResource(
     favIconUrl: tab.favIconUrl,
   };
 }
+
+/**
+ * Add multiple tabs to a resource group
+ */
+export async function addTabsToResourceGroup(
+  tabs: Array<Pick<Resource, "url" | "title" | "favIconUrl">>,
+  groupId: number,
+): Promise<void> {
+  return db.transaction("rw", [db.resources, db.resourceGroups], async () => {
+    const timestamp = Date.now();
+
+    // Get the current group to check existing resources
+    const group = await db.resourceGroups.get(groupId);
+    if (!group) {
+      throw new Error(`Resource group with ID ${groupId} not found`);
+    }
+
+    const existingResourceIds = new Set(group.resourceIds || []);
+
+    // Process each tab
+    for (const tab of tabs) {
+      if (!tab.url) continue; // Skip tabs without URLs
+
+      const normalizedUrl = normalizeUrl(tab.url);
+      const normalizedTitle = (tab.title || "Untitled").toLowerCase().trim();
+
+      // Check for existing resource by title + URL match
+      const allResources = await db.resources.toArray();
+      const existingResource = allResources.find((resource) => {
+        if (!resource.url) return false;
+        const normalizedResourceUrl = normalizeUrl(resource.url);
+        const normalizedResourceTitle = (resource.title || "Untitled")
+          .toLowerCase()
+          .trim();
+
+        return (
+          normalizedResourceUrl === normalizedUrl &&
+          normalizedResourceTitle === normalizedTitle
+        );
+      });
+
+      if (existingResource) {
+        // Resource already exists, just add it to the group if not already there
+        if (!existingResourceIds.has(existingResource.id.toString())) {
+          existingResourceIds.add(existingResource.id.toString());
+        }
+      } else {
+        // Create new resource
+        const newResource: Omit<Resource, "id"> = {
+          url: tab.url,
+          title: tab.title,
+          favIconUrl: tab.favIconUrl,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+
+        const id = await db.resources.add(newResource);
+        existingResourceIds.add(id.toString());
+      }
+    }
+
+    // Update the group with all the new resource IDs
+    await db.resourceGroups.update(groupId, {
+      resourceIds: Array.from(existingResourceIds),
+      updatedAt: timestamp,
+    });
+  });
+}

@@ -5,6 +5,7 @@ import { Command, CommandDialog, CommandList } from "@/components/ui/command";
 import { Footer } from "./presentation/footer";
 import { SearchInput } from "./presentation/search-input";
 import { MainCommands } from "./sections/main-commands";
+import { ResourceGroupsList } from "./sections/resource-groups-list";
 import { SnapshotsList } from "./sections/snapshots-list";
 import { WorkspacesList } from "./sections/workspaces-list";
 import type { CommandMenuProps, FooterProps, MenuMode } from "./types";
@@ -17,11 +18,14 @@ export function CommandMenu({
   onOpenCreateWorkspace,
   onOpenAICleanReview,
   onOpenCreateResourceGroup,
+  onSelectResourceGroup,
+  onMoveToResourceGroup,
+  initialMenuMode = "main",
 }: CommandMenuProps) {
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
 
   const [internalOpen, setInternalOpen] = useState(false);
-  const [menuMode, setMenuMode] = useState<MenuMode>("main");
+  const [menuMode, setMenuMode] = useState<MenuMode>(initialMenuMode);
   const [searchValue, setSearchValue] = useState("");
   const [selectedValue, setSelectedValue] = useState("");
   const [footerProps, setFooterProps] = useState<FooterProps>({
@@ -44,14 +48,14 @@ export function CommandMenu({
       } else {
         setInternalOpen(newOpen);
       }
-      // Reset to main menu and clear search when closing
+      // Reset to initial menu mode and clear search when closing
       if (!newOpen) {
-        setMenuMode("main");
+        setMenuMode(initialMenuMode);
         setSearchValue("");
         setSelectedValue("");
       }
     },
-    [isControlled, onOpenChange],
+    [isControlled, onOpenChange, initialMenuMode],
   );
 
   // Handle keyboard shortcuts
@@ -116,6 +120,16 @@ export function CommandMenu({
             <SnapshotsList
               workspaceId={workspaceId}
               selectedValue={selectedValue}
+              onClose={handleOpenChange.bind(null, false)}
+              setFooterProps={setFooterProps}
+            />
+          )}
+
+          {menuMode === "resourceGroups" && onSelectResourceGroup && (
+            <ResourceGroupsList
+              selectedValue={selectedValue}
+              onSelectResourceGroup={onSelectResourceGroup}
+              onMoveToResourceGroup={onMoveToResourceGroup}
               onClose={handleOpenChange.bind(null, false)}
               setFooterProps={setFooterProps}
             />

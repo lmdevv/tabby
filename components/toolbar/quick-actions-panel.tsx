@@ -1,8 +1,10 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Copy, Layers, X } from "lucide-react";
+import { Copy, Folder, Layers, X } from "lucide-react";
+import { useState } from "react";
 import { browser } from "wxt/browser";
+import { CommandMenu } from "@/components/command-menu/command-menu";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -13,11 +15,13 @@ import {
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import { copyMultipleTabLinks } from "@/lib/helpers/copy-helpers";
+import { addTabsToResourceGroup } from "@/lib/helpers/resource-helpers";
 import { groupTabs } from "@/lib/helpers/tab-helpers";
 
 export function QuickActionsPanel() {
   const { data: selectedTabsData } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
 
   const currentSelectedTabs = (selectedTabsData as number[]) ?? [];
 
@@ -64,6 +68,35 @@ export function QuickActionsPanel() {
   const handleCopyLinks = async () => {
     if (!selectedTabData?.length) return;
     await copyMultipleTabLinks(selectedTabData);
+  };
+
+  const handleAddToResourceGroup = () => {
+    setCommandMenuOpen(true);
+  };
+
+  const handleSelectResourceGroup = async (groupId: number) => {
+    if (!selectedTabData?.length) return;
+    try {
+      await addTabsToResourceGroup(selectedTabData, groupId);
+      handleSelectionCleared();
+    } catch (error) {
+      console.error("Failed to add tabs to resource group:", error);
+    }
+  };
+
+  const handleMoveToResourceGroup = async (groupId: number) => {
+    if (!currentSelectedTabs.length) return;
+    try {
+      // First add to resource group
+      if (selectedTabData?.length) {
+        await addTabsToResourceGroup(selectedTabData, groupId);
+      }
+      // Then close the tabs
+      await browser.tabs.remove(currentSelectedTabs);
+      handleSelectionCleared();
+    } catch (error) {
+      console.error("Failed to move tabs to resource group:", error);
+    }
   };
 
   if (currentSelectedTabsCount === 0) return null;
@@ -117,8 +150,31 @@ export function QuickActionsPanel() {
               <TooltipContent>Group Tabs</TooltipContent>
             </Tooltip>
           )}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                onClick={handleAddToResourceGroup}
+              >
+                <Folder className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Add to Resource Group</TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
+
+      <CommandMenu
+        workspaceId={activeWorkspace?.id ?? null}
+        open={commandMenuOpen}
+        onOpenChange={setCommandMenuOpen}
+        onSelectResourceGroup={handleSelectResourceGroup}
+        onMoveToResourceGroup={handleMoveToResourceGroup}
+        initialMenuMode="resourceGroups"
+      />
     </div>
   );
 }
