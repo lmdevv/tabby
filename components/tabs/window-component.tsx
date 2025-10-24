@@ -29,6 +29,7 @@ import {
 import { normalizeUrl } from "@/lib/helpers/resource-helpers";
 import {
   findTabById,
+  groupTabs,
   moveTabInBrowser,
   ungroupTabIfNeeded,
 } from "@/lib/helpers/tab-helpers";
@@ -431,6 +432,7 @@ export function WindowComponent({
       copySingleLink,
       copyMultipleLinks,
       toggleShowResources,
+      groupTabs,
     });
 
     document.addEventListener("keydown", handleKeyDown);

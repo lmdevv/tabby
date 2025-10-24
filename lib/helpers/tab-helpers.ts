@@ -75,3 +75,25 @@ export async function moveTabInBrowser(
     console.error("Failed to send moveTab message:", error);
   }
 }
+
+/**
+ * Groups the specified tabs together
+ */
+export async function groupTabs(tabIds: number[]): Promise<void> {
+  if (!tabIds.length) return;
+
+  try {
+    if (typeof browser?.tabs?.group === "function") {
+      // Get the window ID from the first tab to ensure they group in the same window
+      const firstTab = await browser.tabs.get(tabIds[0]);
+      await browser.tabs.group({
+        tabIds: tabIds as [number, ...number[]],
+        createProperties: {
+          windowId: firstTab.windowId,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Failed to group tabs:", error);
+  }
+}

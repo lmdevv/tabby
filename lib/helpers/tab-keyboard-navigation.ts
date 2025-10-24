@@ -27,6 +27,8 @@ export interface TabKeyboardNavigationProps {
   copyMultipleLinks: (tabIds: number[]) => Promise<void>;
   // Resource panel toggle
   toggleShowResources: () => void;
+  // Group tabs function
+  groupTabs: (tabIds: number[]) => Promise<void>;
 }
 
 export function createTabKeyboardHandler({
@@ -48,6 +50,7 @@ export function createTabKeyboardHandler({
   copySingleLink,
   copyMultipleLinks,
   toggleShowResources,
+  groupTabs,
 }: TabKeyboardNavigationProps) {
   // Helper function to update visual selection range
   const updateVisualSelection = (startId: number, endId: number) => {
@@ -250,9 +253,18 @@ export function createTabKeyboardHandler({
           handleActivateTab(focusedTabId);
         }
         break;
-      case "g": // gg for go to first tab
+      case "g": // g for group selected tabs, gg for go to first tab
         if (e.key === "g" && !e.repeat) {
-          // Wait for second 'g'
+          // If there are selected tabs, group them immediately
+          if (selectedTabs.length > 1) {
+            e.preventDefault();
+            groupTabs(selectedTabs);
+            // Clear selection after grouping
+            updateSelectedTabs([]);
+            return;
+          }
+
+          // Otherwise, wait for second 'g' for go to first tab
           let timeout: NodeJS.Timeout;
           const secondGHandler = (e2: KeyboardEvent) => {
             if (e2.key === "g") {

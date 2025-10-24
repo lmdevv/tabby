@@ -13,6 +13,7 @@ import {
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import { copyMultipleTabLinks } from "@/lib/helpers/copy-helpers";
+import { groupTabs } from "@/lib/helpers/tab-helpers";
 
 export function QuickActionsPanel() {
   const { data: selectedTabsData } = useAppState("selectedTabs");
@@ -55,19 +56,9 @@ export function QuickActionsPanel() {
   };
 
   const handleGroupTabs = async () => {
-    if (!currentSelectedTabs.length || !activeWorkspace) return;
-    try {
-      if (typeof browser?.tabs?.group === "function") {
-        await browser.tabs.group({
-          tabIds: currentSelectedTabs as [number, ...number[]],
-          createProperties: {
-            windowId: selectedTabData?.[0]?.windowId,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to group tabs:", error);
-    }
+    if (!currentSelectedTabs.length) return;
+    await groupTabs(currentSelectedTabs);
+    handleSelectionCleared();
   };
 
   const handleCopyLinks = async () => {
