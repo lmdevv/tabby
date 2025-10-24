@@ -38,6 +38,10 @@ import { refreshTabs } from "@/lib/helpers/tab-operations";
 
 import type { Tab } from "@/lib/types/types";
 
+type NavigableItem =
+  | { type: "tab"; tab: Tab & { id: number } }
+  | { type: "groupHeader"; groupId: number; collapsed: boolean; title: string };
+
 interface WindowComponentProps {
   windowId: number;
   workspaceId: number;
@@ -56,6 +60,7 @@ export function WindowComponent({
 }: WindowComponentProps) {
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
+  const [focusedGroupId, setFocusedGroupId] = useState<number | null>(null);
   const [clipboardTabId, setClipboardTabId] = useState<number | null>(null);
 
   // Visual selection mode state
@@ -230,6 +235,17 @@ export function WindowComponent({
     }
   }, []);
 
+  const toggleGroupCollapse = useCallback(async (groupId: number) => {
+    try {
+      await browser.runtime.sendMessage({
+        type: "toggleGroupCollapse",
+        groupId,
+      });
+    } catch (error) {
+      console.error("Failed to toggle group collapse:", error);
+    }
+  }, []);
+
   // Helper function to move tab to exact position of another tab
   const moveTabToPosition = useCallback(
     async (tabIdToMove: number, targetTabId: number) => {
@@ -374,15 +390,46 @@ export function WindowComponent({
       .map((element) => element.tab.id.toString());
   }, [orderedElements]);
 
-  // Get all navigable tabs in visual order for keyboard navigation
+  // Get all navigable tabs in visual order for keyboard navigation (excluding collapsed)
   const navigableTabs = useMemo(() => {
     return orderedElements
       .filter(
         (element): element is typeof element & { tab: { id: number } } =>
-          (element.type === "tab" || element.type === "groupedTab") &&
+          (element.type === "tab" ||
+            (element.type === "groupedTab" && !element.groupInfo?.collapsed)) &&
           !!element.tab?.id,
       )
       .map((element) => element.tab);
+  }, [orderedElements]);
+
+  // Create navigable items including group headers and visible tabs
+  const navigableItems = useMemo((): NavigableItem[] => {
+    const items: NavigableItem[] = [];
+    for (const element of orderedElements) {
+      if (
+        element.type === "groupHeader" &&
+        element.group &&
+        element.groupInfo
+      ) {
+        items.push({
+          type: "groupHeader",
+          groupId: element.group.groupId,
+          collapsed: element.groupInfo.collapsed,
+          title: element.groupInfo.title || "Untitled",
+        });
+      } else if (
+        element.type === "tab" ||
+        (element.type === "groupedTab" && !element.groupInfo?.collapsed)
+      ) {
+        if (element.tab?.id) {
+          items.push({
+            type: "tab",
+            tab: element.tab as Tab & { id: number },
+          });
+        }
+      }
+    }
+    return items;
   }, [orderedElements]);
 
   // Get selected tabs state
@@ -419,14 +466,16 @@ export function WindowComponent({
   // Keyboard navigation and movement
   useEffect(() => {
     const handleKeyDown = createTabKeyboardHandler({
-      navigableTabs,
+      navigableItems,
       moveTabToPosition,
       handleDeleteTab,
       handleActivateTab,
       handleRefreshTabs,
       focusedTabId,
+      focusedGroupId,
       clipboardTabId,
       setFocusedTabId,
+      setFocusedGroupId,
       setClipboardTabId,
       isVisualMode,
       visualStartTabId,
@@ -438,13 +487,15 @@ export function WindowComponent({
       copyMultipleLinks,
       toggleShowResources,
       groupTabs,
+      toggleGroupCollapse,
     });
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [
-    navigableTabs,
+    navigableItems,
     focusedTabId,
+    focusedGroupId,
     clipboardTabId,
     moveTabToPosition,
     handleDeleteTab,
@@ -457,6 +508,7 @@ export function WindowComponent({
     copySingleLink,
     copyMultipleLinks,
     toggleShowResources,
+    toggleGroupCollapse,
   ]);
 
   return (
@@ -507,6 +559,7 @@ export function WindowComponent({
                                 .filter((id): id is number => id !== undefined),
                             )
                           }
+                          isFocused={focusedGroupId === element.group.groupId}
                         />
                       </div>
                     );

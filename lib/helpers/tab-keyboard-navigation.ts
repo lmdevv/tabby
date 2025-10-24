@@ -1,8 +1,12 @@
 import { browser } from "wxt/browser";
 import type { Tab } from "@/lib/types/types";
 
+export type NavigableItem =
+  | { type: "tab"; tab: Tab & { id: number } }
+  | { type: "groupHeader"; groupId: number; collapsed: boolean; title: string };
+
 export interface TabKeyboardNavigationProps {
-  navigableTabs: (Tab & { id: number })[];
+  navigableItems: NavigableItem[];
   moveTabToPosition: (
     tabIdToMove: number,
     targetTabId: number,
@@ -11,8 +15,10 @@ export interface TabKeyboardNavigationProps {
   handleActivateTab: (id: number) => Promise<void>;
   handleRefreshTabs: () => Promise<void>;
   focusedTabId: number | null;
+  focusedGroupId: number | null;
   clipboardTabId: number | null;
   setFocusedTabId: (id: number | null) => void;
+  setFocusedGroupId: (id: number | null) => void;
   setClipboardTabId: (id: number | null) => void;
   // Visual selection mode
   isVisualMode: boolean;
@@ -29,17 +35,21 @@ export interface TabKeyboardNavigationProps {
   toggleShowResources: () => void;
   // Group tabs function
   groupTabs: (tabIds: number[]) => Promise<void>;
+  // Toggle group collapse
+  toggleGroupCollapse: (groupId: number) => Promise<void>;
 }
 
 export function createTabKeyboardHandler({
-  navigableTabs,
+  navigableItems,
   moveTabToPosition,
   handleDeleteTab,
   handleActivateTab,
   handleRefreshTabs,
   focusedTabId,
+  focusedGroupId,
   clipboardTabId,
   setFocusedTabId,
+  setFocusedGroupId,
   setClipboardTabId,
   isVisualMode,
   visualStartTabId,
@@ -51,37 +61,52 @@ export function createTabKeyboardHandler({
   copyMultipleLinks,
   toggleShowResources,
   groupTabs,
+  toggleGroupCollapse,
 }: TabKeyboardNavigationProps) {
+  // Helper function to get only tab items for visual selection
+  const tabItems = navigableItems.filter(
+    (item) => item.type === "tab",
+  ) as Array<{ type: "tab"; tab: Tab & { id: number } }>;
+
   // Helper function to update visual selection range
   const updateVisualSelection = (startId: number, endId: number) => {
-    const startIndex = navigableTabs.findIndex((tab) => tab.id === startId);
-    const endIndex = navigableTabs.findIndex((tab) => tab.id === endId);
+    const startIndex = tabItems.findIndex((item) => item.tab.id === startId);
+    const endIndex = tabItems.findIndex((item) => item.tab.id === endId);
 
     if (startIndex === -1 || endIndex === -1) return;
 
     const minIndex = Math.min(startIndex, endIndex);
     const maxIndex = Math.max(startIndex, endIndex);
 
-    const selectedIds = navigableTabs
+    const selectedIds = tabItems
       .slice(minIndex, maxIndex + 1)
-      .map((tab) => tab.id);
+      .map((item) => item.tab.id);
 
     updateSelectedTabs(selectedIds);
   };
 
   return async (e: KeyboardEvent) => {
-    // Only handle if we have tabs and no input is focused
+    // Only handle if we have items and no input is focused
     if (
-      !navigableTabs.length ||
+      !navigableItems.length ||
       e.target instanceof HTMLInputElement ||
       e.target instanceof HTMLTextAreaElement
     ) {
       return;
     }
 
-    const currentIndex = focusedTabId
-      ? navigableTabs.findIndex((tab) => tab.id === focusedTabId)
-      : -1;
+    // Find current focused item index
+    let currentIndex = -1;
+    if (focusedTabId) {
+      currentIndex = navigableItems.findIndex(
+        (item) => item.type === "tab" && item.tab.id === focusedTabId,
+      );
+    } else if (focusedGroupId) {
+      currentIndex = navigableItems.findIndex(
+        (item) =>
+          item.type === "groupHeader" && item.groupId === focusedGroupId,
+      );
+    }
 
     switch (e.key) {
       case " ": // Space - toggle selection of focused tab
@@ -112,13 +137,18 @@ export function createTabKeyboardHandler({
       case "j": // Down
       case "ArrowDown":
         e.preventDefault();
-        if (currentIndex < navigableTabs.length - 1) {
-          const newFocusedId = navigableTabs[currentIndex + 1].id;
-          setFocusedTabId(newFocusedId);
-
-          // If in visual mode, update selection range
-          if (isVisualMode && visualStartTabId) {
-            updateVisualSelection(visualStartTabId, newFocusedId);
+        if (currentIndex < navigableItems.length - 1) {
+          const nextItem = navigableItems[currentIndex + 1];
+          if (nextItem.type === "tab") {
+            setFocusedTabId(nextItem.tab.id);
+            setFocusedGroupId(null);
+            // If in visual mode, update selection range
+            if (isVisualMode && visualStartTabId) {
+              updateVisualSelection(visualStartTabId, nextItem.tab.id);
+            }
+          } else if (nextItem.type === "groupHeader") {
+            setFocusedGroupId(nextItem.groupId);
+            setFocusedTabId(null);
           }
         }
         break;
@@ -126,20 +156,30 @@ export function createTabKeyboardHandler({
       case "ArrowUp":
         e.preventDefault();
         if (currentIndex > 0) {
-          const newFocusedId = navigableTabs[currentIndex - 1].id;
-          setFocusedTabId(newFocusedId);
-
-          // If in visual mode, update selection range
-          if (isVisualMode && visualStartTabId) {
-            updateVisualSelection(visualStartTabId, newFocusedId);
+          const prevItem = navigableItems[currentIndex - 1];
+          if (prevItem.type === "tab") {
+            setFocusedTabId(prevItem.tab.id);
+            setFocusedGroupId(null);
+            // If in visual mode, update selection range
+            if (isVisualMode && visualStartTabId) {
+              updateVisualSelection(visualStartTabId, prevItem.tab.id);
+            }
+          } else if (prevItem.type === "groupHeader") {
+            setFocusedGroupId(prevItem.groupId);
+            setFocusedTabId(null);
           }
-        } else if (navigableTabs.length > 0) {
-          const newFocusedId = navigableTabs[0].id;
-          setFocusedTabId(newFocusedId);
-
-          // If in visual mode, update selection range
-          if (isVisualMode && visualStartTabId) {
-            updateVisualSelection(visualStartTabId, newFocusedId);
+        } else if (navigableItems.length > 0) {
+          const firstItem = navigableItems[0];
+          if (firstItem.type === "tab") {
+            setFocusedTabId(firstItem.tab.id);
+            setFocusedGroupId(null);
+            // If in visual mode, update selection range
+            if (isVisualMode && visualStartTabId) {
+              updateVisualSelection(visualStartTabId, firstItem.tab.id);
+            }
+          } else if (firstItem.type === "groupHeader") {
+            setFocusedGroupId(firstItem.groupId);
+            setFocusedTabId(null);
           }
         }
         break;
@@ -151,17 +191,27 @@ export function createTabKeyboardHandler({
             if (e2.key === "d") {
               e2.preventDefault();
               if (focusedTabId) {
-                const tabToCut = navigableTabs.find(
-                  (tab) => tab.id === focusedTabId,
+                const tabToCut = tabItems.find(
+                  (item) => item.tab.id === focusedTabId,
                 );
                 if (tabToCut) {
                   setClipboardTabId(focusedTabId);
                   // Move to next tab or previous
                   const nextIndex = Math.min(
                     currentIndex + 1,
-                    navigableTabs.length - 1,
+                    navigableItems.length - 1,
                   );
-                  setFocusedTabId(navigableTabs[nextIndex]?.id ?? null);
+                  const nextItem = navigableItems[nextIndex];
+                  if (nextItem?.type === "tab") {
+                    setFocusedTabId(nextItem.tab.id);
+                    setFocusedGroupId(null);
+                  } else if (nextItem?.type === "groupHeader") {
+                    setFocusedGroupId(nextItem.groupId);
+                    setFocusedTabId(null);
+                  } else {
+                    setFocusedTabId(null);
+                    setFocusedGroupId(null);
+                  }
                 }
               }
             }
@@ -198,18 +248,18 @@ export function createTabKeyboardHandler({
         } else if (focusedTabId) {
           // Close single focused tab (original behavior)
           // Calculate next focus position before deletion
-          const currentIndex = navigableTabs.findIndex(
-            (tab) => tab.id === focusedTabId,
+          const tabIndex = tabItems.findIndex(
+            (item) => item.tab.id === focusedTabId,
           );
           let nextFocusId = null;
 
-          if (navigableTabs.length > 1) {
-            if (currentIndex === navigableTabs.length - 1) {
+          if (tabItems.length > 1) {
+            if (tabIndex === tabItems.length - 1) {
               // Last tab, move to previous
-              nextFocusId = navigableTabs[currentIndex - 1].id;
+              nextFocusId = tabItems[tabIndex - 1].tab.id;
             } else {
               // Not last tab, move to next
-              nextFocusId = navigableTabs[currentIndex + 1].id;
+              nextFocusId = tabItems[tabIndex + 1].tab.id;
             }
           }
           // If only one tab, focus will be cleared naturally when tabs update
@@ -219,6 +269,7 @@ export function createTabKeyboardHandler({
 
           // Set new focus immediately for better UX
           setFocusedTabId(nextFocusId);
+          setFocusedGroupId(null);
         }
         break;
       case "y": // y for copy links, yy for single link
@@ -251,6 +302,8 @@ export function createTabKeyboardHandler({
         e.preventDefault();
         if (focusedTabId) {
           handleActivateTab(focusedTabId);
+        } else if (focusedGroupId) {
+          toggleGroupCollapse(focusedGroupId);
         }
         break;
       case "g": // g for group selected tabs, gg for go to first tab
@@ -269,8 +322,15 @@ export function createTabKeyboardHandler({
           const secondGHandler = (e2: KeyboardEvent) => {
             if (e2.key === "g") {
               e2.preventDefault();
-              if (navigableTabs.length > 0) {
-                setFocusedTabId(navigableTabs[0].id);
+              if (navigableItems.length > 0) {
+                const firstItem = navigableItems[0];
+                if (firstItem.type === "tab") {
+                  setFocusedTabId(firstItem.tab.id);
+                  setFocusedGroupId(null);
+                } else if (firstItem.type === "groupHeader") {
+                  setFocusedGroupId(firstItem.groupId);
+                  setFocusedTabId(null);
+                }
               }
             }
             document.removeEventListener("keydown", secondGHandler);
@@ -284,10 +344,17 @@ export function createTabKeyboardHandler({
           document.addEventListener("keydown", secondGHandler);
         }
         break;
-      case "G": // G for go to last tab
+      case "G": // G for go to last item
         e.preventDefault();
-        if (navigableTabs.length > 0) {
-          setFocusedTabId(navigableTabs[navigableTabs.length - 1].id);
+        if (navigableItems.length > 0) {
+          const lastItem = navigableItems[navigableItems.length - 1];
+          if (lastItem.type === "tab") {
+            setFocusedTabId(lastItem.tab.id);
+            setFocusedGroupId(null);
+          } else if (lastItem.type === "groupHeader") {
+            setFocusedGroupId(lastItem.groupId);
+            setFocusedTabId(null);
+          }
         }
         break;
       case "r": // r for refresh tabs
@@ -301,7 +368,7 @@ export function createTabKeyboardHandler({
       case "a": {
         // a for select/unselect all tabs
         e.preventDefault();
-        const allTabIds = navigableTabs.map((tab) => tab.id);
+        const allTabIds = tabItems.map((item) => item.tab.id);
         updateSelectedTabs(
           selectedTabs.length === allTabIds.length ? [] : allTabIds,
         );
@@ -309,6 +376,7 @@ export function createTabKeyboardHandler({
       }
       case "Escape":
         setFocusedTabId(null);
+        setFocusedGroupId(null);
         setClipboardTabId(null);
         // Exit visual mode if active
         if (isVisualMode) {

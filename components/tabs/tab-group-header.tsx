@@ -37,6 +37,7 @@ interface TabGroupHeaderProps {
   onEditGroup: () => void;
   onUngroupAll: () => void;
   onCloseAll: () => void;
+  isFocused?: boolean;
 }
 
 export function TabGroupHeader({
@@ -44,6 +45,7 @@ export function TabGroupHeader({
   onEditGroup,
   onUngroupAll,
   onCloseAll,
+  isFocused = false,
 }: TabGroupHeaderProps) {
   const { theme } = useTheme();
 
@@ -82,7 +84,9 @@ export function TabGroupHeader({
       <ContextMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex w-full items-center justify-between rounded-md p-2 h-auto"
+          className={`flex w-full items-center justify-between rounded-md p-2 h-auto ${
+            isFocused ? "ring-2 ring-blue-500 ring-offset-1" : ""
+          }`}
           onClick={handleToggleCollapse}
           aria-label={`${collapsed ? "Expand" : "Collapse"} group ${groupInfo.title || "Untitled"}`}
           style={{ backgroundColor: headerBg }}
