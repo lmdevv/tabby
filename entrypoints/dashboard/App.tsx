@@ -8,12 +8,14 @@ import { CommandMenu } from "@/components/command-menu/command-menu";
 import { AICleanDialog } from "@/components/dialogs/ai-clean-dialog";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
 import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
+import { ResourceGroupDialog } from "@/components/resources/resource-group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { CreateWorkspace } from "@/components/sidebar/create-workspace";
 import { QuickActionsPanel } from "@/components/toolbar/quick-actions-panel";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
+import { createResourceGroup } from "@/lib/helpers/resource-helpers";
 import type { Tab } from "@/lib/types/types";
 import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
 
@@ -51,6 +53,7 @@ export default function App() {
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [createResourceGroupOpen, setCreateResourceGroupOpen] = useState(false);
 
   const { updateState } = useUpdateState();
   const { data: confirmAIClean } = useAppState("confirmAIClean");
@@ -266,6 +269,19 @@ export default function App() {
     [confirmAIClean, handleAICleanConfirm],
   );
 
+  const handleCreateResourceGroup = useCallback(
+    async (name: string, description: string) => {
+      try {
+        await createResourceGroup(name, description);
+        toast.success("Resource group created successfully");
+      } catch (error) {
+        console.error("Failed to create resource group:", error);
+        toast.error("Failed to create resource group");
+      }
+    },
+    [],
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -304,6 +320,7 @@ export default function App() {
           onOpenSettings={() => setSettingsDialogOpen(true)}
           onOpenCreateWorkspace={() => setCreateWorkspaceOpen(true)}
           onOpenAICleanReview={handleOpenAICleanReview}
+          onOpenCreateResourceGroup={() => setCreateResourceGroupOpen(true)}
         />
 
         <AppContent
@@ -358,6 +375,14 @@ export default function App() {
         workspaceId={shownWorkspaceId || null}
         proposedTabIds={aiCleanDialog.proposedTabIds}
         instructions={aiCleanDialog.instructions}
+      />
+
+      {/* Create Resource Group Dialog */}
+      <ResourceGroupDialog
+        open={createResourceGroupOpen}
+        onOpenChange={setCreateResourceGroupOpen}
+        onConfirm={handleCreateResourceGroup}
+        mode="create"
       />
     </SidebarProvider>
   );

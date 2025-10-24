@@ -2,6 +2,7 @@
 
 import {
   ArrowUpDown,
+  BookmarkPlus,
   Bot,
   ChevronDown,
   ChevronUp,
@@ -47,6 +48,7 @@ interface MainCommandsProps
     | "onOpenSettings"
     | "onOpenCreateWorkspace"
     | "onOpenAICleanReview"
+    | "onOpenCreateResourceGroup"
   > {
   searchValue: string;
   setMenuMode: (mode: "main" | "workspaces" | "snapshots") => void;
@@ -59,6 +61,7 @@ export function MainCommands({
   onOpenSettings,
   onOpenCreateWorkspace,
   onOpenAICleanReview,
+  onOpenCreateResourceGroup,
   searchValue,
   setMenuMode,
   onClose,
@@ -211,6 +214,11 @@ export function MainCommands({
     onClose();
   };
 
+  const handleCreateResourceGroup = () => {
+    onOpenCreateResourceGroup?.();
+    onClose();
+  };
+
   const showWorkspaces = () => {
     setMenuMode("workspaces");
     setFooterProps({
@@ -261,6 +269,7 @@ export function MainCommands({
       "uncollapse all groups": "Uncollapse All Groups",
       "workspaces browse": "Browse Workspaces",
       "create workspace": "Create Workspace",
+      "create resource group": "Create Resource Group",
       "clean unused tabs 3 days": "Clean Unused Tabs (3+ days)",
       "clean duplicate tabs": "Clean Duplicate Tabs",
       "clean resource tabs": "Clean Resource Tabs",
@@ -375,6 +384,14 @@ export function MainCommands({
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           <span>Create Workspace</span>
+        </CommandItem>
+        <CommandItem
+          value="create resource group"
+          keywords={["new resource group", "add resource group"]}
+          onSelect={handleCreateResourceGroup}
+        >
+          <BookmarkPlus className="mr-2 h-4 w-4" />
+          <span>Create Resource Group</span>
         </CommandItem>
         <CommandItem
           value="clean unused tabs 3 days"

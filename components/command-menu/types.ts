@@ -7,6 +7,7 @@ export interface CommandMenuProps {
   onOpenSettings?: () => void;
   onOpenCreateWorkspace?: () => void;
   onOpenAICleanReview?: (tabIds: number[], instructions: string) => void;
+  onOpenCreateResourceGroup?: () => void;
 }
 
 export interface FooterProps {
