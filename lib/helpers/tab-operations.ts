@@ -79,13 +79,13 @@ export async function aiGroupTabs(
   }
 
   try {
-    toast.loading("Grouping tabs with AI...", { id: "ai-grouping" });
+    toast.loading("Grouping tabs with Tabby...", { id: "ai-grouping" });
     await aiGroupTabsInWorkspace(options.workspaceId);
-    toast.success("Tabs grouped with AI successfully", { id: "ai-grouping" });
+    toast.success("Tabs grouped with Tabby successfully", { id: "ai-grouping" });
     options.onClose?.();
   } catch (error) {
-    console.error("Failed to AI group tabs:", error);
-    toast.error("Failed to AI group tabs", { id: "ai-grouping" });
+    console.error("Failed to group tabs:", error);
+    toast.error("Failed to group tabs", { id: "ai-grouping" });
   }
 }
 
@@ -118,7 +118,7 @@ export async function aiGroupTabsCustom(
   }
 
   try {
-    toast.loading("Grouping tabs with custom AI...", {
+    toast.loading("Grouping tabs with Tabby...", {
       id: "ai-custom-grouping",
     });
     await aiGroupTabsInWorkspaceCustom(options.workspaceId, customInstructions);
