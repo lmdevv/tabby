@@ -124,41 +124,43 @@ export function AppContent({
           <div className="grid gap-4 h-full overflow-hidden grid-cols-[minmax(280px,1fr)_minmax(250px,1fr)]">
             {/* Active Tabs Panel */}
             <div className="flex flex-col min-w-0 overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">Active Tabs</h2>
-              </div>
               {windowGroups.length > 0 ? (
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                    <div className="space-y-6 px-6 py-2 min-w-0">
-                      <div className="flex items-center justify-end mb-2">
-                        <TopToolbar
-                          workspaceId={shownWorkspaceId}
-                          isPreview={isPreview}
-                        />
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-lg">Active Tabs</h2>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                      <div className="space-y-6 px-6 py-2 min-w-0">
+                        <div className="flex items-center justify-end mb-2">
+                          <TopToolbar
+                            workspaceId={shownWorkspaceId}
+                            isPreview={isPreview}
+                          />
+                        </div>
+                        {windowGroups.map((windowGroup) => {
+                          return (
+                            <div key={windowGroup.windowId}>
+                              {shownWorkspaceId && (
+                                <WindowComponent
+                                  windowId={windowGroup.windowId}
+                                  workspaceId={shownWorkspaceId}
+                                  onTabClick={
+                                    isPreview && onPreviewTabClick
+                                      ? (tab) => onPreviewTabClick(tab)
+                                      : onTabClick
+                                  }
+                                  onEditGroup={onEditGroup}
+                                  isPreview={isPreview}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {windowGroups.map((windowGroup) => {
-                        return (
-                          <div key={windowGroup.windowId}>
-                            {shownWorkspaceId && (
-                              <WindowComponent
-                                windowId={windowGroup.windowId}
-                                workspaceId={shownWorkspaceId}
-                                onTabClick={
-                                  isPreview && onPreviewTabClick
-                                    ? (tab) => onPreviewTabClick(tab)
-                                    : onTabClick
-                                }
-                                onEditGroup={onEditGroup}
-                                isPreview={isPreview}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
+                    </ScrollArea>
+                  </div>
+                </>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
@@ -182,41 +184,43 @@ export function AppContent({
           /* Single Layout - Only active tabs, centered */
           <div className="h-full flex items-center justify-center">
             <div className="w-full max-w-4xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">Active Tabs</h2>
-              </div>
               {windowGroups.length > 0 ? (
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                    <div className="space-y-6 px-6 py-2 min-w-0">
-                      <div className="flex items-center justify-end mb-2">
-                        <TopToolbar
-                          workspaceId={shownWorkspaceId}
-                          isPreview={isPreview}
-                        />
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-lg">Active Tabs</h2>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                      <div className="space-y-6 px-6 py-2 min-w-0">
+                        <div className="flex items-center justify-end mb-2">
+                          <TopToolbar
+                            workspaceId={shownWorkspaceId}
+                            isPreview={isPreview}
+                          />
+                        </div>
+                        {windowGroups.map((windowGroup) => {
+                          return (
+                            <div key={windowGroup.windowId}>
+                              {shownWorkspaceId && (
+                                <WindowComponent
+                                  windowId={windowGroup.windowId}
+                                  workspaceId={shownWorkspaceId}
+                                  onTabClick={
+                                    isPreview && onPreviewTabClick
+                                      ? (tab) => onPreviewTabClick(tab)
+                                      : onTabClick
+                                  }
+                                  onEditGroup={onEditGroup}
+                                  isPreview={isPreview}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {windowGroups.map((windowGroup) => {
-                        return (
-                          <div key={windowGroup.windowId}>
-                            {shownWorkspaceId && (
-                              <WindowComponent
-                                windowId={windowGroup.windowId}
-                                workspaceId={shownWorkspaceId}
-                                onTabClick={
-                                  isPreview && onPreviewTabClick
-                                    ? (tab) => onPreviewTabClick(tab)
-                                    : onTabClick
-                                }
-                                onEditGroup={onEditGroup}
-                                isPreview={isPreview}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
+                    </ScrollArea>
+                  </div>
+                </>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
