@@ -349,6 +349,30 @@ export async function cleanNonResourceTabs(
 }
 
 /**
+ * Cleans all tabs in a workspace.
+ *
+ * @param options - An object containing options.
+ * @param options.workspaceId - The ID of the workspace to clean.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function cleanAllTabs(
+  options: TabOperationsOptions,
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "cleanAllTabs",
+      workspaceId: options.workspaceId,
+    } as const);
+    toast.success("All tabs cleaned successfully");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to clean all tabs:", error);
+    toast.error("Failed to clean all tabs");
+  }
+}
+
+/**
  * Converts a tab group to a resource.
  *
  * @param groupId - The ID of the tab group to convert.

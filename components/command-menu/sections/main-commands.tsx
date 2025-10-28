@@ -29,6 +29,7 @@ import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
   aiGroupTabsCustom,
+  cleanAllTabs,
   cleanDuplicateTabs,
   cleanNonResourceTabs,
   cleanResourceTabs,
@@ -142,6 +143,13 @@ export function MainCommands({
 
   const handleCleanNonResourceTabs = () => {
     cleanNonResourceTabs({
+      workspaceId,
+      onClose,
+    });
+  };
+
+  const handleCleanAllTabs = () => {
+    cleanAllTabs({
       workspaceId,
       onClose,
     });
@@ -274,6 +282,7 @@ export function MainCommands({
       "clean duplicate tabs": "Clean Duplicate Tabs",
       "clean resource tabs": "Clean Resource Tabs",
       "clean non resource tabs": "Clean Non-Resource Tabs",
+      "clean all tabs": "Clean All Tabs",
       settings: "Open Settings",
       "create snapshot": "Create Snapshot",
       "rollback to previous snapshot": "Rollback to Previous Snapshot",
@@ -424,6 +433,14 @@ export function MainCommands({
         >
           <Trash2 className="mr-2 h-4 w-4" />
           <span>Clean Non-Resource Tabs</span>
+        </CommandItem>
+        <CommandItem
+          value="clean all tabs"
+          keywords={["close all tabs", "remove all tabs"]}
+          onSelect={handleCleanAllTabs}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          <span>Clean All Tabs</span>
         </CommandItem>
         <CommandItem value="settings" onSelect={handleOpenSettings}>
           <Settings2 className="mr-2 h-4 w-4" />

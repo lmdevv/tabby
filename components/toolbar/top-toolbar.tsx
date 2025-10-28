@@ -28,6 +28,7 @@ import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import {
   aiGroupTabs,
+  cleanAllTabs,
   cleanDuplicateTabs,
   cleanNonResourceTabs,
   cleanResourceTabs,
@@ -127,6 +128,10 @@ export function TopToolbar({
 
   const handleCleanNonResourceTabs = () => {
     cleanNonResourceTabs({ workspaceId });
+  };
+
+  const handleCleanAllTabs = () => {
+    cleanAllTabs({ workspaceId });
   };
   return (
     <div className="flex gap-2">
@@ -248,6 +253,9 @@ export function TopToolbar({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCleanNonResourceTabs}>
             Clean Non-Resource Tabs
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCleanAllTabs}>
+            Clean All Tabs
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

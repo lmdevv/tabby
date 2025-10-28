@@ -1,5 +1,6 @@
 import { browser } from "wxt/browser";
 import {
+  cleanAllTabsInWorkspace,
   cleanDuplicateTabsInWorkspace,
   cleanNonResourceTabsInWorkspace,
   cleanResourceTabsInWorkspace,
@@ -225,6 +226,11 @@ const handlers: Partial<HandlersMap> = {
 
   async cleanNonResourceTabs(message) {
     await cleanNonResourceTabsInWorkspace(message.workspaceId);
+    return { success: true };
+  },
+
+  async cleanAllTabs(message) {
+    await cleanAllTabsInWorkspace(message.workspaceId);
     return { success: true };
   },
 

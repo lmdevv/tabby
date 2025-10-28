@@ -384,6 +384,77 @@ export async function cleanupEmptyTabGroup(
 }
 
 /**
+ * Cleans all tabs in a workspace.
+ *
+ * @param workspaceId - The ID of the workspace to clean.
+ * @returns A Promise that resolves when all tabs are cleaned.
+ */
+export async function cleanAllTabsInWorkspace(workspaceId: number) {
+  try {
+    console.log(`🧹 Cleaning all tabs in workspace ${workspaceId}`);
+
+    // Get only active tabs in the workspace
+    const tabs = await db.activeTabs
+      .where("workspaceId")
+      .equals(workspaceId)
+      .and((tab) => tab.tabStatus === "active")
+      .toArray();
+
+    // Filter out dashboard tabs
+    const tabsToClean = tabs.filter((tab) => !isDashboardTab(tab));
+
+    if (tabsToClean.length === 0) {
+      console.log(`i No tabs to clean in workspace ${workspaceId}`);
+      return;
+    }
+
+    // Close browser tabs that still exist
+    const tabIdsToClose = tabsToClean
+      .map((tab) => tab.id)
+      .filter((id): id is number => id !== undefined);
+
+    if (tabIdsToClose.length > 0) {
+      try {
+        const existingTabs = await browser.tabs.query({});
+        const existingTabIds = new Set(
+          existingTabs
+            .map((t) => t.id)
+            .filter((id): id is number => id !== undefined),
+        );
+        const validTabIdsToClose = tabIdsToClose.filter((id) =>
+          existingTabIds.has(id),
+        );
+
+        if (validTabIdsToClose.length > 0) {
+          await browser.tabs.remove(validTabIdsToClose);
+        }
+      } catch (error) {
+        console.error(`❌ Error closing all tabs:`, error);
+      }
+    }
+
+    // Archive all tabs in database
+    const stableIdsToArchive = tabsToClean.map((tab) => tab.stableId);
+    if (stableIdsToArchive.length > 0) {
+      await db.activeTabs
+        .where("stableId")
+        .anyOf(stableIdsToArchive)
+        .modify({ tabStatus: "archived" });
+
+      console.log(
+        `✅ Cleaned ${tabsToClean.length} tabs from workspace ${workspaceId}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ Failed to clean all tabs in workspace ${workspaceId}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Closes specific tabs by their IDs in a workspace.
  *
  * @param workspaceId - The ID of the workspace the tabs belong to.
