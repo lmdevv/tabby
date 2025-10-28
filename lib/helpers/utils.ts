@@ -5,6 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Derive a display title from URL when title is not available
+ */
+export function getDisplayTitleFromUrl(url?: string): string {
+  if (!url) return "Untitled";
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    const pathname = urlObj.pathname;
+    // Use hostname if it's a simple path, otherwise use a shortened pathname
+    if (pathname === "/" || pathname === "") {
+      return hostname;
+    }
+    // Take the first meaningful part of the path
+    const pathParts = pathname.split("/").filter((p) => p.length > 0);
+    if (pathParts.length > 0) {
+      return `${hostname}/${pathParts[0]}`;
+    }
+    return hostname;
+  } catch {
+    return "Untitled";
+  }
+}
+
 export function getRelativeTime(timestamp: number): string {
   const nowMs = Date.now();
   const deltaSeconds = Math.round((timestamp - nowMs) / 1000);

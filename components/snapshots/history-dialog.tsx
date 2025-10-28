@@ -2,6 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Info, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { browser } from "wxt/browser";
+
 import { SnapshotItem } from "@/components/snapshots/snapshot-item";
 import { TabCard } from "@/components/tabs/tab-card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { db } from "@/lib/db/db";
+import { getDisplayTitleFromUrl } from "@/lib/helpers/utils";
 import type { SnapshotTab, WorkspaceSnapshot } from "@/lib/types/types";
 
 export function HistoryDialog({
@@ -205,8 +207,9 @@ export function HistoryDialog({
                     <CollapsibleContent className="mt-3">
                       <div className="max-h-48 overflow-auto pr-1 scrollbar-none space-y-1">
                         {(expandedTabs ?? []).map((t) => {
+                          const displayTitle = getDisplayTitleFromUrl(t.url);
                           const cardData = {
-                            title: t.title || "Untitled",
+                            title: displayTitle,
                             url: t.url,
                             favIconUrl: t.favIconUrl,
                             tags: t.tags,
@@ -217,7 +220,7 @@ export function HistoryDialog({
                               key={t.id}
                               data={cardData}
                               onClick={() => {}}
-                              ariaLabel={`Tab: ${t.title || t.url}`}
+                              ariaLabel={`Tab: ${displayTitle}`}
                               isInteractive={false}
                               renderContextMenu={() => (
                                 <ContextMenuItem
