@@ -19,7 +19,6 @@ export function CommandMenu({
   onOpenAICleanReview,
   onOpenCreateResourceGroup,
   onSelectResourceGroup,
-  onMoveToResourceGroup,
   initialMenuMode = "main",
 }: CommandMenuProps) {
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
@@ -129,7 +128,6 @@ export function CommandMenu({
             <ResourceGroupsList
               selectedValue={selectedValue}
               onSelectResourceGroup={onSelectResourceGroup}
-              onMoveToResourceGroup={onMoveToResourceGroup}
               onClose={handleOpenChange.bind(null, false)}
               setFooterProps={setFooterProps}
             />

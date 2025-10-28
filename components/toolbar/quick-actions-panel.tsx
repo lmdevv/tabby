@@ -84,21 +84,6 @@ export function QuickActionsPanel() {
     }
   };
 
-  const handleMoveToResourceGroup = async (groupId: number) => {
-    if (!currentSelectedTabs.length) return;
-    try {
-      // First add to resource group
-      if (selectedTabData?.length) {
-        await addTabsToResourceGroup(selectedTabData, groupId);
-      }
-      // Then close the tabs
-      await browser.tabs.remove(currentSelectedTabs);
-      handleSelectionCleared();
-    } catch (error) {
-      console.error("Failed to move tabs to resource group:", error);
-    }
-  };
-
   if (currentSelectedTabsCount === 0) return null;
 
   return (
@@ -172,7 +157,6 @@ export function QuickActionsPanel() {
         open={commandMenuOpen}
         onOpenChange={setCommandMenuOpen}
         onSelectResourceGroup={handleSelectResourceGroup}
-        onMoveToResourceGroup={handleMoveToResourceGroup}
         initialMenuMode="resourceGroups"
       />
     </div>

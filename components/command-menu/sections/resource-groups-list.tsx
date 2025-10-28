@@ -14,7 +14,6 @@ import type { FooterProps } from "../types";
 interface ResourceGroupsListProps {
   selectedValue: string;
   onSelectResourceGroup: (groupId: number) => void;
-  onMoveToResourceGroup?: (groupId: number) => void;
   onClose: () => void;
   setFooterProps: (props: FooterProps) => void;
 }
@@ -22,7 +21,6 @@ interface ResourceGroupsListProps {
 export function ResourceGroupsList({
   selectedValue,
   onSelectResourceGroup,
-  onMoveToResourceGroup,
   onClose,
   setFooterProps,
 }: ResourceGroupsListProps) {
@@ -48,7 +46,7 @@ export function ResourceGroupsList({
     if (selectedGroup) {
       setFooterProps({
         enterText: `Add to "${selectedGroup.name}"`,
-        shortcuts: [{ key: "⌃Enter", action: "Move" }],
+        shortcuts: [],
       });
     } else {
       setFooterProps({
@@ -72,18 +70,6 @@ export function ResourceGroupsList({
               key={group.id}
               value={group.id?.toString()}
               onSelect={() => handleSelectResourceGroup(group.id)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  (e.ctrlKey || e.metaKey) &&
-                  onMoveToResourceGroup
-                ) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMoveToResourceGroup(group.id);
-                  onClose();
-                }
-              }}
             >
               <Folder className="mr-2 h-4 w-4" />
               <span className="flex-1">{group.name}</span>
