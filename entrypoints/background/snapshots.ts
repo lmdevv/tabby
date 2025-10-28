@@ -66,6 +66,7 @@ export async function createWorkspaceSnapshot(
       ({
         snapshotId,
         stableId: g.stableId,
+        title: g.title,
         color: g.color,
         collapsed: g.collapsed,
         windowIndex: windowIndexMap.get(g.windowId) ?? 0,
@@ -83,9 +84,11 @@ export async function createWorkspaceSnapshot(
       ({
         snapshotId,
         url: t.url,
+        title: t.title,
         favIconUrl: t.favIconUrl,
         pinned: t.pinned,
         index: t.index,
+        description: t.description,
         tags: t.tags,
         windowIndex: windowIndexMap.get(t.windowId) ?? 0,
         groupStableId:
@@ -424,6 +427,7 @@ export async function restoreSnapshot(
         tabIds: ids as [number, ...number[]],
       });
       await browser.tabGroups.update(newGroupId, {
+        title: g.title,
         color: g.color as Browser.tabGroups.TabGroup["color"],
         collapsed: g.collapsed,
       });

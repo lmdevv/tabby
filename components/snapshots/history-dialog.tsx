@@ -207,7 +207,8 @@ export function HistoryDialog({
                     <CollapsibleContent className="mt-3">
                       <div className="max-h-48 overflow-auto pr-1 scrollbar-none space-y-1">
                         {(expandedTabs ?? []).map((t) => {
-                          const displayTitle = getDisplayTitleFromUrl(t.url);
+                          const displayTitle =
+                            t.title || getDisplayTitleFromUrl(t.url);
                           const cardData = {
                             title: displayTitle,
                             url: t.url,
