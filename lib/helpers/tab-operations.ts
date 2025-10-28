@@ -580,3 +580,65 @@ export async function uncollapseAllResourceGroups(
     toast.error("Failed to uncollapse all resource groups");
   }
 }
+
+/**
+ * Appends selected tabs to a target workspace.
+ *
+ * @param tabIds - The browser tab IDs to append.
+ * @param targetWorkspaceId - The ID of the workspace to append tabs to.
+ * @param onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function appendTabsToWorkspace(
+  tabIds: number[],
+  targetWorkspaceId: number,
+  onClose?: () => void,
+): Promise<void> {
+  try {
+    const res = await browser.runtime.sendMessage({
+      type: "appendTabsToWorkspace",
+      tabIds,
+      targetWorkspaceId,
+    } as const);
+    if (res?.success !== false) {
+      toast.success("Tabs added to workspace");
+      onClose?.();
+    } else {
+      toast.error(res?.error || "Failed to add tabs to workspace");
+    }
+  } catch (error) {
+    console.error("Failed to append tabs to workspace:", error);
+    toast.error("Failed to add tabs to workspace");
+  }
+}
+
+/**
+ * Appends a tab group to a target workspace.
+ *
+ * @param groupId - The browser tab group ID to append.
+ * @param targetWorkspaceId - The ID of the workspace to append the group to.
+ * @param onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function appendGroupToWorkspace(
+  groupId: number,
+  targetWorkspaceId: number,
+  onClose?: () => void,
+): Promise<void> {
+  try {
+    const res = await browser.runtime.sendMessage({
+      type: "appendGroupToWorkspace",
+      groupId,
+      targetWorkspaceId,
+    } as const);
+    if (res?.success !== false) {
+      toast.success("Group added to workspace");
+      onClose?.();
+    } else {
+      toast.error(res?.error || "Failed to add group to workspace");
+    }
+  } catch (error) {
+    console.error("Failed to append group to workspace:", error);
+    toast.error("Failed to add group to workspace");
+  }
+}

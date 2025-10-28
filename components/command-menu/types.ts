@@ -9,6 +9,7 @@ export interface CommandMenuProps {
   onOpenAICleanReview?: (tabIds: number[], instructions: string) => void;
   onOpenCreateResourceGroup?: () => void;
   onSelectResourceGroup?: (groupId: number) => void;
+  onSelectWorkspace?: (workspaceId: number) => void;
   initialMenuMode?: MenuMode;
 }
 

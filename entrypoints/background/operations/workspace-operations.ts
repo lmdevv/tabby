@@ -371,3 +371,194 @@ export async function switchWorkspaceTabs(workspaceId: number) {
     console.error("Error switching workspace tabs:", e);
   }
 }
+
+/**
+ * Appends tabs to a target workspace by copying them from the active workspace.
+ *
+ * @param tabIds - The browser tab IDs to copy.
+ * @param targetWorkspaceId - The ID of the workspace to append tabs to.
+ * @param opts - Optional configuration.
+ * @param opts.closeOriginal - Whether to close the original tabs (not implemented yet).
+ * @returns A Promise that resolves with success status.
+ */
+export async function appendTabsToWorkspace(
+  tabIds: number[],
+  targetWorkspaceId: number,
+  opts?: { closeOriginal?: boolean },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Get the active workspace to find source tabs
+    const activeWorkspace = await db.workspaces
+      .where("active")
+      .equals(1)
+      .first();
+    if (!activeWorkspace) {
+      return { success: false, error: "No active workspace found" };
+    }
+
+    // Load source tabs from the active workspace
+    const sourceTabs = await db.activeTabs
+      .where("id")
+      .anyOf(tabIds)
+      .and(
+        (tab) =>
+          tab.workspaceId === activeWorkspace.id && tab.tabStatus === "active",
+      )
+      .toArray();
+
+    if (sourceTabs.length === 0) {
+      return {
+        success: false,
+        error: "No matching tabs found in active workspace",
+      };
+    }
+
+    const now = Date.now();
+
+    // Copy tabs to target workspace in a transaction
+    await db.transaction("rw", db.activeTabs, async () => {
+      for (const sourceTab of sourceTabs) {
+        // Destructure to exclude unique fields that should not be copied
+        const {
+          id: _id,
+          stableId: _stableId,
+          workspaceId: _workspaceId,
+          tabStatus: _tabStatus,
+          createdAt: _createdAt,
+          updatedAt: _updatedAt,
+          ...tabData
+        } = sourceTab;
+
+        // Create new tab record for target workspace
+        const newTab: Omit<Tab, "id"> = {
+          ...tabData,
+          workspaceId: targetWorkspaceId,
+          tabStatus: "active",
+          stableId: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        await db.activeTabs.add(newTab);
+      }
+    });
+
+    // TODO: Implement closeOriginal functionality if needed in the future
+    if (opts?.closeOriginal) {
+      console.warn("closeOriginal functionality not implemented yet");
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to append tabs to workspace:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Appends a tab group to a target workspace by copying it from the active workspace.
+ *
+ * @param groupId - The browser tab group ID to copy.
+ * @param targetWorkspaceId - The ID of the workspace to append the group to.
+ * @param opts - Optional configuration.
+ * @param opts.closeOriginal - Whether to close the original group (not implemented yet).
+ * @returns A Promise that resolves with success status.
+ */
+export async function appendGroupToWorkspace(
+  groupId: number,
+  targetWorkspaceId: number,
+  opts?: { closeOriginal?: boolean },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Get the active workspace to find source group and tabs
+    const activeWorkspace = await db.workspaces
+      .where("active")
+      .equals(1)
+      .first();
+    if (!activeWorkspace) {
+      return { success: false, error: "No active workspace found" };
+    }
+
+    // Load source group
+    const sourceGroup = await db.tabGroups.get(groupId);
+    if (!sourceGroup || sourceGroup.workspaceId !== activeWorkspace.id) {
+      return {
+        success: false,
+        error: "Tab group not found in active workspace",
+      };
+    }
+
+    // Load tabs in this group
+    const sourceTabs = await db.activeTabs
+      .where("groupId")
+      .equals(groupId)
+      .and(
+        (tab) =>
+          tab.workspaceId === activeWorkspace.id && tab.tabStatus === "active",
+      )
+      .toArray();
+
+    const now = Date.now();
+
+    // Copy group and tabs to target workspace in a transaction
+    await db.transaction("rw", [db.activeTabs, db.tabGroups], async () => {
+      // Destructure group to exclude unique fields that should not be copied
+      const {
+        id: _groupId,
+        stableId: _groupStableId,
+        workspaceId: _groupWorkspaceId,
+        groupStatus: _groupStatus,
+        createdAt: _groupCreatedAt,
+        updatedAt: _groupUpdatedAt,
+        ...groupData
+      } = sourceGroup;
+
+      // Create new group record for target workspace
+      const newGroupId = await db.tabGroups.add({
+        ...groupData,
+        workspaceId: targetWorkspaceId,
+        groupStatus: "archived", // Will become active when workspace is activated
+        stableId: crypto.randomUUID(),
+        windowId: 0, // Will be set when workspace is activated
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Copy tabs to target workspace with new group ID
+      for (const sourceTab of sourceTabs) {
+        // Destructure to exclude unique fields that should not be copied
+        const {
+          id: _tabId,
+          stableId: _tabStableId,
+          workspaceId: _tabWorkspaceId,
+          tabStatus: _tabStatus,
+          createdAt: _tabCreatedAt,
+          updatedAt: _tabUpdatedAt,
+          ...tabData
+        } = sourceTab;
+
+        const newTab: Omit<Tab, "id"> = {
+          ...tabData,
+          workspaceId: targetWorkspaceId,
+          groupId: newGroupId, // Reference the new group
+          tabStatus: "active",
+          stableId: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        await db.activeTabs.add(newTab);
+      }
+    });
+
+    // TODO: Implement closeOriginal functionality if needed in the future
+    if (opts?.closeOriginal) {
+      console.warn("closeOriginal functionality not implemented yet");
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to append group to workspace:", error);
+    return { success: false, error: String(error) };
+  }
+}

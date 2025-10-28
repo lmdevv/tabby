@@ -260,6 +260,20 @@ export interface CreateWorkspaceFromTabGroupMessage {
   deleteOriginal?: boolean;
 }
 
+export interface AppendTabsToWorkspaceMessage {
+  type: "appendTabsToWorkspace";
+  tabIds: number[];
+  targetWorkspaceId: number;
+  closeOriginal?: boolean;
+}
+
+export interface AppendGroupToWorkspaceMessage {
+  type: "appendGroupToWorkspace";
+  groupId: number;
+  targetWorkspaceId: number;
+  closeOriginal?: boolean;
+}
+
 export type RuntimeMessage =
   | OpenWorkspaceMessage
   | CloseWorkspaceMessage
@@ -287,7 +301,9 @@ export type RuntimeMessage =
   | OpenResourcesAsTabsMessage
   | OpenResourcesAsGroupMessage
   | CreateWorkspaceFromResourcesMessage
-  | CreateWorkspaceFromTabGroupMessage;
+  | CreateWorkspaceFromTabGroupMessage
+  | AppendTabsToWorkspaceMessage
+  | AppendGroupToWorkspaceMessage;
 
 export type {
   LanguageModelAvailability,

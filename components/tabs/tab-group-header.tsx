@@ -2,8 +2,10 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import type { Browser } from "wxt/browser";
 import { browser } from "wxt/browser";
+import { CommandMenu } from "@/components/command-menu/command-menu";
 import { useTheme } from "@/components/theme/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/context-menu";
 import { db } from "@/lib/db/db";
 import {
+  appendGroupToWorkspace,
   convertTabGroupToResource,
   createWorkspaceFromTabGroup,
 } from "@/lib/helpers/tab-operations";
@@ -48,6 +51,8 @@ export function TabGroupHeader({
   isFocused = false,
 }: TabGroupHeaderProps) {
   const { theme } = useTheme();
+  const [workspaceCommandMenuOpen, setWorkspaceCommandMenuOpen] =
+    useState(false);
 
   // Fetch group info from DB
   const groupInfo = useLiveQuery(() => db.tabGroups.get(groupId), [groupId]);
@@ -79,64 +84,88 @@ export function TabGroupHeader({
     }
   };
 
+  const handleSelectWorkspace = async (workspaceId: number) => {
+    await appendGroupToWorkspace(groupId, workspaceId);
+  };
+
+  const handleAddToWorkspace = () => {
+    setWorkspaceCommandMenuOpen(true);
+  };
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className={`flex w-full items-center justify-between rounded-md p-2 h-auto ${
-            isFocused ? "ring-2 ring-blue-500 ring-offset-1" : ""
-          }`}
-          onClick={handleToggleCollapse}
-          aria-label={`${collapsed ? "Expand" : "Collapse"} group ${groupInfo.title || "Untitled"}`}
-          style={{ backgroundColor: headerBg }}
-        >
-          <div className="flex items-center gap-2">
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" style={{ color: accentHex }} />
-            ) : (
-              <ChevronDown className="h-4 w-4" style={{ color: accentHex }} />
-            )}
-            <span className="font-medium text-sm">
-              {groupInfo.title || "Untitled"}
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className={`flex w-full items-center justify-between rounded-md p-2 h-auto ${
+              isFocused ? "ring-2 ring-blue-500 ring-offset-1" : ""
+            }`}
+            onClick={handleToggleCollapse}
+            aria-label={`${collapsed ? "Expand" : "Collapse"} group ${groupInfo.title || "Untitled"}`}
+            style={{ backgroundColor: headerBg }}
+          >
+            <div className="flex items-center gap-2">
+              {collapsed ? (
+                <ChevronRight
+                  className="h-4 w-4"
+                  style={{ color: accentHex }}
+                />
+              ) : (
+                <ChevronDown className="h-4 w-4" style={{ color: accentHex }} />
+              )}
+              <span className="font-medium text-sm">
+                {groupInfo.title || "Untitled"}
+              </span>
+            </div>
+            <span className="text-muted-foreground text-xs">
+              {tabCount} {tabCount === 1 ? "tab" : "tabs"}
             </span>
-          </div>
-          <span className="text-muted-foreground text-xs">
-            {tabCount} {tabCount === 1 ? "tab" : "tabs"}
-          </span>
-        </Button>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onClick={onEditGroup}>Edit Group</ContextMenuItem>
-        <ContextMenuItem onClick={onUngroupAll}>
-          Ungroup All Tabs
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={async () => {
-            const defaultName = groupInfo.title || "";
-            let nameToUse = defaultName;
-            if (!defaultName) {
-              const input = window.prompt(
-                "Name the new workspace",
-                "New Workspace",
-              );
-              if (!input) return; // cancel or empty
-              nameToUse = input;
-            }
-            await createWorkspaceFromTabGroup(groupId, nameToUse, true);
-          }}
-        >
-          Move to workspace
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => convertTabGroupToResource(groupId, true)}
-        >
-          Move as resource group
-        </ContextMenuItem>
-        <ContextMenuItem onClick={onCloseAll} className="text-destructive">
-          Close All Tabs
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+          </Button>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={onEditGroup}>Edit Group</ContextMenuItem>
+          <ContextMenuItem onClick={onUngroupAll}>
+            Ungroup All Tabs
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={async () => {
+              const defaultName = groupInfo.title || "";
+              let nameToUse = defaultName;
+              if (!defaultName) {
+                const input = window.prompt(
+                  "Name the new workspace",
+                  "New Workspace",
+                );
+                if (!input) return; // cancel or empty
+                nameToUse = input;
+              }
+              await createWorkspaceFromTabGroup(groupId, nameToUse, true);
+            }}
+          >
+            Move as workspace
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => convertTabGroupToResource(groupId, true)}
+          >
+            Move as resource group
+          </ContextMenuItem>
+          <ContextMenuItem onClick={handleAddToWorkspace}>
+            Add to workspace
+          </ContextMenuItem>
+          <ContextMenuItem onClick={onCloseAll} className="text-destructive">
+            Close All Tabs
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <CommandMenu
+        workspaceId={null}
+        open={workspaceCommandMenuOpen}
+        onOpenChange={setWorkspaceCommandMenuOpen}
+        onSelectWorkspace={handleSelectWorkspace}
+        initialMenuMode="workspaces"
+      />
+    </>
   );
 }

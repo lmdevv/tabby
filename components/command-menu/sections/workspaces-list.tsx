@@ -16,12 +16,14 @@ import type { FooterProps } from "../types";
 
 interface WorkspacesListProps {
   selectedValue: string;
+  onSelectWorkspace?: (workspaceId: number) => void;
   onClose: () => void;
   setFooterProps: (props: FooterProps) => void;
 }
 
 export function WorkspacesList({
   selectedValue,
+  onSelectWorkspace,
   onClose,
   setFooterProps,
 }: WorkspacesListProps) {
@@ -41,7 +43,12 @@ export function WorkspacesList({
   );
 
   const handleOpenWorkspace = (workspaceIdToOpen: number) => {
-    openWorkspace(workspaceIdToOpen, onClose);
+    if (onSelectWorkspace) {
+      onSelectWorkspace(workspaceIdToOpen);
+      onClose();
+    } else {
+      openWorkspace(workspaceIdToOpen, onClose);
+    }
   };
 
   // Update footer when selection changes
@@ -51,7 +58,9 @@ export function WorkspacesList({
     );
     if (selectedWorkspace) {
       setFooterProps({
-        enterText: `Open "${selectedWorkspace.name}"`,
+        enterText: onSelectWorkspace
+          ? `Add to "${selectedWorkspace.name}"`
+          : `Open "${selectedWorkspace.name}"`,
         shortcuts: [
           { key: "⌃H", action: "Back" },
           { key: "⌃←", action: "Back" },
@@ -59,14 +68,14 @@ export function WorkspacesList({
       });
     } else {
       setFooterProps({
-        enterText: "Select workspace",
+        enterText: onSelectWorkspace ? "Select workspace" : "Select workspace",
         shortcuts: [
           { key: "⌃H", action: "Back" },
           { key: "⌃←", action: "Back" },
         ],
       });
     }
-  }, [selectedValue, workspaces, setFooterProps]);
+  }, [selectedValue, workspaces, setFooterProps, onSelectWorkspace]);
 
   return (
     <>

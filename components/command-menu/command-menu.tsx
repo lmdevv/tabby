@@ -19,6 +19,7 @@ export function CommandMenu({
   onOpenAICleanReview,
   onOpenCreateResourceGroup,
   onSelectResourceGroup,
+  onSelectWorkspace,
   initialMenuMode = "main",
 }: CommandMenuProps) {
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
@@ -110,6 +111,7 @@ export function CommandMenu({
           {menuMode === "workspaces" && (
             <WorkspacesList
               selectedValue={selectedValue}
+              onSelectWorkspace={onSelectWorkspace}
               onClose={handleOpenChange.bind(null, false)}
               setFooterProps={setFooterProps}
             />

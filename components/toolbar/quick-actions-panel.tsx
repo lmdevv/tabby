@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Copy, Folder, Layers, X } from "lucide-react";
+import { Copy, Folder, Layers, Monitor, X } from "lucide-react";
 import { useState } from "react";
 import { browser } from "wxt/browser";
 import { CommandMenu } from "@/components/command-menu/command-menu";
@@ -17,11 +17,14 @@ import { db } from "@/lib/db/db";
 import { copyMultipleTabLinks } from "@/lib/helpers/copy-helpers";
 import { addTabsToResourceGroup } from "@/lib/helpers/resource-helpers";
 import { groupTabs } from "@/lib/helpers/tab-helpers";
+import { appendTabsToWorkspace } from "@/lib/helpers/tab-operations";
 
 export function QuickActionsPanel() {
   const { data: selectedTabsData } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [workspaceCommandMenuOpen, setWorkspaceCommandMenuOpen] =
+    useState(false);
 
   const currentSelectedTabs = (selectedTabsData as number[]) ?? [];
 
@@ -82,6 +85,16 @@ export function QuickActionsPanel() {
     } catch (error) {
       console.error("Failed to add tabs to resource group:", error);
     }
+  };
+
+  const handleSelectWorkspace = async (workspaceId: number) => {
+    if (!currentSelectedTabs.length) return;
+    await appendTabsToWorkspace(currentSelectedTabs, workspaceId);
+    handleSelectionCleared();
+  };
+
+  const handleAddToWorkspace = () => {
+    setWorkspaceCommandMenuOpen(true);
   };
 
   if (currentSelectedTabsCount === 0) return null;
@@ -149,6 +162,20 @@ export function QuickActionsPanel() {
             </TooltipTrigger>
             <TooltipContent>Add to Resource Group</TooltipContent>
           </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                onClick={handleAddToWorkspace}
+              >
+                <Monitor className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Add to Workspace</TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
 
@@ -158,6 +185,14 @@ export function QuickActionsPanel() {
         onOpenChange={setCommandMenuOpen}
         onSelectResourceGroup={handleSelectResourceGroup}
         initialMenuMode="resourceGroups"
+      />
+
+      <CommandMenu
+        workspaceId={activeWorkspace?.id ?? null}
+        open={workspaceCommandMenuOpen}
+        onOpenChange={setWorkspaceCommandMenuOpen}
+        onSelectWorkspace={handleSelectWorkspace}
+        initialMenuMode="workspaces"
       />
     </div>
   );

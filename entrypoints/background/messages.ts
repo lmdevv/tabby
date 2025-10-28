@@ -16,6 +16,8 @@ import {
 } from "@/entrypoints/background/operations/tab-operations";
 import {
   activateWorkspace,
+  appendGroupToWorkspace,
+  appendTabsToWorkspace,
   createWorkspaceFromUrls,
 } from "@/entrypoints/background/operations/workspace-operations";
 import {
@@ -335,6 +337,26 @@ const handlers: Partial<HandlersMap> = {
     const created = await createWorkspaceFromUrls(targetName, urls);
     if (!created.success || !created.workspaceId) return created;
     return { success: true, workspaceId: created.workspaceId };
+  },
+
+  async appendTabsToWorkspace(message) {
+    return await appendTabsToWorkspace(
+      message.tabIds,
+      message.targetWorkspaceId,
+      {
+        closeOriginal: message.closeOriginal,
+      },
+    );
+  },
+
+  async appendGroupToWorkspace(message) {
+    return await appendGroupToWorkspace(
+      message.groupId,
+      message.targetWorkspaceId,
+      {
+        closeOriginal: message.closeOriginal,
+      },
+    );
   },
 };
 
