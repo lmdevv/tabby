@@ -84,9 +84,9 @@ export default defineBackground(() => {
 
   // Scheduling via alarms to survive SW suspension
   try {
-    browser.alarms.create("reconcileTabs", { periodInMinutes: 10 });
-    browser.alarms.create("validateTabs", { periodInMinutes: 10 });
-    browser.alarms.create("syncTabGroups", { periodInMinutes: 10 });
+    browser.alarms.create("reconcileTabs", { periodInMinutes: 5 });
+    browser.alarms.create("validateTabs", { periodInMinutes: 5 });
+    browser.alarms.create("syncTabGroups", { periodInMinutes: 5 });
 
     browser.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === "reconcileTabs") {
