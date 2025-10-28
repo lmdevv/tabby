@@ -68,7 +68,8 @@ export function ResourceGroupsList({
           group.id ? (
             <CommandItem
               key={group.id}
-              value={group.id?.toString()}
+              value={group.name}
+              keywords={group.description ? [group.description] : []}
               onSelect={() => handleSelectResourceGroup(group.id)}
             >
               <Folder className="mr-2 h-4 w-4" />
