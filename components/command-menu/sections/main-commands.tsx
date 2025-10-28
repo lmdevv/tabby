@@ -35,9 +35,11 @@ import {
   cleanResourceTabs,
   cleanUnusedTabs,
   collapseAllGroups,
+  collapseAllResourceGroups,
   groupTabs,
   sortTabs,
   uncollapseAllGroups,
+  uncollapseAllResourceGroups,
   ungroupTabs,
 } from "@/lib/helpers/tab-operations";
 import type { CommandMenuProps, FooterProps } from "../types";
@@ -127,6 +129,14 @@ export function MainCommands({
 
   const handleUncollapseAllGroups = () => {
     uncollapseAllGroups({ workspaceId, onClose });
+  };
+
+  const handleCollapseAllResourceGroups = () => {
+    collapseAllResourceGroups({ onClose });
+  };
+
+  const handleUncollapseAllResourceGroups = () => {
+    uncollapseAllResourceGroups({ onClose });
   };
 
   const handleCleanUnusedTabs = () => {
@@ -275,6 +285,8 @@ export function MainCommands({
       "ungroup all tabs": "Ungroup All Tabs",
       "collapse all groups": "Collapse All Groups",
       "uncollapse all groups": "Uncollapse All Groups",
+      "collapse all resource groups": "Collapse All Resource Groups",
+      "uncollapse all resource groups": "Uncollapse All Resource Groups",
       "workspaces browse": "Browse Workspaces",
       "create workspace": "Create Workspace",
       "create resource group": "Create Resource Group",
@@ -381,6 +393,20 @@ export function MainCommands({
         >
           <ChevronUp className="mr-2 h-4 w-4" />
           <span>Uncollapse All Groups</span>
+        </CommandItem>
+        <CommandItem
+          value="collapse all resource groups"
+          onSelect={handleCollapseAllResourceGroups}
+        >
+          <ChevronDown className="mr-2 h-4 w-4" />
+          <span>Collapse All Resource Groups</span>
+        </CommandItem>
+        <CommandItem
+          value="uncollapse all resource groups"
+          onSelect={handleUncollapseAllResourceGroups}
+        >
+          <ChevronUp className="mr-2 h-4 w-4" />
+          <span>Uncollapse All Resource Groups</span>
         </CommandItem>
         <CommandItem value="workspaces browse" onSelect={showWorkspaces}>
           <Monitor className="mr-2 h-4 w-4" />

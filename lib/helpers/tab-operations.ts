@@ -536,3 +536,47 @@ export async function createWorkspaceFromResources(
     toast.error("Failed to create workspace from resources");
   }
 }
+
+/**
+ * Collapses all resource groups.
+ *
+ * @param options - An object containing options.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function collapseAllResourceGroups(
+  options: { onClose?: () => void } = {},
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "collapseAllResourceGroups",
+    } as const);
+    toast.success("All resource groups collapsed");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to collapse all resource groups:", error);
+    toast.error("Failed to collapse all resource groups");
+  }
+}
+
+/**
+ * Uncollapses all resource groups.
+ *
+ * @param options - An object containing options.
+ * @param options.onClose - A function to be called when the operation is complete.
+ * @returns A Promise that resolves when the operation is complete.
+ */
+export async function uncollapseAllResourceGroups(
+  options: { onClose?: () => void } = {},
+): Promise<void> {
+  try {
+    await browser.runtime.sendMessage({
+      type: "uncollapseAllResourceGroups",
+    } as const);
+    toast.success("All resource groups uncollapsed");
+    options.onClose?.();
+  } catch (error) {
+    console.error("Failed to uncollapse all resource groups:", error);
+    toast.error("Failed to uncollapse all resource groups");
+  }
+}

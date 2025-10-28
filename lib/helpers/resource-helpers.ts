@@ -379,3 +379,27 @@ export async function addTabsToResourceGroup(
     });
   });
 }
+
+/**
+ * Collapse all resource groups
+ */
+export async function collapseAllResourceGroups(): Promise<void> {
+  return db.transaction("rw", db.resourceGroups, async () => {
+    await db.resourceGroups.toCollection().modify({
+      collapsed: 1,
+      updatedAt: Date.now(),
+    });
+  });
+}
+
+/**
+ * Uncollapse all resource groups
+ */
+export async function uncollapseAllResourceGroups(): Promise<void> {
+  return db.transaction("rw", db.resourceGroups, async () => {
+    await db.resourceGroups.toCollection().modify({
+      collapsed: 0,
+      updatedAt: Date.now(),
+    });
+  });
+}

@@ -29,6 +29,10 @@ import {
   isDashboardTab,
 } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
+import {
+  collapseAllResourceGroups,
+  uncollapseAllResourceGroups,
+} from "@/lib/helpers/resource-helpers";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
 import type { RuntimeMessage, Workspace } from "@/lib/types/types";
 
@@ -101,6 +105,16 @@ const handlers: Partial<HandlersMap> = {
         await browser.tabGroups.update(group.id, { collapsed: false });
       }
     }
+    return { success: true };
+  },
+
+  async collapseAllResourceGroups() {
+    await collapseAllResourceGroups();
+    return { success: true };
+  },
+
+  async uncollapseAllResourceGroups() {
+    await uncollapseAllResourceGroups();
     return { success: true };
   },
 

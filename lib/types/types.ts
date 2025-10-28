@@ -151,6 +151,14 @@ export interface UncollapseAllGroupsMessage {
   workspaceId: number;
 }
 
+export interface CollapseAllResourceGroupsMessage {
+  type: "collapseAllResourceGroups";
+}
+
+export interface UncollapseAllResourceGroupsMessage {
+  type: "uncollapseAllResourceGroups";
+}
+
 export interface CreateSnapshotMessage {
   type: "createSnapshot";
   workspaceId?: number;
@@ -260,6 +268,8 @@ export type RuntimeMessage =
   | ToggleGroupCollapseMessage
   | CollapseAllGroupsMessage
   | UncollapseAllGroupsMessage
+  | CollapseAllResourceGroupsMessage
+  | UncollapseAllResourceGroupsMessage
   | CreateSnapshotMessage
   | RestoreSnapshotMessage
   | DeleteSnapshotMessage
