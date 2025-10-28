@@ -468,6 +468,18 @@ export function WindowComponent({
 
   // Keyboard navigation and movement
   useEffect(() => {
+    const scrollTabIntoView = (tabId: number) => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-tab-id="${tabId}"]`,
+      );
+      if (!el) return;
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    };
+
     const handleKeyDown = createTabKeyboardHandler({
       navigableItems,
       moveTabToPosition,
@@ -491,6 +503,7 @@ export function WindowComponent({
       toggleShowResources,
       groupTabs,
       toggleGroupCollapse,
+      scrollTabIntoView,
       isActiveWindow,
     });
 
@@ -585,6 +598,7 @@ export function WindowComponent({
                       <div
                         key={`tab-${element.tab.id}`}
                         className="ml-6 min-w-0 max-w-full"
+                        data-tab-id={element.tab.id}
                       >
                         {element.tab.id !== undefined && (
                           <SortableActiveTabCard
@@ -612,6 +626,7 @@ export function WindowComponent({
                         <div
                           key={`tab-${element.tab.id}`}
                           className="min-w-0 max-w-full"
+                          data-tab-id={element.tab.id}
                         >
                           <SortableActiveTabCard
                             id={element.tab.id.toString()}

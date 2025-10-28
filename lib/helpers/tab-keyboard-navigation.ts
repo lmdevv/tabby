@@ -37,6 +37,8 @@ export interface TabKeyboardNavigationProps {
   groupTabs: (tabIds: number[]) => Promise<void>;
   // Toggle group collapse
   toggleGroupCollapse: (groupId: number) => Promise<void>;
+  // Scroll tab into view
+  scrollTabIntoView: (tabId: number) => void;
   // Window activity
   isActiveWindow: boolean;
 }
@@ -64,6 +66,7 @@ export function createTabKeyboardHandler({
   toggleShowResources,
   groupTabs,
   toggleGroupCollapse,
+  scrollTabIntoView,
   isActiveWindow,
 }: TabKeyboardNavigationProps) {
   // Helper function to get only tab items for visual selection
@@ -368,6 +371,12 @@ export function createTabKeyboardHandler({
       case "R": // R for toggle show resources
         e.preventDefault();
         toggleShowResources();
+        break;
+      case "z": // z for center focused tab
+        e.preventDefault();
+        if (focusedTabId) {
+          scrollTabIntoView(focusedTabId);
+        }
         break;
       case "a": {
         // a for select/unselect all tabs

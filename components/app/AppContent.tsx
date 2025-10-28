@@ -204,7 +204,11 @@ export function AppContent({
                           const isActiveWindow =
                             windowGroup.windowId.toString() === activeWindowId;
                           return (
-                            <div key={windowGroup.windowId} className="w-full">
+                            <div
+                              key={windowGroup.windowId}
+                              className="w-full"
+                              data-window-id={windowGroup.windowId}
+                            >
                               {shownWorkspaceId && (
                                 <WindowComponent
                                   windowId={windowGroup.windowId}
@@ -267,7 +271,11 @@ export function AppContent({
                           const isActiveWindow =
                             windowGroup.windowId.toString() === activeWindowId;
                           return (
-                            <div key={windowGroup.windowId} className="w-full">
+                            <div
+                              key={windowGroup.windowId}
+                              className="w-full"
+                              data-window-id={windowGroup.windowId}
+                            >
                               {shownWorkspaceId && (
                                 <WindowComponent
                                   windowId={windowGroup.windowId}
