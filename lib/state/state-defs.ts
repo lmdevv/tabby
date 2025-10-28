@@ -24,6 +24,9 @@ export const stateDefs = {
   autoGroupTabs: { default: false as boolean },
   confirmTabClose: { default: true as boolean },
   confirmAIClean: { default: true as boolean },
+
+  // Window Navigation State
+  activeWindowId: { default: "-1" as string },
 } as const;
 
 // Extract the state key type from the definitions

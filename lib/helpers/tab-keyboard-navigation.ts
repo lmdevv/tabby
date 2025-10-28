@@ -37,6 +37,8 @@ export interface TabKeyboardNavigationProps {
   groupTabs: (tabIds: number[]) => Promise<void>;
   // Toggle group collapse
   toggleGroupCollapse: (groupId: number) => Promise<void>;
+  // Window activity
+  isActiveWindow: boolean;
 }
 
 export function createTabKeyboardHandler({
@@ -62,6 +64,7 @@ export function createTabKeyboardHandler({
   toggleShowResources,
   groupTabs,
   toggleGroupCollapse,
+  isActiveWindow,
 }: TabKeyboardNavigationProps) {
   // Helper function to get only tab items for visual selection
   const tabItems = navigableItems.filter(
@@ -90,7 +93,8 @@ export function createTabKeyboardHandler({
     if (
       !navigableItems.length ||
       e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
+      e.target instanceof HTMLTextAreaElement ||
+      !isActiveWindow
     ) {
       return;
     }

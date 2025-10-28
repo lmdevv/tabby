@@ -49,6 +49,8 @@ interface WindowComponentProps {
   onEditGroup: (groupId: number) => void;
   // When previewing a workspace that is not active, we also want to read archived tabs
   isPreview?: boolean;
+  // Whether this window is the active one for keyboard navigation
+  isActiveWindow: boolean;
 }
 
 export function WindowComponent({
@@ -57,6 +59,7 @@ export function WindowComponent({
   onTabClick,
   onEditGroup,
   isPreview = false,
+  isActiveWindow,
 }: WindowComponentProps) {
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
@@ -488,6 +491,7 @@ export function WindowComponent({
       toggleShowResources,
       groupTabs,
       toggleGroupCollapse,
+      isActiveWindow,
     });
 
     document.addEventListener("keydown", handleKeyDown);
@@ -509,6 +513,7 @@ export function WindowComponent({
     copyMultipleLinks,
     toggleShowResources,
     toggleGroupCollapse,
+    isActiveWindow,
   ]);
 
   return (
@@ -559,7 +564,10 @@ export function WindowComponent({
                                 .filter((id): id is number => id !== undefined),
                             )
                           }
-                          isFocused={focusedGroupId === element.group.groupId}
+                          isFocused={
+                            isActiveWindow &&
+                            focusedGroupId === element.group.groupId
+                          }
                         />
                       </div>
                     );
@@ -588,7 +596,9 @@ export function WindowComponent({
                             }
                             onDelete={handleDeleteTab}
                             onAddToResourceGroup={handleAddToResourceGroup}
-                            isFocused={focusedTabId === element.tab.id}
+                            isFocused={
+                              isActiveWindow && focusedTabId === element.tab.id
+                            }
                             isInClipboard={clipboardTabId === element.tab.id}
                           />
                         )}
@@ -611,7 +621,9 @@ export function WindowComponent({
                             }
                             onDelete={handleDeleteTab}
                             onAddToResourceGroup={handleAddToResourceGroup}
-                            isFocused={focusedTabId === element.tab.id}
+                            isFocused={
+                              isActiveWindow && focusedTabId === element.tab.id
+                            }
                             isInClipboard={clipboardTabId === element.tab.id}
                           />
                         </div>

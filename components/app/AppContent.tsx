@@ -1,9 +1,10 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAppState, useUpdateState } from "@/hooks/use-state";
 
 import { db } from "@/lib/db/db";
 import type { Tab } from "@/lib/types/types";
@@ -38,8 +39,11 @@ export function AppContent({
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
+  const { data: activeWindowIdData } = useAppState("activeWindowId");
+  const { updateState } = useUpdateState();
 
   const showResources = (showResourcesData ?? true) as boolean;
+  const activeWindowId = activeWindowIdData as string;
 
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {
@@ -116,6 +120,64 @@ export function AppContent({
       .sort((a, b) => a.windowId - b.windowId);
   }, [shownTabs, tabGroups]);
 
+  // Initialize active window to the first window if unset or invalid
+  useEffect(() => {
+    if (windowGroups.length > 0) {
+      const firstWindowId = windowGroups[0].windowId.toString();
+      const isValidActiveWindow = windowGroups.some(
+        (w) => w.windowId.toString() === activeWindowId,
+      );
+      if (activeWindowId === "-1" || !isValidActiveWindow) {
+        updateState("activeWindowId", firstWindowId);
+      }
+    }
+  }, [windowGroups, activeWindowId, updateState]);
+
+  // Window switching keyboard handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if no input is focused and we have windows
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        windowGroups.length === 0
+      ) {
+        return;
+      }
+
+      if (
+        e.key === "h" ||
+        e.key === "l" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight"
+      ) {
+        e.preventDefault();
+
+        const currentIndex = windowGroups.findIndex(
+          (w) => w.windowId.toString() === activeWindowId,
+        );
+        if (currentIndex === -1) return;
+
+        let nextIndex: number;
+        if (e.key === "h" || e.key === "ArrowLeft") {
+          // Move left (wrap around)
+          nextIndex =
+            currentIndex === 0 ? windowGroups.length - 1 : currentIndex - 1;
+        } else {
+          // Move right (wrap around)
+          nextIndex =
+            currentIndex === windowGroups.length - 1 ? 0 : currentIndex + 1;
+        }
+
+        const nextWindowId = windowGroups[nextIndex].windowId.toString();
+        updateState("activeWindowId", nextWindowId);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [windowGroups, activeWindowId, updateState]);
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <div className="flex-1 h-full">
@@ -139,8 +201,10 @@ export function AppContent({
                           />
                         </div>
                         {windowGroups.map((windowGroup) => {
+                          const isActiveWindow =
+                            windowGroup.windowId.toString() === activeWindowId;
                           return (
-                            <div key={windowGroup.windowId}>
+                            <div key={windowGroup.windowId} className="w-full">
                               {shownWorkspaceId && (
                                 <WindowComponent
                                   windowId={windowGroup.windowId}
@@ -152,6 +216,7 @@ export function AppContent({
                                   }
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
+                                  isActiveWindow={isActiveWindow}
                                 />
                               )}
                             </div>
@@ -199,8 +264,10 @@ export function AppContent({
                           />
                         </div>
                         {windowGroups.map((windowGroup) => {
+                          const isActiveWindow =
+                            windowGroup.windowId.toString() === activeWindowId;
                           return (
-                            <div key={windowGroup.windowId}>
+                            <div key={windowGroup.windowId} className="w-full">
                               {shownWorkspaceId && (
                                 <WindowComponent
                                   windowId={windowGroup.windowId}
@@ -212,6 +279,7 @@ export function AppContent({
                                   }
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
+                                  isActiveWindow={isActiveWindow}
                                 />
                               )}
                             </div>
