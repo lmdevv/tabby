@@ -1,0 +1,28 @@
+# 🛡️ Tabby Privacy Statement
+
+Your privacy is top priority. Tabby is designed with a **local-first** approach
+to ensure your browsing data stays on your device.
+
+## What Tabby Does
+
+- Tabby organizes and manages your browser tabs locally.
+- No browsing data, tab information, or personal details are ever sold, tracked,
+  or shared.
+- I do not use analytics, tracking scripts, or any third-party monitoring tools.
+
+## AI Usage
+
+- By default, **all features run locally** on your device.
+- If you choose to **opt-in to cloud-based AI (Gemini API)**, only the minimal
+  relevant content from active tabs will be sent securely to the AI model to
+  generate suggestions.
+- Cloud AI interactions are subject to Google’s Gemini Privacy Policy, and Tabby
+  fully adheres to their terms.
+- I do not control or store any data processed by Google’s systems, and the data
+  is not used for model training to my knowledge as part of their paid plan.
+- You can disable cloud AI features anytime in the settings.
+
+## My Commitment
+
+I will **never sell, track, or exploit your data** for any purpose. Tabby exists
+to make your workflow simpler, not to compromise your privacy.
