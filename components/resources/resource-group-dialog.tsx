@@ -119,6 +119,11 @@ export function ResourceGroupDialog({
                 id={nameId}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleConfirm();
+                  }
+                }}
                 placeholder="e.g., Work Projects, Research, Personal"
                 className="w-full h-10"
                 autoFocus
@@ -133,6 +138,11 @@ export function ResourceGroupDialog({
                 id={descriptionId}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
+                    handleConfirm();
+                  }
+                }}
                 placeholder="Briefly describe what this group is for (optional)"
                 className="w-full resize-none min-h-[80px]"
                 rows={3}
