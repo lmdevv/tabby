@@ -2,7 +2,10 @@ import { browser } from "wxt/browser";
 import { cleanupEmptyTabGroup } from "@/entrypoints/background/operations/cleaning-operations";
 import { shiftIndices } from "@/entrypoints/background/operations/db-operations";
 import { db } from "@/lib/db/db";
-import { UNGROUPED_TAB_GROUP_ID } from "@/lib/types/constants";
+import {
+  UNASSIGNED_WORKSPACE_ID,
+  UNGROUPED_TAB_GROUP_ID,
+} from "@/lib/types/constants";
 import type { Tab, Workspace } from "@/lib/types/types";
 
 // Helper function to validate and correct tab state with current browser state
@@ -55,9 +58,17 @@ async function validateTabState(tabId: number, dbTab: Tab): Promise<Tab> {
 // Export function to validate all tabs (can be called periodically)
 export async function validateAllTabs(): Promise<void> {
   try {
+    // Only validate tabs in the active workspace to avoid browser API calls for inactive workspace tabs
+    const activeWorkspace = await db.workspaces
+      .where("active")
+      .equals(1)
+      .first();
+    if (!activeWorkspace) return;
+
     const allDbTabs = await db.activeTabs
-      .where("tabStatus")
-      .equals("active")
+      .where("workspaceId")
+      .equals(activeWorkspace.id)
+      .and((t) => t.tabStatus === "active")
       .toArray();
     const updates: Tab[] = [];
 
@@ -110,7 +121,9 @@ export function setupTabListeners(
       createdAt: now,
       updatedAt: now,
       tabStatus: "active",
-      workspaceId: activeWorkspace ? activeWorkspace.id : -1,
+      workspaceId: activeWorkspace
+        ? activeWorkspace.id
+        : UNASSIGNED_WORKSPACE_ID,
     };
 
     await db.transaction("rw", db.activeTabs, async () => {

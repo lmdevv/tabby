@@ -13,7 +13,7 @@ import {
   reconcileTabs,
   refreshActiveTabs,
 } from "@/entrypoints/background/operations/db-operations";
-import { startSnapshotScheduler } from "@/entrypoints/background/snapshots";
+import { initSnapshotScheduler } from "@/entrypoints/background/snapshots";
 import { db } from "@/lib/db/db";
 
 export default defineBackground(() => {
@@ -56,7 +56,7 @@ export default defineBackground(() => {
 
   // Start background snapshot scheduler (checks every minute, snapshots at min interval)
   try {
-    startSnapshotScheduler(() => activeWorkspace);
+    initSnapshotScheduler(() => activeWorkspace);
   } catch (e) {
     console.error(e);
   }

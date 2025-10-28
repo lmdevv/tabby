@@ -25,6 +25,9 @@ export const stateDefs = {
   confirmTabClose: { default: true as boolean },
   confirmAIClean: { default: true as boolean },
 
+  // Snapshot State
+  "snapshot:retentionDays": { default: 7 as number },
+
   // Window Navigation State
   activeWindowId: { default: "-1" as string },
 } as const;

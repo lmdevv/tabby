@@ -1,12 +1,7 @@
-// TODO:
-// Improve the snapshot logic:
-// It should not just take based on time, but based on tabs moved around, bc if tabs didnt move at all for 10 minutes, maybe that new snpshot is unnecessary
-// Also, the deletion logic would make more sense if the timestamp of the last snapshot should be only one week from now, so the rest can go
-// Maybe add notes and titles to snapshots
-// Diff-based snapshot restoration
 import { browser } from "wxt/browser";
 import { isDashboardTab } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
+import { getDefaultValue } from "@/lib/state/state-defs";
 import type {
   SnapshotTab,
   SnapshotTabGroup,
@@ -14,8 +9,8 @@ import type {
   WorkspaceSnapshot,
 } from "@/lib/types/types";
 
-const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const SNAPSHOT_RETENTION = 50; // per workspace
+const SNAPSHOT_MIN_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes minimum between snapshots
 
 export async function createWorkspaceSnapshot(
   workspaceId: number,
@@ -71,7 +66,6 @@ export async function createWorkspaceSnapshot(
       ({
         snapshotId,
         stableId: g.stableId,
-        title: g.title,
         color: g.color,
         collapsed: g.collapsed,
         windowIndex: windowIndexMap.get(g.windowId) ?? 0,
@@ -89,11 +83,9 @@ export async function createWorkspaceSnapshot(
       ({
         snapshotId,
         url: t.url,
-        title: t.title,
         favIconUrl: t.favIconUrl,
         pinned: t.pinned,
         index: t.index,
-        description: t.description,
         tags: t.tags,
         windowIndex: windowIndexMap.get(t.windowId) ?? 0,
         groupStableId:
@@ -141,39 +133,182 @@ export async function pruneOldSnapshots(workspaceId: number): Promise<void> {
   );
 }
 
-export function startSnapshotScheduler(
+export async function pruneActiveWorkspaceByAge(
+  workspaceId: number,
+): Promise<void> {
+  // Get retention setting (default to 7 days)
+  const retentionSetting = await db.state
+    .where("key")
+    .equals("snapshot:retentionDays")
+    .first();
+  const defaultValue = getDefaultValue("snapshot:retentionDays");
+  const retentionDays = retentionSetting
+    ? Number(retentionSetting.value)
+    : defaultValue;
+
+  // If unlimited (0), don't prune
+  if (retentionDays === 0) return;
+
+  const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  // Get snapshots older than cutoff
+  const oldSnapshots = await db.workspaceSnapshots
+    .where("workspaceId")
+    .equals(workspaceId)
+    .and((s) => s.createdAt < cutoffTime)
+    .toArray();
+
+  if (oldSnapshots.length === 0) return;
+
+  const ids = oldSnapshots.map((s) => s.id);
+
+  await db.transaction(
+    "rw",
+    db.workspaceSnapshots,
+    db.snapshotTabs,
+    db.snapshotTabGroups,
+    async () => {
+      await db.workspaceSnapshots.bulkDelete(ids);
+      await db.snapshotTabs.where("snapshotId").anyOf(ids).delete();
+      await db.snapshotTabGroups.where("snapshotId").anyOf(ids).delete();
+    },
+  );
+}
+
+// Simple database-based change detection using most recent tab/group update
+async function hasWorkspaceChangedSinceLastSnapshot(
+  workspaceId: number,
+): Promise<boolean> {
+  // Get the most recent tab update timestamp for this workspace
+  const mostRecentTabUpdate = await db.activeTabs
+    .where("workspaceId")
+    .equals(workspaceId)
+    .and((t) => t.tabStatus === "active")
+    .sortBy("updatedAt");
+
+  // Get the most recent group update timestamp for this workspace
+  const mostRecentGroupUpdate = await db.tabGroups
+    .where("workspaceId")
+    .equals(workspaceId)
+    .and((g) => g.groupStatus === "active")
+    .sortBy("updatedAt");
+
+  // Find the most recent change timestamp
+  const latestTabUpdate =
+    mostRecentTabUpdate[mostRecentTabUpdate.length - 1]?.updatedAt ?? 0;
+  const latestGroupUpdate =
+    mostRecentGroupUpdate[mostRecentGroupUpdate.length - 1]?.updatedAt ?? 0;
+  const latestChange = Math.max(latestTabUpdate, latestGroupUpdate);
+
+  // Get the last snapshot timestamp
+  const lastSnapshot = await db.workspaceSnapshots
+    .where("workspaceId")
+    .equals(workspaceId)
+    .reverse()
+    .sortBy("createdAt");
+
+  const lastSnapshotAt = lastSnapshot[0]?.createdAt ?? 0;
+
+  // If there have been changes since the last snapshot, return true
+  return latestChange > lastSnapshotAt;
+}
+
+// State keys for snapshot tracking
+const kLastSnapshotAt = (wsId: number) => `snapshot:lastAt:${wsId}`;
+
+export async function maybeCreateSnapshot(workspace: Workspace): Promise<void> {
+  if (workspace.id <= 0) return;
+
+  // Check if there are any active non-dashboard tabs
+  const count = await db.activeTabs
+    .where("workspaceId")
+    .equals(workspace.id)
+    .and(
+      (t) =>
+        t.tabStatus === "active" &&
+        !t.url?.startsWith(browser.runtime.getURL("")),
+    )
+    .count();
+  if (count === 0) return;
+
+  const now = Date.now();
+
+  // Get the last snapshot timestamp
+  const lastSnapshot = await db.workspaceSnapshots
+    .where("workspaceId")
+    .equals(workspace.id)
+    .reverse()
+    .sortBy("createdAt");
+
+  const lastSnapshotAt = lastSnapshot[0]?.createdAt ?? 0;
+
+  // Check if minimum time has passed
+  const timeElapsed = now - lastSnapshotAt;
+  if (timeElapsed < SNAPSHOT_MIN_INTERVAL_MS) return;
+
+  // Check if workspace has changed since last snapshot
+  const hasChanged = await hasWorkspaceChangedSinceLastSnapshot(workspace.id);
+
+  if (hasChanged) {
+    // Create snapshot
+    const snapshotId = await createWorkspaceSnapshot(workspace.id, "interval");
+    if (snapshotId > 0) {
+      // Update last snapshot time (upsert by key to satisfy unique constraint)
+      await db.transaction("rw", db.state, async () => {
+        await db.state
+          .where("key")
+          .equals(kLastSnapshotAt(workspace.id))
+          .modify({
+            value: now,
+            updatedAt: now,
+          });
+
+        // If no rows were modified, it means the state doesn't exist, so add it
+        const existingCount = await db.state
+          .where("key")
+          .equals(kLastSnapshotAt(workspace.id))
+          .count();
+        if (existingCount === 0) {
+          await db.state.add({
+            key: kLastSnapshotAt(workspace.id),
+            value: now,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      });
+    }
+  }
+}
+
+export function initSnapshotScheduler(
   getActiveWorkspace: () => Workspace | undefined,
 ): void {
-  setInterval(async () => {
+  // Clear any existing alarm
+  browser.alarms.clear("snapshotCheck").catch(() => {});
+
+  // Create alarm that fires every 5 minutes
+  browser.alarms.create("snapshotCheck", {
+    periodInMinutes: 5,
+  });
+
+  // Listen for alarm and potentially create snapshot + prune
+  browser.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== "snapshotCheck") return;
+
     try {
-      const aw = getActiveWorkspace();
-      if (!aw) return;
-      // lightweight gate: ensure at least 1 active non-dashboard tab
-      const count = await db.activeTabs
-        .where("workspaceId")
-        .equals(aw.id)
-        .and(
-          (t) =>
-            t.tabStatus === "active" &&
-            !t.url?.startsWith(browser.runtime.getURL("")),
-        )
-        .count();
-      if (count === 0) return;
+      const activeWorkspace = getActiveWorkspace();
+      if (!activeWorkspace) return;
 
-      // Ensure min spacing between snapshots using last snapshot time
-      const last = await db.workspaceSnapshots
-        .where("workspaceId")
-        .equals(aw.id)
-        .reverse()
-        .sortBy("createdAt");
-      const lastTime = last[0]?.createdAt ?? 0;
-      if (Date.now() - lastTime < SNAPSHOT_INTERVAL_MS) return;
+      // Try to create snapshot if needed
+      await maybeCreateSnapshot(activeWorkspace);
 
-      await createWorkspaceSnapshot(aw.id, "interval");
+      // Prune old snapshots
+      await pruneActiveWorkspaceByAge(activeWorkspace.id);
     } catch (e) {
       console.error("Snapshot scheduler error", e);
     }
-  }, 60 * 1000); // check every minute
+  });
 }
 
 export async function restoreSnapshot(
@@ -289,7 +424,6 @@ export async function restoreSnapshot(
         tabIds: ids as [number, ...number[]],
       });
       await browser.tabGroups.update(newGroupId, {
-        title: g.title,
         color: g.color as Browser.tabGroups.TabGroup["color"],
         collapsed: g.collapsed,
       });

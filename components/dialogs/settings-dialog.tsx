@@ -29,6 +29,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -106,6 +113,7 @@ export function SettingsDialog({
   const autoAiCleanId = React.useId();
 
   const { data: confirmAIClean } = useAppState("confirmAIClean");
+  const { data: snapshotRetentionDays } = useAppState("snapshot:retentionDays");
   const { updateState } = useUpdateState();
 
   // Check AI model availability on component mount
@@ -410,6 +418,39 @@ export function SettingsDialog({
                           updateState("confirmAIClean", checked)
                         }
                       />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Snapshot Retention
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        How long to keep automatic snapshots
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Select
+                        value={(snapshotRetentionDays ?? 7).toString()}
+                        onValueChange={(value) =>
+                          updateState(
+                            "snapshot:retentionDays",
+                            parseInt(value, 10) || 7,
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 days</SelectItem>
+                          <SelectItem value="7">7 days</SelectItem>
+                          <SelectItem value="14">14 days</SelectItem>
+                          <SelectItem value="30">1 month</SelectItem>
+                          <SelectItem value="0">Unlimited</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

@@ -89,11 +89,9 @@ export interface SnapshotTab {
   id: number;
   snapshotId: number;
   url?: string;
-  title?: string;
   favIconUrl?: string;
   pinned?: boolean;
   index?: number;
-  description?: string;
   tags?: string[];
   windowIndex: number; // stable within the snapshot
   groupStableId?: string; // reference to SnapshotTabGroup.stableId
@@ -103,7 +101,6 @@ export interface SnapshotTabGroup {
   id: number;
   snapshotId: number;
   stableId: string; // copied from TabGroup.stableId at snapshot time
-  title?: string;
   color?: Browser.tabGroups.Color | string;
   collapsed?: boolean;
   windowIndex: number;
