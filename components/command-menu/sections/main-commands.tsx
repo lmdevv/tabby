@@ -281,7 +281,7 @@ export function MainCommands({
       "sort by domain": "Sort by Domain",
       "sort by recency newest first": "Sort by Recency (Newest First)",
       "group by domain": "Group by Domain",
-      "group with tabby ai": "Group with Tabby",
+      "group tabs": "Group Tabs",
       "ungroup all tabs": "Ungroup All Tabs",
       "collapse all groups": "Collapse All Groups",
       "uncollapse all groups": "Uncollapse All Groups",
@@ -303,12 +303,12 @@ export function MainCommands({
 
     if (customGroupInstructions) {
       setFooterProps({
-        enterText: `Group with Tabby (Custom): "${customGroupInstructions}"`,
+        enterText: `Group (Custom): "${customGroupInstructions}"`,
         shortcuts: [],
       });
     } else if (customCleanInstructions) {
       setFooterProps({
-        enterText: `Clean with Tabby (Custom): "${customCleanInstructions}"`,
+        enterText: `Clean (Custom): "${customCleanInstructions}"`,
         shortcuts: [],
       });
     } else {
@@ -352,11 +352,11 @@ export function MainCommands({
         </CommandItem>
         <CommandItem value="group by domain" onSelect={handleGroupTabs}>
           <Group className="mr-2 h-4 w-4" />
-          <span>Group by Domain</span>
+          <span>Group Tabs by Domain</span>
         </CommandItem>
-        <CommandItem value="group with tabby ai" onSelect={handleAIGroupTabs}>
+        <CommandItem value="group tabs" onSelect={handleAIGroupTabs}>
           <Bot className="mr-2 h-4 w-4" />
-          <span>Group with Tabby</span>
+          <span>Group Tabs</span>
         </CommandItem>
         {isCustomGroupCommand && customGroupInstructions && (
           <CommandItem

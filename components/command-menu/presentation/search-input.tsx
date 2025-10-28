@@ -19,7 +19,7 @@ export function SearchInput({
           ? "Search workspaces..."
           : menuMode === "snapshots"
             ? "Search snapshots..."
-            : "Type a command..."
+            : "Tell tabby what you want..."
       }
       value={searchValue}
       onValueChange={setSearchValue}

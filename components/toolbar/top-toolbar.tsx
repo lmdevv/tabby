@@ -234,10 +234,10 @@ export function TopToolbar({
             Sort by Recency (Newest First)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleAIGroupTabs}>
-            Group with Tabby
+            Group Tabs
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleGroupTabs}>
-            Group by Domain
+            Group Tabs by Domain
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleUngroupTabs}>
             Ungroup All Tabs
