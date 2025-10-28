@@ -1,5 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Columns2 } from "lucide-react";
+import { Columns2, Search } from "lucide-react";
+import { useState } from "react";
+import { CommandMenu } from "@/components/command-menu/command-menu";
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +37,8 @@ export function AppHeader({
   previewWorkspaceId,
   onOpenWorkspace,
 }: AppHeaderProps) {
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
   const { updateState } = useUpdateState();
@@ -159,8 +163,30 @@ export function AppHeader({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCommandMenuOpen(true)}
+              >
+                <Search className="h-[1.2rem] w-[1.2rem]" />
+                <span className="sr-only">Open Command Menu</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open Command Menu</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <ModeToggle />
       </div>
+      <CommandMenu
+        workspaceId={workspaceData?.activeWorkspace?.id ?? null}
+        open={commandMenuOpen}
+        onOpenChange={setCommandMenuOpen}
+      />
     </header>
   );
 }
