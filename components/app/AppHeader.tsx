@@ -1,7 +1,8 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Columns2, Search } from "lucide-react";
+import { Columns2, Keyboard, Search } from "lucide-react";
 import { useState } from "react";
 import { CommandMenu } from "@/components/command-menu/command-menu";
+import { KeybindingsDialog } from "@/components/dialogs/keybindings-dialog";
 import { ModeToggle } from "@/components/theme/mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,6 +39,7 @@ export function AppHeader({
   onOpenWorkspace,
 }: AppHeaderProps) {
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [keybindingsDialogOpen, setKeybindingsDialogOpen] = useState(false);
 
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
@@ -180,12 +182,33 @@ export function AppHeader({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setKeybindingsDialogOpen(true)}
+              >
+                <Keyboard className="h-[1.2rem] w-[1.2rem]" />
+                <span className="sr-only">Show Keybindings</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Show Keybindings</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <ModeToggle />
       </div>
       <CommandMenu
         workspaceId={workspaceData?.activeWorkspace?.id ?? null}
         open={commandMenuOpen}
         onOpenChange={setCommandMenuOpen}
+      />
+      <KeybindingsDialog
+        open={keybindingsDialogOpen}
+        onOpenChange={setKeybindingsDialogOpen}
       />
     </header>
   );
