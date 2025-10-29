@@ -1,5 +1,5 @@
 import type React from "react";
-import { Badge } from "@/components/ui/badge";
+
 import {
   ContextMenu,
   ContextMenuContent,
@@ -46,13 +46,11 @@ export function TabCard({
   isInClipboard = false,
 }: TabCardProps) {
   // Fetch global state for display preferences
-  const { data: showTagsGlobal } = useAppState("showTags");
   const { data: showUrlGlobal } = useAppState("showUrls");
 
-  const showTags = showTagsGlobal ?? true;
   const showUrl = showUrlGlobal ?? true;
 
-  const { title, url, favIconUrl, tags } = data;
+  const { title, url, favIconUrl } = data;
 
   // Format display values (no truncation - let CSS handle it)
   const rawTitle = title || "Untitled";
@@ -125,29 +123,6 @@ export function TabCard({
             {/* Custom content after info (e.g., description, status indicators) */}
             {afterInfo}
           </div>
-
-          {/* Tags */}
-          {showTags && tags && tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 sm:justify-end flex-shrink-0">
-              {tags.slice(0, 2).map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="h-5 px-1.5 py-0.5 text-xs"
-                >
-                  {tag}
-                </Badge>
-              ))}
-              {tags.length > 2 && (
-                <Badge
-                  variant="secondary"
-                  className="h-5 px-1.5 py-0.5 text-xs"
-                >
-                  +{tags.length - 2}
-                </Badge>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

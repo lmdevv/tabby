@@ -9,7 +9,6 @@ import type { Theme } from "../types/types";
 // Define the state definition map
 export const stateDefs = {
   // UI Display State
-  showTags: { default: true as boolean },
   showUrls: { default: true as boolean },
   showResources: { default: true as boolean },
 

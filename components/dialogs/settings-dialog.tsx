@@ -126,6 +126,7 @@ export function SettingsDialog({
   const { data: confirmAIClean } = useAppState("confirmAIClean");
   const { data: snapshotRetentionDays } = useAppState("snapshot:retentionDays");
   const { data: aiMode } = useAppState("ai:mode");
+  const { data: showUrls } = useAppState("showUrls");
   const { updateState } = useUpdateState();
 
   const handleExport = async () => {
@@ -442,6 +443,23 @@ export function SettingsDialog({
                         checked={confirmAIClean === true}
                         onCheckedChange={(checked) =>
                           updateState("confirmAIClean", checked)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Show URLs</div>
+                      <div className="text-sm text-muted-foreground">
+                        Display URLs in tab cards
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Switch
+                        checked={showUrls === true}
+                        onCheckedChange={(checked) =>
+                          updateState("showUrls", checked)
                         }
                       />
                     </div>

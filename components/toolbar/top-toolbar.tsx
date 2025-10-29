@@ -1,14 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  ArrowUpDown,
-  CheckSquare,
-  History,
-  Link2,
-  RefreshCw,
-  Tag,
-} from "lucide-react";
+import { ArrowUpDown, CheckSquare, History, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { HistoryDialog } from "@/components/snapshots/history-dialog";
 import { Button } from "@/components/ui/button";
@@ -52,8 +45,6 @@ export function TopToolbar({
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   // Get UI state directly from global state
-  const { data: showTagsData } = useAppState("showTags");
-  const { data: showUrlsData } = useAppState("showUrls");
   const { data: selectedTabsData } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
 
@@ -62,9 +53,6 @@ export function TopToolbar({
   const handleSelectTabs = (tabIds: number[]) => {
     updateState("selectedTabs", tabIds);
   };
-
-  const showTags = (showTagsData ?? true) as boolean;
-  const showUrls = (showUrlsData ?? true) as boolean;
 
   // Get tabs data directly from DB
   const tabs = useLiveQuery(() => {
@@ -78,9 +66,6 @@ export function TopToolbar({
 
   const tabsCount = tabs?.length || 0;
   const selectedTabsCount = selectedTabs.length;
-
-  const toggleShowTags = () => updateState("showTags", !showTags);
-  const toggleShowUrls = () => updateState("showUrls", !showUrls);
 
   const handleSelectAll = () => {
     if (!tabs?.length) return;
@@ -135,40 +120,6 @@ export function TopToolbar({
   };
   return (
     <div className="flex gap-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={showTags ? "default" : "ghost"}
-              size="icon"
-              onClick={toggleShowTags}
-            >
-              <Tag className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {showTags ? "Hide Tags" : "Show Tags"}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={showUrls ? "default" : "ghost"}
-              size="icon"
-              onClick={toggleShowUrls}
-            >
-              <Link2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {showUrls ? "Hide URLs" : "Show URLs"}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>

@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { Archive, BookmarkPlus, Star, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -58,7 +58,6 @@ export function ActiveTabCard({
   const tab = useLiveQuery(() => db.activeTabs.get(tabId), [tabId]);
 
   // Fetch global state
-  const { data: showTags } = useAppState("showTags");
   const { data: selectedTabs } = useAppState("selectedTabs");
   const { updateState } = useUpdateState();
 
@@ -89,16 +88,7 @@ export function ActiveTabCard({
   // Early return if tab not found
   if (!tab) return null;
 
-  const {
-    title,
-    url,
-    favIconUrl,
-    pinned,
-    audible,
-    mutedInfo,
-    discarded,
-    tags,
-  } = tab;
+  const { title, url, favIconUrl, pinned, audible, mutedInfo, discarded } = tab;
 
   const resourceGroupsForTab =
     getResourceGroupsForTab({
@@ -161,21 +151,6 @@ export function ActiveTabCard({
       }
       afterInfo={
         <>
-          {/* Tags */}
-          {showTags && tags && tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="h-5 px-1.5 py-0.5 text-xs"
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-
           {/* Status indicators */}
           <div className="ml-auto flex flex-shrink-0 items-center gap-0.5">
             <TooltipProvider>
