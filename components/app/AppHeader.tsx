@@ -31,15 +31,18 @@ import { db } from "@/lib/db/db";
 
 interface AppHeaderProps {
   previewWorkspaceId: number | null;
+  keybindingsDialogOpen: boolean;
+  onKeybindingsDialogOpenChange: (open: boolean) => void;
   onOpenWorkspace: () => void;
 }
 
 export function AppHeader({
   previewWorkspaceId,
+  keybindingsDialogOpen,
+  onKeybindingsDialogOpenChange,
   onOpenWorkspace,
 }: AppHeaderProps) {
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
-  const [keybindingsDialogOpen, setKeybindingsDialogOpen] = useState(false);
 
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
@@ -188,7 +191,7 @@ export function AppHeader({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setKeybindingsDialogOpen(true)}
+                onClick={() => onKeybindingsDialogOpenChange(true)}
               >
                 <Keyboard className="h-[1.2rem] w-[1.2rem]" />
                 <span className="sr-only">Show Keybindings</span>
@@ -208,7 +211,7 @@ export function AppHeader({
       />
       <KeybindingsDialog
         open={keybindingsDialogOpen}
-        onOpenChange={setKeybindingsDialogOpen}
+        onOpenChange={onKeybindingsDialogOpenChange}
       />
     </header>
   );

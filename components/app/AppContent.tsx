@@ -28,6 +28,8 @@ interface AppContentProps {
   isPreview?: boolean;
   // In preview mode, clicking a tab should activate the workspace and focus the tab
   onPreviewTabClick?: (tab: Tab) => Promise<void>;
+  // Callback to open keybindings dialog
+  onOpenKeybindingsDialog: () => void;
 }
 
 export function AppContent({
@@ -36,6 +38,7 @@ export function AppContent({
   onEditGroup,
   isPreview = false,
   onPreviewTabClick,
+  onOpenKeybindingsDialog,
 }: AppContentProps) {
   // Get settings directly in the component
   const { data: showResourcesData } = useAppState("showResources");
@@ -221,6 +224,9 @@ export function AppContent({
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
                                   isActiveWindow={isActiveWindow}
+                                  onOpenKeybindingsDialog={
+                                    onOpenKeybindingsDialog
+                                  }
                                 />
                               )}
                             </div>
@@ -288,6 +294,9 @@ export function AppContent({
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
                                   isActiveWindow={isActiveWindow}
+                                  onOpenKeybindingsDialog={
+                                    onOpenKeybindingsDialog
+                                  }
                                 />
                               )}
                             </div>

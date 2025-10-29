@@ -389,7 +389,7 @@ export function SettingsDialog({
                           <HoverCardContent side="top" className="w-80">
                             <p>
                               Local inference is only supported on specific
-                              devices and chrome browsers for now.{" "}
+                              devices and Chrome browser for now.{" "}
                             </p>
                           </HoverCardContent>
                         </HoverCard>

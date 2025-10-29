@@ -51,6 +51,8 @@ interface WindowComponentProps {
   isPreview?: boolean;
   // Whether this window is the active one for keyboard navigation
   isActiveWindow: boolean;
+  // Callback to open keybindings dialog
+  onOpenKeybindingsDialog: () => void;
 }
 
 export function WindowComponent({
@@ -60,6 +62,7 @@ export function WindowComponent({
   onEditGroup,
   isPreview = false,
   isActiveWindow,
+  onOpenKeybindingsDialog,
 }: WindowComponentProps) {
   // Focus management for vim keybindings
   const [focusedTabId, setFocusedTabId] = useState<number | null>(null);
@@ -505,6 +508,7 @@ export function WindowComponent({
       toggleGroupCollapse,
       scrollTabIntoView,
       isActiveWindow,
+      onOpenKeybindingsDialog,
     });
 
     document.addEventListener("keydown", handleKeyDown);
@@ -527,6 +531,7 @@ export function WindowComponent({
     toggleShowResources,
     toggleGroupCollapse,
     isActiveWindow,
+    onOpenKeybindingsDialog,
   ]);
 
   return (

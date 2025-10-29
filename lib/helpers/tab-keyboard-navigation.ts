@@ -41,6 +41,8 @@ export interface TabKeyboardNavigationProps {
   scrollTabIntoView: (tabId: number) => void;
   // Window activity
   isActiveWindow: boolean;
+  // Open keybindings dialog
+  onOpenKeybindingsDialog: () => void;
 }
 
 export function createTabKeyboardHandler({
@@ -68,6 +70,7 @@ export function createTabKeyboardHandler({
   toggleGroupCollapse,
   scrollTabIntoView,
   isActiveWindow,
+  onOpenKeybindingsDialog,
 }: TabKeyboardNavigationProps) {
   // Helper function to get only tab items for visual selection
   const tabItems = navigableItems.filter(
@@ -387,6 +390,10 @@ export function createTabKeyboardHandler({
         );
         break;
       }
+      case "?":
+        e.preventDefault();
+        onOpenKeybindingsDialog();
+        break;
       case "Escape":
         setFocusedTabId(null);
         setFocusedGroupId(null);

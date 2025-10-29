@@ -67,7 +67,10 @@ const keybindings: KeybindingCategory[] = [
   },
   {
     category: "Global",
-    bindings: [{ keys: ["Ctrl", "Space"], description: "Open command menu" }],
+    bindings: [
+      { keys: ["Ctrl", "Space"], description: "Open command menu" },
+      { keys: ["?"], description: "Show keybindings" },
+    ],
   },
 ];
 

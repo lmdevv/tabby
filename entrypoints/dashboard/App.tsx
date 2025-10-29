@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { CommandMenu } from "@/components/command-menu/command-menu";
 import { AICleanDialog } from "@/components/dialogs/ai-clean-dialog";
 import { GroupDialog } from "@/components/dialogs/group-dialog";
+import { KeybindingsDialog } from "@/components/dialogs/keybindings-dialog";
 import { WorkspaceDialog } from "@/components/dialogs/workspace-dialog";
 import { ResourceGroupDialog } from "@/components/resources/resource-group-dialog";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
@@ -51,6 +52,7 @@ export default function App() {
   });
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [keybindingsDialogOpen, setKeybindingsDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [createResourceGroupOpen, setCreateResourceGroupOpen] = useState(false);
@@ -294,6 +296,8 @@ export default function App() {
       <SidebarInset>
         <AppHeader
           previewWorkspaceId={previewWorkspaceId}
+          keybindingsDialogOpen={keybindingsDialogOpen}
+          onKeybindingsDialogOpenChange={setKeybindingsDialogOpen}
           onOpenWorkspace={() => {
             if (
               shownWorkspaceId &&
@@ -333,6 +337,7 @@ export default function App() {
             previewWorkspaceId !== workspaceData?.activeWorkspace?.id
           }
           onPreviewTabClick={handlePreviewTabClick}
+          onOpenKeybindingsDialog={() => setKeybindingsDialogOpen(true)}
         />
       </SidebarInset>
 
@@ -383,6 +388,12 @@ export default function App() {
         onOpenChange={setCreateResourceGroupOpen}
         onConfirm={handleCreateResourceGroup}
         mode="create"
+      />
+
+      {/* Keybindings Dialog */}
+      <KeybindingsDialog
+        open={keybindingsDialogOpen}
+        onOpenChange={setKeybindingsDialogOpen}
       />
     </SidebarProvider>
   );
