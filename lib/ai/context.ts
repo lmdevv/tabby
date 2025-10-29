@@ -9,6 +9,7 @@
  */
 
 import { db } from "@/lib/db/db";
+import { UNGROUPED_TAB_GROUP_ID } from "@/lib/types/constants";
 
 /**
  * Simplified workspace context for AI analysis
@@ -81,12 +82,27 @@ export async function buildWorkspaceAIContext(
     // Build simplified tabs
     const tabs = workspaceTabs
       .filter((tab) => tab.id !== undefined)
-      .map((tab) => ({
-        id: tab.id as number,
-        title: tab.title || "Untitled",
-        url: tab.url || "",
-        groupId: tab.groupId,
-      }));
+      .map((tab) => {
+        const tabData: {
+          id: number;
+          title: string;
+          url: string;
+          groupId?: number;
+        } = {
+          id: tab.id as number,
+          title: tab.title || "Untitled",
+          url: tab.url || "",
+        };
+        // Only include groupId if the tab actually belongs to a group (not ungrouped)
+        if (
+          tab.groupId !== UNGROUPED_TAB_GROUP_ID &&
+          tab.groupId !== null &&
+          tab.groupId !== undefined
+        ) {
+          tabData.groupId = tab.groupId;
+        }
+        return tabData;
+      });
 
     // Only include windows if there are multiple
     const windowIds = Array.from(tabsByWindow.keys());
