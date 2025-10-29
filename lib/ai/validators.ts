@@ -31,12 +31,7 @@ export function validateFullCoverage(
   const errors: string[] = [];
 
   // Collect all tab IDs from the context
-  const contextTabIds = new Set<number>();
-  for (const window of context.windows) {
-    for (const tab of window.tabs) {
-      contextTabIds.add(tab.id);
-    }
-  }
+  const contextTabIds = new Set(context.tabs.map((tab) => tab.id));
 
   // Collect all tab IDs mentioned in the AI response
   const responseTabIds = new Set<number>();
@@ -104,11 +99,13 @@ export function validateByWindow(
 ): ValidationResult {
   const errors: string[] = [];
 
-  // Build a map of tab ID to window ID for quick lookup
+  // Build a map of tab ID to window ID for quick lookup (only if windows exist)
   const tabToWindow = new Map<number, number>();
-  for (const window of context.windows) {
-    for (const tab of window.tabs) {
-      tabToWindow.set(tab.id, window.windowId);
+  if (context.windows) {
+    for (const window of context.windows) {
+      for (const tabId of window.tabIds) {
+        tabToWindow.set(tabId, window.windowId);
+      }
     }
   }
 

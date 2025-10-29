@@ -1,58 +1,46 @@
 /**
  * AI Context Builder for Workspace Analysis
- * Provides hierarchical workspace context (windows → groups → tabs) for AI features
+ * Provides simplified workspace context for AI features
  *
  * This context enables AI to understand:
- * - Window organization and focus state
- * - Existing tab groups and their composition
- * - Tab properties (pinned, audible, etc.) for smarter decisions
- * - Overall workspace structure for contextual naming/grouping
+ * - Existing tab groups with titles and colors
+ * - Tab information (id, title, url, group membership)
+ * - Window organization only when multiple windows exist
  */
 
-import { browser } from "wxt/browser";
 import { db } from "@/lib/db/db";
 
 /**
- * Hierarchical workspace context for AI analysis
- * Groups tabs by windows and includes existing groups for better decision-making
+ * Simplified workspace context for AI analysis
+ * Provides essential information about groups and tabs for AI decision-making
  *
  * Structure:
- * - windows[]: Each window contains its groups and tabs
- * - groups[]: Existing tab groups with their member tab IDs
- * - tabs[]: All active tabs with metadata for AI decision-making
+ * - groups[]: Existing tab groups with title and color
+ * - tabs[]: All active tabs with basic info and group membership
+ * - windows[]: Window organization (only included if multiple windows exist)
  */
 export interface WorkspaceContext {
   workspaceId: number;
-  windows: Array<{
-    windowId: number;
-    focused?: boolean;
-    incognito?: boolean;
-    groups: Array<{
-      id: number;
-      title?: string;
-      color?: string;
-      collapsed?: boolean;
-      tabIds: number[];
-    }>;
-    tabs: Array<{
-      id: number;
-      title: string;
-      url: string;
-      pinned?: boolean;
-      audible?: boolean;
-      muted?: boolean;
-      discarded?: boolean;
-      groupId?: number | null;
-      lastAccessed?: number;
-    }>;
+  groups: Array<{
+    id: number;
+    title?: string;
+    color?: string;
   }>;
-  tabCount: number;
-  groupCount: number;
+  tabs: Array<{
+    id: number;
+    title: string;
+    url: string;
+    groupId?: number | null;
+  }>;
+  windows?: Array<{
+    windowId: number;
+    tabIds: number[];
+  }>;
 }
 
 /**
- * Build hierarchical workspace context for AI analysis
- * Includes windows, groups, and tabs organized by window
+ * Build simplified workspace context for AI analysis
+ * Includes groups and tabs, with window info only when multiple windows exist
  */
 export async function buildWorkspaceAIContext(
   workspaceId: number,
@@ -72,7 +60,7 @@ export async function buildWorkspaceAIContext(
       .filter((group) => group.groupStatus === "active")
       .toArray();
 
-    // Group tabs by windowId (filter out tabs without windowId or id)
+    // Group tabs by windowId to determine if we need window structure
     const tabsByWindow = new Map<number, typeof workspaceTabs>();
     for (const tab of workspaceTabs) {
       if (tab.windowId !== undefined && tab.id !== undefined) {
@@ -83,102 +71,40 @@ export async function buildWorkspaceAIContext(
       }
     }
 
-    // Group tab groups by windowId
-    const groupsByWindow = new Map<number, typeof workspaceGroups>();
-    for (const group of workspaceGroups) {
-      if (group.windowId !== undefined) {
-        if (!groupsByWindow.has(group.windowId)) {
-          groupsByWindow.set(group.windowId, []);
-        }
-        groupsByWindow.get(group.windowId)?.push(group);
-      }
-    }
+    // Build simplified groups
+    const groups = workspaceGroups.map((group) => ({
+      id: group.id,
+      title: group.title,
+      color: group.color,
+    }));
 
-    // Get window details for all windows that have tabs in this workspace
+    // Build simplified tabs
+    const tabs = workspaceTabs
+      .filter((tab) => tab.id !== undefined)
+      .map((tab) => ({
+        id: tab.id as number,
+        title: tab.title || "Untitled",
+        url: tab.url || "",
+        groupId: tab.groupId,
+      }));
+
+    // Only include windows if there are multiple
     const windowIds = Array.from(tabsByWindow.keys());
-    const windows: WorkspaceContext["windows"] = [];
+    let windows: WorkspaceContext["windows"];
 
-    for (const windowId of windowIds) {
-      try {
-        const windowInfo = await browser.windows.get(windowId, {
-          populate: false,
-        });
-
-        const windowGroups = groupsByWindow.get(windowId) || [];
-        const windowTabs = tabsByWindow.get(windowId) || [];
-
-        // Build group details with their tab IDs
-        const groups = windowGroups.map((group) => ({
-          id: group.id,
-          title: group.title,
-          color: group.color,
-          collapsed: group.collapsed,
-          tabIds: windowTabs
-            .filter((tab) => tab.groupId === group.id)
-            .map((tab) => tab.id as number),
-        }));
-
-        // Build tab details
-        const tabs = windowTabs.map((tab) => ({
-          id: tab.id as number,
-          title: tab.title || "Untitled",
-          url: tab.url || "",
-          pinned: tab.pinned,
-          audible: tab.audible,
-          muted: tab.mutedInfo?.muted,
-          discarded: tab.discarded,
-          groupId: tab.groupId,
-          lastAccessed: tab.lastAccessed,
-        }));
-
-        windows.push({
-          windowId,
-          focused: windowInfo.focused,
-          incognito: windowInfo.incognito,
-          groups,
-          tabs,
-        });
-      } catch (error) {
-        console.warn(`Failed to get details for window ${windowId}:`, error);
-        // Still include the window with available data
-        const windowGroups = groupsByWindow.get(windowId) || [];
-        const windowTabs = tabsByWindow.get(windowId) || [];
-
-        const groups = windowGroups.map((group) => ({
-          id: group.id,
-          title: group.title,
-          color: group.color,
-          collapsed: group.collapsed,
-          tabIds: windowTabs
-            .filter((tab) => tab.groupId === group.id)
-            .map((tab) => tab.id as number),
-        }));
-
-        const tabs = windowTabs.map((tab) => ({
-          id: tab.id as number,
-          title: tab.title || "Untitled",
-          url: tab.url || "",
-          pinned: tab.pinned,
-          audible: tab.audible,
-          muted: tab.mutedInfo?.muted,
-          discarded: tab.discarded,
-          groupId: tab.groupId,
-          lastAccessed: tab.lastAccessed,
-        }));
-
-        windows.push({
-          windowId,
-          groups,
-          tabs,
-        });
-      }
+    if (windowIds.length > 1) {
+      windows = windowIds.map((windowId) => ({
+        windowId,
+        tabIds:
+          tabsByWindow.get(windowId)?.map((tab) => tab.id as number) || [],
+      }));
     }
 
     return {
       workspaceId,
+      groups,
+      tabs,
       windows,
-      tabCount: workspaceTabs.length,
-      groupCount: workspaceGroups.length,
     };
   } catch (error) {
     console.error(

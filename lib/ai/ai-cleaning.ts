@@ -20,10 +20,10 @@ export async function getAIProposedTabsToClean(
   customInstructions: string,
 ): Promise<number[]> {
   try {
-    // Build hierarchical workspace context
+    // Build simplified workspace context
     const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    if (workspaceContext.tabCount <= 1) {
+    if (workspaceContext.tabs.length <= 1) {
       console.log("Not enough tabs to analyze for cleaning");
       return [];
     }
@@ -35,27 +35,12 @@ export async function getAIProposedTabsToClean(
     const formatWorkspaceContextForCleanPrompt = (
       context: WorkspaceContext,
     ): string => {
-      // For cleaning, we focus on tab details with additional context about groups and windows
+      // For cleaning, we provide simplified context with essential tab and group info
       const contextObj = {
         workspaceId: context.workspaceId,
-        tabCount: context.tabCount,
-        groupCount: context.groupCount,
-        windows: context.windows.map((window) => ({
-          windowId: window.windowId,
-          focused: window.focused,
-          incognito: window.incognito,
-          groups: window.groups,
-          tabs: window.tabs.map((tab) => ({
-            id: tab.id,
-            title: tab.title,
-            url: tab.url,
-            pinned: tab.pinned,
-            audible: tab.audible,
-            muted: tab.muted,
-            groupId: tab.groupId,
-            lastAccessed: tab.lastAccessed,
-          })),
-        })),
+        groups: context.groups,
+        tabs: context.tabs,
+        ...(context.windows && { windows: context.windows }),
       };
       return JSON.stringify(contextObj, null, 2);
     };
@@ -93,12 +78,7 @@ export async function getAIProposedTabsToClean(
     );
 
     // Filter to only include tab IDs that actually exist in our workspace context
-    const existingTabIds = new Set<number>();
-    for (const window of workspaceContext.windows) {
-      for (const tab of window.tabs) {
-        existingTabIds.add(tab.id);
-      }
-    }
+    const existingTabIds = new Set(workspaceContext.tabs.map((tab) => tab.id));
     const validProposedIds = parsedResponse.tabsToClose.filter((id) =>
       existingTabIds.has(id),
     );

@@ -69,21 +69,18 @@ export async function generateWorkspaceTitle(
         // Include summary context for workspace naming
         const contextForPrompt = {
           workspaceId: workspaceContext.workspaceId,
-          tabCount: workspaceContext.tabCount,
-          groupCount: workspaceContext.groupCount,
-          windowCount: workspaceContext.windows.length,
-          // Include group names and window structure to help with thematic understanding
-          groups: workspaceContext.windows.flatMap((w) =>
-            w.groups
-              .map((g) => ({ title: g.title, tabCount: g.tabIds.length }))
-              .filter((g) => g.title),
-          ),
-          windows: workspaceContext.windows.map((w) => ({
-            focused: w.focused,
-            incognito: w.incognito,
-            tabCount: w.tabs.length,
-            groupCount: w.groups.length,
-          })),
+          tabCount: workspaceContext.tabs.length,
+          groupCount: workspaceContext.groups.length,
+          windowCount: workspaceContext.windows?.length || 1,
+          // Include group names to help with thematic understanding
+          groups: workspaceContext.groups
+            .map((g) => ({ title: g.title }))
+            .filter((g) => g.title),
+          ...(workspaceContext.windows && {
+            windows: workspaceContext.windows.map((w) => ({
+              tabCount: w.tabIds.length,
+            })),
+          }),
         };
         prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
       } catch (error) {

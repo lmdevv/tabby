@@ -69,13 +69,13 @@ export async function generateTabGroupTitle(
         // Create a slimmed version of context for tab group naming
         const contextForPrompt = {
           workspaceId: workspaceContext.workspaceId,
-          tabCount: workspaceContext.tabCount,
-          groupCount: workspaceContext.groupCount,
-          windowCount: workspaceContext.windows.length,
+          tabCount: workspaceContext.tabs.length,
+          groupCount: workspaceContext.groups.length,
+          windowCount: workspaceContext.windows?.length || 1,
           // Include group names to help with thematic context
-          existingGroupNames: workspaceContext.windows.flatMap((w) =>
-            w.groups.map((g) => g.title).filter(Boolean),
-          ),
+          existingGroupNames: workspaceContext.groups
+            .map((g) => g.title)
+            .filter(Boolean),
         };
         prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
       } catch (error) {

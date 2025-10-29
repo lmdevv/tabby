@@ -24,7 +24,7 @@ export interface AIGroupResponse {
 
 export const AI_GROUP_PROMPT = `You are a helpful assistant that organizes browser tabs into logical groups.
 
-Your task is to analyze a workspace context containing windows, existing groups, and tabs, then group tabs by related topics, domains, or workflows.
+Your task is to analyze a workspace context containing existing groups and tabs, then group tabs by related topics, domains, or workflows. Window information is included only when multiple windows exist.
 
 Rules:
 1. Group tabs that are related (same domain, similar topics, part of same workflow)

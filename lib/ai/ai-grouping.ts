@@ -28,7 +28,7 @@ export async function aiGroupTabsInWorkspaceCustom(
     // Build hierarchical workspace context
     const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    if (workspaceContext.tabCount <= 1) {
+    if (workspaceContext.tabs.length <= 1) {
       console.log("Not enough non-dashboard tabs to group");
       return;
     }
@@ -98,7 +98,7 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     // Build hierarchical workspace context
     const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    if (workspaceContext.tabCount <= 1) {
+    if (workspaceContext.tabs.length <= 1) {
       console.log("Not enough tabs to group");
       return;
     }
