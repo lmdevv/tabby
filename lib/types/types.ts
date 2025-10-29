@@ -1,22 +1,4 @@
 import type { Browser } from "wxt/browser";
-import type {
-  DownloadProgressEvent,
-  ExpectedInput,
-  LanguageModel,
-  LanguageModelAvailability,
-  LanguageModelCreateOptions,
-  LanguageModelMonitor,
-  LanguageModelParams,
-  LanguageModelSession,
-  PromptAudioContent,
-  PromptContent,
-  PromptContentType,
-  PromptImageContent,
-  PromptMessage,
-  PromptOptions,
-  PromptRole,
-  PromptTextContent,
-} from "./ai-types";
 
 //
 // Database types
@@ -304,25 +286,6 @@ export type RuntimeMessage =
   | CreateWorkspaceFromTabGroupMessage
   | AppendTabsToWorkspaceMessage
   | AppendGroupToWorkspaceMessage;
-
-export type {
-  LanguageModelAvailability,
-  LanguageModelParams,
-  LanguageModelMonitor,
-  DownloadProgressEvent,
-  PromptRole,
-  PromptContentType,
-  PromptTextContent,
-  PromptImageContent,
-  PromptAudioContent,
-  PromptContent,
-  PromptMessage,
-  ExpectedInput,
-  LanguageModelCreateOptions,
-  PromptOptions,
-  LanguageModelSession,
-  LanguageModel,
-};
 
 // Application state entry type
 export interface StateEntry {
