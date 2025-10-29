@@ -1,6 +1,6 @@
+import type { InferenceMode } from "firebase/ai";
 import { FileDown, FileJson, FileUp, Settings2, Trash2 } from "lucide-react";
 import * as React from "react";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,6 @@ import { Switch } from "@/components/ui/switch";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { checkAIModelAvailability } from "@/lib/ai/ai-availability";
 import { db } from "@/lib/db/db";
-import type { HybridAIMode } from "@/lib/types/ai-types";
 import type {
   Resource,
   ResourceGroup,
@@ -387,14 +386,15 @@ export function SettingsDialog({
                       <div className="text-sm font-medium">Tabby engine</div>
                       <div className="text-sm text-muted-foreground">
                         Select how Tabby runs (
-                        {isModelAvailable ? "available" : "unavailable"} for local inference)
+                        {isModelAvailable ? "available" : "unavailable"} for
+                        local inference)
                       </div>
                     </div>
                     <div className="flex-none self-center">
                       <Select
                         value={(aiMode ?? "only_in_cloud").toString()}
                         onValueChange={(value) =>
-                          updateState("ai:mode", value as HybridAIMode)
+                          updateState("ai:mode", value as InferenceMode)
                         }
                       >
                         <SelectTrigger className="w-56" id={localAiId}>

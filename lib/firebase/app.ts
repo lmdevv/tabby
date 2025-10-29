@@ -1,6 +1,7 @@
 import {
   type AI as FirebaseAI,
   type Schema as FirebaseSchema,
+  type GenerativeModel,
   GoogleAIBackend,
   getAI,
   getGenerativeModel,
@@ -8,7 +9,6 @@ import {
 } from "firebase/ai";
 import { type FirebaseApp, initializeApp } from "firebase/app";
 import { stateCache } from "@/lib/db/cache-manager";
-import type { FirebaseAIModel, HybridAIMode } from "@/lib/types/ai-types";
 import { getFirebaseEnvConfig } from "./env";
 
 let firebaseAppSingleton: FirebaseApp | null = null;
@@ -33,19 +33,6 @@ export function getAIClient(): FirebaseAI | null {
   return aiClientSingleton;
 }
 
-function mapToFirebaseInferenceMode(mode: HybridAIMode): InferenceMode {
-  switch (mode) {
-    case "only_on_device":
-      return InferenceMode.ONLY_ON_DEVICE;
-    case "prefer_on_device":
-      return InferenceMode.PREFER_ON_DEVICE;
-    case "prefer_in_cloud":
-      return InferenceMode.PREFER_IN_CLOUD;
-    case "only_in_cloud":
-      return InferenceMode.ONLY_IN_CLOUD;
-  }
-}
-
 /**
  * Creates a Firebase AI model with hybrid inference mode and structured output configuration.
  */
@@ -54,9 +41,9 @@ export async function createFirebaseAIModel(
     schema?: FirebaseSchema;
     modelName?: string;
     responseMimeType?: string;
-    modeOverride?: HybridAIMode;
+    modeOverride?: InferenceMode;
   } = {},
-): Promise<FirebaseAIModel> {
+): Promise<GenerativeModel> {
   const ai = getAIClient();
   if (!ai) {
     throw new Error(
@@ -66,8 +53,8 @@ export async function createFirebaseAIModel(
 
   const mode =
     options.modeOverride ??
-    (stateCache.getCachedItem("ai:mode") as HybridAIMode | null) ??
-    "prefer_on_device";
+    (stateCache.getCachedItem("ai:mode") as InferenceMode | null) ??
+    InferenceMode.PREFER_ON_DEVICE;
 
   const modelName = options.modelName ?? "gemini-2.0-flash-lite";
   const responseMimeType = options.responseMimeType ?? "application/json";
@@ -92,7 +79,7 @@ export async function createFirebaseAIModel(
   }
 
   return getGenerativeModel(ai, {
-    mode: mapToFirebaseInferenceMode(mode),
+    mode,
     inCloudParams: {
       model: modelName,
       generationConfig,
