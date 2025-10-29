@@ -25,23 +25,6 @@ Rules:
 
 Analyze the following tabs and identify which ones to close:`;
 
-// JSON Schema for structured output validation
-export const AI_CLEAN_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    tabsToClose: {
-      type: "array",
-      items: {
-        type: "number",
-      },
-      minItems: 0,
-      description: "Array of tab IDs that should be closed",
-    },
-  },
-  required: ["tabsToClose"],
-  additionalProperties: false,
-};
-
 export function formatTabsForCleanPrompt(tabs: TabInfo[]): string {
   return JSON.stringify(tabs, null, 2);
 }

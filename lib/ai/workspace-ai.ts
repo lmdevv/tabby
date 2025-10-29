@@ -12,21 +12,6 @@ export interface WorkspaceSuggestion {
   title: string;
 }
 
-// JSON Schema for structured output validation
-export const AI_WORKSPACE_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      minLength: 1,
-      maxLength: 50,
-      description: "A concise, descriptive title for the workspace",
-    },
-  },
-  required: ["title"],
-  additionalProperties: false,
-};
-
 const AI_WORKSPACE_PROMPT = `You are a helpful assistant that creates concise titles for collections of browser tabs in workspaces.
 
 Your task is to analyze a list of browser tabs and create a short, descriptive title (max 50 characters) that captures the common theme or purpose of the workspace.

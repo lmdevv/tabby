@@ -35,53 +35,6 @@ Rules:
 
 Analyze the following tabs and create appropriate groups:`;
 
-// JSON Schema for structured output validation
-export const AI_GROUP_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    groups: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          name: {
-            type: "string",
-            minLength: 1,
-            maxLength: 50,
-            description: "Descriptive name for the group",
-          },
-          tabIds: {
-            type: "array",
-            items: {
-              type: "number",
-            },
-            minItems: 2,
-            description: "Array of tab IDs that belong to this group",
-          },
-          color: {
-            type: "string",
-            description:
-              "Optional color for the group (only include if user explicitly requests a specific color)",
-          },
-        },
-        required: ["name", "tabIds"],
-        additionalProperties: false,
-      },
-      description: "Array of tab groups",
-    },
-    ungroupedTabs: {
-      type: "array",
-      items: {
-        type: "number",
-      },
-      description:
-        "Array of tab IDs that don't belong to any group (required - always include this even if empty)",
-    },
-  },
-  required: ["groups", "ungroupedTabs"],
-  additionalProperties: false,
-};
-
 export function formatTabsForPrompt(tabs: TabInfo[]): string {
   return JSON.stringify(tabs, null, 2);
 }

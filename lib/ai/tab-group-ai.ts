@@ -12,21 +12,6 @@ export interface TabGroupSuggestion {
   title: string;
 }
 
-// JSON Schema for structured output validation
-export const AI_TAB_GROUP_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      minLength: 1,
-      maxLength: 50,
-      description: "A concise, descriptive title for the tab group",
-    },
-  },
-  required: ["title"],
-  additionalProperties: false,
-};
-
 const AI_TAB_GROUP_PROMPT = `You are a helpful assistant that creates concise titles for collections of browser tabs.
 
 Your task is to analyze a list of browser tabs and create a short, descriptive title (max 50 characters) that captures the common theme or purpose.

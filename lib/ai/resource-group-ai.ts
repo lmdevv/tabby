@@ -18,28 +18,6 @@ export interface AIResourceGroupResponse {
   description: string;
 }
 
-// JSON Schema for structured output validation
-export const AI_RESOURCE_GROUP_RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      minLength: 1,
-      maxLength: 50,
-      description: "A concise, descriptive title for the resource group",
-    },
-    description: {
-      type: "string",
-      minLength: 1,
-      maxLength: 80,
-      description:
-        "A brief description of the resource group (max 80 characters)",
-    },
-  },
-  required: ["title", "description"],
-  additionalProperties: false,
-};
-
 const AI_RESOURCE_GROUP_PROMPT = `You are a helpful assistant that creates concise titles and descriptions for collections of web resources (bookmarks/tabs).
 
 Your task is to analyze a list of web resources and create:
