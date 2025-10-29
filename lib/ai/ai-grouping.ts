@@ -14,6 +14,7 @@ import {
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
+import { normalizeToBrowserGroupColor } from "@/lib/ui/tab-group-colors";
 
 /**
  * Main function to group tabs in a workspace using AI with custom instructions
@@ -246,10 +247,15 @@ async function applyAIGrouping(
                 createProperties: { windowId },
               });
 
-              // Update the group with the AI-suggested name and a random color
+              // Update the group with the AI-suggested name and color (if provided) or random
+              const groupColor = group.color
+                ? normalizeToBrowserGroupColor(group.color) ||
+                  getRandomTabGroupColor()
+                : getRandomTabGroupColor();
+
               await browser.tabGroups.update(groupId, {
                 title: group.name,
-                color: getRandomTabGroupColor(),
+                color: groupColor,
               });
 
               console.log(

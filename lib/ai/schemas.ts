@@ -25,6 +25,7 @@ export const groupingSchema = Schema.object({
           tabIds: Schema.array({
             items: Schema.number(),
           }),
+          color: Schema.string(),
         },
         required: ["name", "tabIds"],
       }),

@@ -82,3 +82,49 @@ export function getReadableTextColor(hexColor: string): string {
 export function getDefaultTabGroupColor(): TabGroupColor {
   return TAB_GROUP_COLORS[0];
 }
+
+// Normalize user-provided color input to a browser group color enum
+export function normalizeToBrowserGroupColor(
+  input: string,
+): BrowserTabGroupColor | null {
+  const normalized = input.trim().toLowerCase();
+
+  // Check for exact hex matches
+  const hexMatch = TAB_GROUP_COLORS.find(
+    (color) => color.value === input.trim(),
+  );
+  if (hexMatch) {
+    return hexMatch.browserValue;
+  }
+
+  // Check for direct browser color name matches (case-insensitive)
+  const browserMatch = TAB_GROUP_COLORS.find(
+    (color) => color.browserValue.toLowerCase() === normalized,
+  );
+  if (browserMatch) {
+    return browserMatch.browserValue;
+  }
+
+  // Check synonyms map
+  const synonyms: Record<string, BrowserTabGroupColor> = {
+    gray: "grey",
+    grey: "grey",
+    teal: "cyan",
+    lime: "green",
+    magenta: "pink",
+    fuchsia: "pink",
+    violet: "purple",
+    amber: "yellow",
+    gold: "yellow",
+    sky: "blue",
+    navy: "blue",
+  };
+
+  const synonymMatch = synonyms[normalized];
+  if (synonymMatch) {
+    return synonymMatch;
+  }
+
+  // No safe match found
+  return null;
+}

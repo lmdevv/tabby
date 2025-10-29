@@ -12,6 +12,7 @@ export interface TabInfo {
 export interface TabGroup {
   name: string;
   tabIds: number[];
+  color?: string;
 }
 
 export interface AIGroupResponse {
@@ -30,6 +31,7 @@ Rules:
 4. Some tabs can remain ungrouped if they don't fit well anywhere
 5. Ensure all tab IDs from the input are included in either groups or ungroupedTabs
 6. Keep groups focused and logical
+7. Only include a \`color\` field for a group if the user's custom instructions explicitly ask for a specific color; otherwise omit it
 
 Analyze the following tabs and create appropriate groups:`;
 
@@ -55,6 +57,11 @@ export const AI_GROUP_RESPONSE_SCHEMA = {
             },
             minItems: 2,
             description: "Array of tab IDs that belong to this group",
+          },
+          color: {
+            type: "string",
+            description:
+              "Optional color for the group (only include if user explicitly requests a specific color)",
           },
         },
         required: ["name", "tabIds"],
@@ -98,6 +105,11 @@ export function validateAIGroupResponse(
         !Array.isArray(group.tabIds) ||
         group.tabIds.length < 2
       ) {
+        return null;
+      }
+
+      // Validate optional color field (if present)
+      if (group.color !== undefined && typeof group.color !== "string") {
         return null;
       }
 
