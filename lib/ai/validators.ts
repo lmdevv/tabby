@@ -22,6 +22,7 @@ export interface ValidationResult {
 /**
  * Validate that all active tabs in the workspace context are accounted for
  * in either groups[].tabIds or ungroupedTabs arrays
+ * Automatically adds missing tabs to ungroupedTabs to ensure full coverage
  */
 export function validateFullCoverage(
   context: WorkspaceContext,
@@ -58,11 +59,24 @@ export function validateFullCoverage(
     responseTabIds.add(tabId);
   }
 
-  // Check for missing tabs
+  // Check for missing tabs and automatically add them to ungroupedTabs
+  const missingTabIds: number[] = [];
   for (const contextTabId of contextTabIds) {
     if (!responseTabIds.has(contextTabId)) {
-      errors.push(`Tab ${contextTabId} is missing from AI response`);
+      missingTabIds.push(contextTabId);
     }
+  }
+
+  // Add missing tabs to ungroupedTabs array
+  if (missingTabIds.length > 0) {
+    if (!response.ungroupedTabs) {
+      response.ungroupedTabs = [];
+    }
+    response.ungroupedTabs.push(...missingTabIds);
+    console.log(
+      `ℹ️ Added ${missingTabIds.length} missing tabs to ungroupedTabs:`,
+      missingTabIds,
+    );
   }
 
   // Check for extra tabs not in context
@@ -124,6 +138,7 @@ export function validateByWindow(
 
 /**
  * Run all validations for an AI grouping response
+ * Note: This function modifies the response object by adding missing tabs to ungroupedTabs
  */
 export function validateAIGroupingResponse(
   context: WorkspaceContext,
