@@ -20,49 +20,81 @@ export interface ValidationResult {
 }
 
 /**
- * Validate that all active tabs in the workspace context are accounted for
- * in either groups[].tabIds or ungroupedTabs arrays
- * Automatically adds missing tabs to ungroupedTabs to ensure full coverage
+ * Validate and fix AI grouping response to ensure consistency
+ * - Removes tabs that appear in multiple groups (keeps only first occurrence)
+ * - Moves tabs that appear in both groups and ungrouped to ungrouped only
+ * - Adds missing tabs to ungroupedTabs
+ * - Removes extra tabs not in workspace
  */
-export function validateFullCoverage(
+export function validateAndFixAIGroupingResponse(
   context: WorkspaceContext,
   response: AIGroupResponse,
 ): ValidationResult {
   const errors: string[] = [];
+  let fixesApplied = 0;
 
   // Collect all tab IDs from the context
   const contextTabIds = new Set(context.tabs.map((tab) => tab.id));
 
-  // Collect all tab IDs mentioned in the AI response
-  const responseTabIds = new Set<number>();
+  // Track which tabs we've seen and where
+  const seenTabs = new Map<number, "grouped" | "ungrouped">();
 
-  // Add tab IDs from groups
-  for (const group of response.groups) {
+  // First pass: collect all tabs and identify conflicts
+  const tabsToRemoveFromGroups = new Map<number, number[]>(); // tabId -> group indices to remove from
+
+  // Check groups for duplicates
+  for (let groupIndex = 0; groupIndex < response.groups.length; groupIndex++) {
+    const group = response.groups[groupIndex];
+    const uniqueTabIds: number[] = [];
+
     for (const tabId of group.tabIds) {
-      if (responseTabIds.has(tabId)) {
-        errors.push(`Tab ${tabId} appears in multiple groups`);
+      if (seenTabs.has(tabId)) {
+        // Tab already seen - mark for removal from this group
+        if (!tabsToRemoveFromGroups.has(tabId)) {
+          tabsToRemoveFromGroups.set(tabId, []);
+        }
+        tabsToRemoveFromGroups.get(tabId)?.push(groupIndex);
+        errors.push(
+          `Tab ${tabId} appears in multiple groups - removing from subsequent groups`,
+        );
+        fixesApplied++;
+      } else {
+        seenTabs.set(tabId, "grouped");
+        uniqueTabIds.push(tabId);
       }
-      responseTabIds.add(tabId);
     }
+
+    // Update group with unique tabs only
+    group.tabIds = uniqueTabIds;
   }
 
-  // Add tab IDs from ungrouped tabs
-  for (const tabId of response.ungroupedTabs || []) {
-    if (responseTabIds.has(tabId)) {
-      errors.push(`Tab ${tabId} appears in both groups and ungrouped tabs`);
+  // Check ungrouped tabs for conflicts with groups
+  if (response.ungroupedTabs) {
+    const filteredUngrouped: number[] = [];
+
+    for (const tabId of response.ungroupedTabs) {
+      if (seenTabs.has(tabId)) {
+        errors.push(
+          `Tab ${tabId} appears in both groups and ungrouped tabs - keeping in groups`,
+        );
+        fixesApplied++;
+      } else {
+        seenTabs.set(tabId, "ungrouped");
+        filteredUngrouped.push(tabId);
+      }
     }
-    responseTabIds.add(tabId);
+
+    response.ungroupedTabs = filteredUngrouped;
   }
 
-  // Check for missing tabs and automatically add them to ungroupedTabs
+  // Check for missing tabs and add them to ungroupedTabs
   const missingTabIds: number[] = [];
   for (const contextTabId of contextTabIds) {
-    if (!responseTabIds.has(contextTabId)) {
+    if (!seenTabs.has(contextTabId)) {
       missingTabIds.push(contextTabId);
     }
   }
 
-  // Add missing tabs to ungroupedTabs array
   if (missingTabIds.length > 0) {
     if (!response.ungroupedTabs) {
       response.ungroupedTabs = [];
@@ -72,21 +104,62 @@ export function validateFullCoverage(
       `ℹ️ Added ${missingTabIds.length} missing tabs to ungroupedTabs:`,
       missingTabIds,
     );
+    fixesApplied += missingTabIds.length;
   }
 
-  // Check for extra tabs not in context
-  for (const responseTabId of responseTabIds) {
-    if (!contextTabIds.has(responseTabId)) {
-      errors.push(
-        `Tab ${responseTabId} in AI response does not exist in workspace`,
-      );
+  // Remove extra tabs not in context
+  const extraTabs: number[] = [];
+  for (const [tabId] of seenTabs) {
+    if (!contextTabIds.has(tabId)) {
+      extraTabs.push(tabId);
     }
   }
 
+  if (extraTabs.length > 0) {
+    // Remove from groups
+    for (const group of response.groups) {
+      group.tabIds = group.tabIds.filter((id) => !extraTabs.includes(id));
+    }
+    // Remove from ungrouped
+    if (response.ungroupedTabs) {
+      response.ungroupedTabs = response.ungroupedTabs.filter(
+        (id) => !extraTabs.includes(id),
+      );
+    }
+    errors.push(
+      `Removed ${extraTabs.length} extra tabs not in workspace: ${extraTabs.join(", ")}`,
+    );
+    fixesApplied += extraTabs.length;
+  }
+
+  // Remove empty groups
+  const originalGroupCount = response.groups.length;
+  response.groups = response.groups.filter((group) => group.tabIds.length > 0);
+  const removedGroups = originalGroupCount - response.groups.length;
+  if (removedGroups > 0) {
+    errors.push(`Removed ${removedGroups} empty groups`);
+    fixesApplied += removedGroups;
+  }
+
+  if (fixesApplied > 0) {
+    console.log(`🔧 Applied ${fixesApplied} fixes to AI grouping response`);
+  }
+
   return {
-    valid: errors.length === 0,
+    valid: true, // Always return valid since we fixed the issues
     errors,
   };
+}
+
+/**
+ * Legacy validation function - kept for backward compatibility
+ * @deprecated Use validateAndFixAIGroupingResponse instead
+ */
+export function validateFullCoverage(
+  context: WorkspaceContext,
+  response: AIGroupResponse,
+): ValidationResult {
+  return validateAndFixAIGroupingResponse(context, response);
 }
 
 /**
@@ -135,13 +208,13 @@ export function validateByWindow(
 
 /**
  * Run all validations for an AI grouping response
- * Note: This function modifies the response object by adding missing tabs to ungroupedTabs
+ * This function fixes issues automatically rather than failing
  */
 export function validateAIGroupingResponse(
   context: WorkspaceContext,
   response: AIGroupResponse,
 ): ValidationResult {
-  const coverage = validateFullCoverage(context, response);
+  const coverage = validateAndFixAIGroupingResponse(context, response);
   const windowValidation = validateByWindow(context, response);
 
   const allErrors = [...coverage.errors, ...windowValidation.errors];

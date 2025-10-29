@@ -65,17 +65,19 @@ export async function aiGroupTabsInWorkspaceCustom(
     console.log("✅ Valid AI response format");
     console.log("Groups to create:", parsedResponse.groups.length);
 
-    // Validate AI response against workspace context
+    // Validate and fix AI response against workspace context
     const validation = validateAIGroupingResponse(
       workspaceContext,
       parsedResponse,
     );
-    if (!validation.valid) {
-      console.error("❌ AI response validation failed:", validation.errors);
-      return;
+    if (validation.errors.length > 0) {
+      console.log(
+        "🔧 AI response validation applied fixes:",
+        validation.errors,
+      );
+    } else {
+      console.log("✅ AI response passed validation without fixes");
     }
-
-    console.log("✅ AI response passed validation");
 
     // Apply the AI's grouping suggestions
     await applyAIGrouping(workspaceId, parsedResponse);
@@ -134,17 +136,19 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     console.log("✅ Valid AI response format");
     console.log("Groups to create:", parsedResponse.groups.length);
 
-    // Validate AI response against workspace context
+    // Validate and fix AI response against workspace context
     const validation = validateAIGroupingResponse(
       workspaceContext,
       parsedResponse,
     );
-    if (!validation.valid) {
-      console.error("❌ AI response validation failed:", validation.errors);
-      return;
+    if (validation.errors.length > 0) {
+      console.log(
+        "🔧 AI response validation applied fixes:",
+        validation.errors,
+      );
+    } else {
+      console.log("✅ AI response passed validation without fixes");
     }
-
-    console.log("✅ AI response passed validation");
 
     // Apply the AI's grouping suggestions
     await applyAIGrouping(workspaceId, parsedResponse);
