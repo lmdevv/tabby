@@ -4,13 +4,14 @@
  */
 
 import { browser } from "wxt/browser";
+import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { groupingSchema } from "@/lib/ai/schemas";
 import {
   AI_GROUP_PROMPT,
   type AIGroupResponse,
-  formatTabsForPrompt,
-  type TabInfo,
+  formatWorkspaceContextForPrompt,
 } from "@/lib/ai/tab-grouping-prompt";
+import { validateAIGroupingResponse } from "@/lib/ai/validators";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
@@ -24,29 +25,10 @@ export async function aiGroupTabsInWorkspaceCustom(
   customPrompt?: string,
 ): Promise<void> {
   try {
-    // Get all tabs in the workspace
-    const workspaceTabs = await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .toArray();
+    // Build hierarchical workspace context
+    const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    // Filter out restricted schemes and tabs without IDs
-    const tabInfo: TabInfo[] = workspaceTabs
-      .filter((tab) => {
-        const url = tab.url || "";
-        const isRestrictedScheme =
-          url.startsWith("chrome://") ||
-          url.startsWith("chrome-extension://") ||
-          url.startsWith("about:");
-        return !isRestrictedScheme && tab.id !== undefined;
-      })
-      .map((tab) => ({
-        id: tab.id as number,
-        title: tab.title || "Untitled",
-        url: tab.url || "",
-      }));
-
-    if (tabInfo.length <= 1) {
+    if (workspaceContext.tabCount <= 1) {
       console.log("Not enough non-dashboard tabs to group");
       return;
     }
@@ -54,8 +36,8 @@ export async function aiGroupTabsInWorkspaceCustom(
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: groupingSchema });
 
-    // Prepare the prompt with tab data and custom instructions
-    const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customPrompt}\n\n${formatTabsForPrompt(tabInfo)}`;
+    // Prepare the prompt with workspace context and custom instructions
+    const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customPrompt}\n\n${formatWorkspaceContextForPrompt(workspaceContext)}`;
 
     console.log("=== AI CUSTOM GROUP DEBUG ===");
     console.log("Custom instructions:", customPrompt);
@@ -83,6 +65,18 @@ export async function aiGroupTabsInWorkspaceCustom(
     console.log("✅ Valid AI response format");
     console.log("Groups to create:", parsedResponse.groups.length);
 
+    // Validate AI response against workspace context
+    const validation = validateAIGroupingResponse(
+      workspaceContext,
+      parsedResponse,
+    );
+    if (!validation.valid) {
+      console.error("❌ AI response validation failed:", validation.errors);
+      return;
+    }
+
+    console.log("✅ AI response passed validation");
+
     // Apply the AI's grouping suggestions
     await applyAIGrouping(workspaceId, parsedResponse);
 
@@ -101,50 +95,19 @@ export async function aiGroupTabsInWorkspaceCustom(
  */
 export async function aiGroupTabsInWorkspace(workspaceId: number) {
   try {
-    // Get all tabs in the workspace
-    const tabs = await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .toArray();
+    // Build hierarchical workspace context
+    const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    if (tabs.length <= 1) {
+    if (workspaceContext.tabCount <= 1) {
       console.log("Not enough tabs to group");
-      return;
-    }
-
-    // Filter out non-active, dashboard and restricted tabs; prepare tab info for AI
-    const tabInfo: TabInfo[] = tabs
-      .filter((tab) => {
-        const ourExtensionBaseURL = browser.runtime.getURL("");
-        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
-        const isRestrictedScheme =
-          tab.url?.startsWith("chrome://") ||
-          tab.url?.startsWith("chrome-extension://") ||
-          tab.url === "about:blank";
-        return (
-          tab.tabStatus === "active" &&
-          tab.url !== specificDashboardURL &&
-          !tab.url?.startsWith(ourExtensionBaseURL) &&
-          !isRestrictedScheme &&
-          tab.id !== undefined
-        );
-      })
-      .map((tab) => ({
-        id: tab.id as number,
-        title: tab.title || "Untitled",
-        url: tab.url || "",
-      }));
-
-    if (tabInfo.length <= 1) {
-      console.log("Not enough non-dashboard tabs to group");
       return;
     }
 
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: groupingSchema });
 
-    // Prepare the prompt with tab data
-    const prompt = `${AI_GROUP_PROMPT}\n\n${formatTabsForPrompt(tabInfo)}`;
+    // Prepare the prompt with workspace context
+    const prompt = `${AI_GROUP_PROMPT}\n\n${formatWorkspaceContextForPrompt(workspaceContext)}`;
 
     console.log("=== AI GROUP DEBUG ===");
     console.log("Sending prompt to AI model:");
@@ -171,6 +134,18 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     console.log("✅ Valid AI response format");
     console.log("Groups to create:", parsedResponse.groups.length);
 
+    // Validate AI response against workspace context
+    const validation = validateAIGroupingResponse(
+      workspaceContext,
+      parsedResponse,
+    );
+    if (!validation.valid) {
+      console.error("❌ AI response validation failed:", validation.errors);
+      return;
+    }
+
+    console.log("✅ AI response passed validation");
+
     // Apply the AI's grouping suggestions
     await applyAIGrouping(workspaceId, parsedResponse);
 
@@ -186,6 +161,12 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
 
 /**
  * Apply AI-generated grouping to tabs in a workspace
+ *
+ * Behavior:
+ * - Creates new groups for each AI-suggested group
+ * - Ungroups tabs explicitly listed in ungroupedTabs
+ * - AI performs pure replacement - existing groups are preserved but new ones are added
+ * - Window boundaries are respected automatically (tabs grouped by their current window)
  */
 async function applyAIGrouping(
   workspaceId: number,
@@ -222,26 +203,25 @@ async function applyAIGrouping(
       );
 
       if (candidateTabIds.length >= 2) {
-        // Resolve windowIds from live browser state to avoid stale DB windowIds
-        const byWindow = new Map<number, number[]>();
-        for (const tabId of candidateTabIds) {
-          try {
-            const liveTab = await browser.tabs.get(tabId);
-            if (typeof liveTab.windowId === "number") {
-              if (!byWindow.has(liveTab.windowId))
-                byWindow.set(liveTab.windowId, []);
-              byWindow.get(liveTab.windowId)?.push(tabId);
-            }
-          } catch {
-            // Skip tabs that no longer exist between query and action
-          }
-        }
-
-        // Create groups for each window
-        for (const [windowId, windowTabIds] of byWindow) {
-          if (windowTabIds.length >= 2) {
+        try {
+          // Fallback to original per-window grouping logic
+          const byWindow = new Map<number, number[]>();
+          for (const tabId of candidateTabIds) {
             try {
-              // Create the browser tab group
+              const liveTab = await browser.tabs.get(tabId);
+              if (typeof liveTab.windowId === "number") {
+                if (!byWindow.has(liveTab.windowId))
+                  byWindow.set(liveTab.windowId, []);
+                byWindow.get(liveTab.windowId)?.push(tabId);
+              }
+            } catch {
+              // Skip tabs that no longer exist between query and action
+            }
+          }
+
+          // Create groups for each window
+          for (const [windowId, windowTabIds] of byWindow) {
+            if (windowTabIds.length >= 2) {
               const groupId = await browser.tabs.group({
                 tabIds: windowTabIds as [number, ...number[]],
                 createProperties: { windowId },
@@ -261,13 +241,13 @@ async function applyAIGrouping(
               console.log(
                 `✅ Created AI group "${group.name}" with ${windowTabIds.length} tabs in window ${windowId}`,
               );
-            } catch (groupError) {
-              console.error(
-                `❌ Failed to create AI group "${group.name}":`,
-                groupError,
-              );
             }
           }
+        } catch (groupError) {
+          console.error(
+            `❌ Failed to create AI group "${group.name}":`,
+            groupError,
+          );
         }
       } else {
         console.log(
@@ -276,10 +256,24 @@ async function applyAIGrouping(
       }
     }
 
-    // Handle ungrouped tabs (if any) - just log them for now
+    // Handle ungrouped tabs (if any) - explicitly ungroup tabs listed in ungroupedTabs
+    // This ensures tabs that should remain standalone are not accidentally grouped
     if (aiResponse.ungroupedTabs?.length) {
+      const validUngroupedTabIds = aiResponse.ungroupedTabs.filter(
+        (tabId) => tabMap.has(tabId) && liveTabIds.has(tabId),
+      );
+
+      for (const tabId of validUngroupedTabIds) {
+        try {
+          await browser.tabs.ungroup(tabId);
+          console.log(`✅ Ungrouped tab ${tabId} as requested`);
+        } catch (ungroupError) {
+          console.error(`❌ Failed to ungroup tab ${tabId}:`, ungroupError);
+        }
+      }
+
       console.log(
-        `ℹ️ ${aiResponse.ungroupedTabs.length} tabs left ungrouped as requested`,
+        `ℹ️ ${validUngroupedTabIds.length} tabs ungrouped as requested (${aiResponse.ungroupedTabs.length - validUngroupedTabIds.length} invalid)`,
       );
     }
 

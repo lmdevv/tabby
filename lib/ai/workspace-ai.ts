@@ -3,6 +3,7 @@
  * Uses Chrome's built-in AI to generate concise titles for workspaces
  */
 
+import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { workspaceSchema } from "@/lib/ai/schemas";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
@@ -40,6 +41,7 @@ function formatTabsForPrompt(tabs: Tab[]): string {
  */
 export async function generateWorkspaceTitle(
   tabIds: number[],
+  workspaceId?: number,
 ): Promise<WorkspaceSuggestion | null> {
   try {
     if (tabIds.length === 0) {
@@ -58,8 +60,42 @@ export async function generateWorkspaceTitle(
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: workspaceSchema });
 
-    // Prepare the prompt with tab data
-    const prompt = `${AI_WORKSPACE_PROMPT}\n\n${formatTabsForPrompt(tabs)}`;
+    // Prepare the prompt with tab data and optional workspace context
+    let prompt = AI_WORKSPACE_PROMPT;
+
+    if (workspaceId !== undefined) {
+      try {
+        const workspaceContext = await buildWorkspaceAIContext(workspaceId);
+        // Include summary context for workspace naming
+        const contextForPrompt = {
+          workspaceId: workspaceContext.workspaceId,
+          tabCount: workspaceContext.tabCount,
+          groupCount: workspaceContext.groupCount,
+          windowCount: workspaceContext.windows.length,
+          // Include group names and window structure to help with thematic understanding
+          groups: workspaceContext.windows.flatMap((w) =>
+            w.groups
+              .map((g) => ({ title: g.title, tabCount: g.tabIds.length }))
+              .filter((g) => g.title),
+          ),
+          windows: workspaceContext.windows.map((w) => ({
+            focused: w.focused,
+            incognito: w.incognito,
+            tabCount: w.tabs.length,
+            groupCount: w.groups.length,
+          })),
+        };
+        prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
+      } catch (error) {
+        console.warn(
+          "Failed to build workspace context for workspace naming:",
+          error,
+        );
+        // Continue without context
+      }
+    }
+
+    prompt += `\n\n${formatTabsForPrompt(tabs)}`;
 
     console.log("=== AI WORKSPACE DEBUG ===");
     console.log("Tabs to analyze:", tabs.length);

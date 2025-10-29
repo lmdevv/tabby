@@ -3,6 +3,7 @@
  * Uses Chrome's built-in AI to generate concise titles for tab groups
  */
 
+import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { tabGroupSchema } from "@/lib/ai/schemas";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
@@ -40,6 +41,7 @@ function formatTabsForPrompt(tabs: Tab[]): string {
  */
 export async function generateTabGroupTitle(
   tabIds: number[],
+  workspaceId?: number,
 ): Promise<TabGroupSuggestion | null> {
   try {
     if (tabIds.length === 0) {
@@ -58,8 +60,34 @@ export async function generateTabGroupTitle(
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: tabGroupSchema });
 
-    // Prepare the prompt with tab data
-    const prompt = `${AI_TAB_GROUP_PROMPT}\n\n${formatTabsForPrompt(tabs)}`;
+    // Prepare the prompt with tab data and optional workspace context
+    let prompt = AI_TAB_GROUP_PROMPT;
+
+    if (workspaceId !== undefined) {
+      try {
+        const workspaceContext = await buildWorkspaceAIContext(workspaceId);
+        // Create a slimmed version of context for tab group naming
+        const contextForPrompt = {
+          workspaceId: workspaceContext.workspaceId,
+          tabCount: workspaceContext.tabCount,
+          groupCount: workspaceContext.groupCount,
+          windowCount: workspaceContext.windows.length,
+          // Include group names to help with thematic context
+          existingGroupNames: workspaceContext.windows.flatMap((w) =>
+            w.groups.map((g) => g.title).filter(Boolean),
+          ),
+        };
+        prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
+      } catch (error) {
+        console.warn(
+          "Failed to build workspace context for tab group naming:",
+          error,
+        );
+        // Continue without context
+      }
+    }
+
+    prompt += `\n\n${formatTabsForPrompt(tabs)}`;
 
     console.log("=== AI TAB GROUP DEBUG ===");
     console.log("Tabs to analyze:", tabs.length);

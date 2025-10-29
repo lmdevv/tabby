@@ -3,14 +3,12 @@
  * Handles the logic for cleaning tabs using Chrome's built-in AI
  */
 
-import { browser } from "wxt/browser";
-import { cleanSchema } from "@/lib/ai/schemas";
 import {
-  AI_CLEAN_PROMPT,
-  formatTabsForCleanPrompt,
-  type TabInfo,
-} from "@/lib/ai/tab-cleaning-prompt";
-import { db } from "@/lib/db/db";
+  buildWorkspaceAIContext,
+  type WorkspaceContext,
+} from "@/lib/ai/context";
+import { cleanSchema } from "@/lib/ai/schemas";
+import { AI_CLEAN_PROMPT } from "@/lib/ai/tab-cleaning-prompt";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 
 /**
@@ -22,50 +20,48 @@ export async function getAIProposedTabsToClean(
   customInstructions: string,
 ): Promise<number[]> {
   try {
-    // Get all tabs in the workspace
-    const tabs = await db.activeTabs
-      .where("workspaceId")
-      .equals(workspaceId)
-      .toArray();
+    // Build hierarchical workspace context
+    const workspaceContext = await buildWorkspaceAIContext(workspaceId);
 
-    if (tabs.length <= 1) {
+    if (workspaceContext.tabCount <= 1) {
       console.log("Not enough tabs to analyze for cleaning");
-      return [];
-    }
-
-    // Filter out non-active, dashboard and restricted tabs; prepare tab info for AI
-    const tabInfo: TabInfo[] = tabs
-      .filter((tab) => {
-        const ourExtensionBaseURL = browser.runtime.getURL("");
-        const specificDashboardURL = browser.runtime.getURL("/dashboard.html");
-        const isRestrictedScheme =
-          tab.url?.startsWith("chrome://") ||
-          tab.url?.startsWith("chrome-extension://") ||
-          tab.url === "about:blank";
-        return (
-          tab.tabStatus === "active" &&
-          tab.url !== specificDashboardURL &&
-          !tab.url?.startsWith(ourExtensionBaseURL) &&
-          !isRestrictedScheme &&
-          tab.id !== undefined
-        );
-      })
-      .map((tab) => ({
-        id: tab.id as number,
-        title: tab.title || "Untitled",
-        url: tab.url || "",
-      }));
-
-    if (tabInfo.length <= 1) {
-      console.log("Not enough non-dashboard tabs to analyze for cleaning");
       return [];
     }
 
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: cleanSchema });
 
-    // Prepare the prompt with tab data and custom instructions
-    const prompt = `${AI_CLEAN_PROMPT}\n\nIMPORTANT: The user has provided specific cleaning instructions that MUST be followed exactly. Only close tabs that clearly match these instructions. Be conservative - if you're not sure, don't close the tab.\n\nCleaning Instructions: ${customInstructions}\n\n${formatTabsForCleanPrompt(tabInfo)}`;
+    // Create a function to format workspace context for cleaning prompt
+    const formatWorkspaceContextForCleanPrompt = (
+      context: WorkspaceContext,
+    ): string => {
+      // For cleaning, we focus on tab details with additional context about groups and windows
+      const contextObj = {
+        workspaceId: context.workspaceId,
+        tabCount: context.tabCount,
+        groupCount: context.groupCount,
+        windows: context.windows.map((window) => ({
+          windowId: window.windowId,
+          focused: window.focused,
+          incognito: window.incognito,
+          groups: window.groups,
+          tabs: window.tabs.map((tab) => ({
+            id: tab.id,
+            title: tab.title,
+            url: tab.url,
+            pinned: tab.pinned,
+            audible: tab.audible,
+            muted: tab.muted,
+            groupId: tab.groupId,
+            lastAccessed: tab.lastAccessed,
+          })),
+        })),
+      };
+      return JSON.stringify(contextObj, null, 2);
+    };
+
+    // Prepare the prompt with workspace context and custom instructions
+    const prompt = `${AI_CLEAN_PROMPT}\n\nIMPORTANT: The user has provided specific cleaning instructions that MUST be followed exactly. Only close tabs that clearly match these instructions. Be conservative - if you're not sure, don't close the tab. Consider tab properties like pinned, audible, muted, and lastAccessed when making decisions.\n\nCleaning Instructions: ${customInstructions}\n\n${formatWorkspaceContextForCleanPrompt(workspaceContext)}`;
 
     console.log("=== AI CLEAN ANALYSIS DEBUG ===");
     console.log("Custom cleaning instructions:", customInstructions);
@@ -96,8 +92,13 @@ export async function getAIProposedTabsToClean(
       parsedResponse.tabsToClose.length,
     );
 
-    // Filter to only include tab IDs that actually exist in our tab info
-    const existingTabIds = new Set(tabInfo.map((tab) => tab.id));
+    // Filter to only include tab IDs that actually exist in our workspace context
+    const existingTabIds = new Set<number>();
+    for (const window of workspaceContext.windows) {
+      for (const tab of window.tabs) {
+        existingTabIds.add(tab.id);
+      }
+    }
     const validProposedIds = parsedResponse.tabsToClose.filter((id) =>
       existingTabIds.has(id),
     );

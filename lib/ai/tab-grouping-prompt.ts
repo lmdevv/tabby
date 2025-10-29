@@ -3,6 +3,8 @@
  * This prompt is designed to work with local AI models via Chrome's Prompt API
  */
 
+import type { WorkspaceContext } from "@/lib/ai/context";
+
 export interface TabInfo {
   id: number;
   title: string;
@@ -22,7 +24,7 @@ export interface AIGroupResponse {
 
 export const AI_GROUP_PROMPT = `You are a helpful assistant that organizes browser tabs into logical groups.
 
-Your task is to analyze a list of browser tabs and group them by related topics, domains, or workflows.
+Your task is to analyze a workspace context containing windows, existing groups, and tabs, then group tabs by related topics, domains, or workflows.
 
 Rules:
 1. Group tabs that are related (same domain, similar topics, part of same workflow)
@@ -32,9 +34,18 @@ Rules:
 5. Ensure all tab IDs from the input are included in either groups or ungroupedTabs
 6. Keep groups focused and logical
 7. Only include a \`color\` field for a group if the user's custom instructions explicitly ask for a specific color; otherwise omit it
+8. PRESERVE existing groups: Do not modify groups that are already organized unless specifically instructed
+9. RESPECT window boundaries: Do not move tabs between windows unless explicitly allowed
 
-Analyze the following tabs and create appropriate groups:`;
+Analyze the following workspace context and create appropriate groups:`;
 
+export function formatWorkspaceContextForPrompt(
+  context: WorkspaceContext,
+): string {
+  return JSON.stringify(context, null, 2);
+}
+
+// Legacy function for backward compatibility
 export function formatTabsForPrompt(tabs: TabInfo[]): string {
   return JSON.stringify(tabs, null, 2);
 }
@@ -63,6 +74,19 @@ export function validateAIGroupResponse(
 
       // Validate optional color field (if present)
       if (group.color !== undefined && typeof group.color !== "string") {
+        return null;
+      }
+
+      // Validate optional existingGroupId field (if present)
+      if (
+        group.existingGroupId !== undefined &&
+        typeof group.existingGroupId !== "number"
+      ) {
+        return null;
+      }
+
+      // Validate optional windowId field (if present)
+      if (group.windowId !== undefined && typeof group.windowId !== "number") {
         return null;
       }
 

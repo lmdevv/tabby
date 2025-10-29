@@ -3,6 +3,7 @@
  * Uses Chrome's built-in AI to generate concise titles and descriptions for resource groups
  */
 
+import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { resourceGroupSchema } from "@/lib/ai/schemas";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
@@ -51,6 +52,7 @@ function formatResourcesForPrompt(resources: Resource[]): string {
  */
 export async function generateResourceGroupTitleAndDescription(
   resourceIds: string[],
+  workspaceId?: number,
 ): Promise<ResourceGroupSuggestion | null> {
   try {
     if (resourceIds.length === 0) {
@@ -72,8 +74,34 @@ export async function generateResourceGroupTitleAndDescription(
     // Create Firebase AI model with schema enforcement
     const model = await createFirebaseAIModel({ schema: resourceGroupSchema });
 
-    // Prepare the prompt with resource data
-    const prompt = `${AI_RESOURCE_GROUP_PROMPT}\n\n${formatResourcesForPrompt(resources)}`;
+    // Prepare the prompt with resource data and optional workspace context
+    let prompt = AI_RESOURCE_GROUP_PROMPT;
+
+    if (workspaceId !== undefined) {
+      try {
+        const workspaceContext = await buildWorkspaceAIContext(workspaceId);
+        // Create a slimmed version of context for resource grouping
+        const contextForPrompt = {
+          workspaceId: workspaceContext.workspaceId,
+          tabCount: workspaceContext.tabCount,
+          groupCount: workspaceContext.groupCount,
+          windowCount: workspaceContext.windows.length,
+          // Include group names to help with thematic context
+          existingGroupNames: workspaceContext.windows.flatMap((w) =>
+            w.groups.map((g) => g.title).filter(Boolean),
+          ),
+        };
+        prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
+      } catch (error) {
+        console.warn(
+          "Failed to build workspace context for resource grouping:",
+          error,
+        );
+        // Continue without context
+      }
+    }
+
+    prompt += `\n\n${formatResourcesForPrompt(resources)}`;
 
     console.log("=== AI RESOURCE GROUP DEBUG ===");
     console.log("Resources to analyze:", resources.length);
