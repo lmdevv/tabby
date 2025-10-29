@@ -1,6 +1,13 @@
 import type { InferenceMode } from "firebase/ai";
-import { FileDown, FileJson, FileUp, Settings2, Trash2 } from "lucide-react";
-import * as React from "react";
+import {
+  FileDown,
+  FileJson,
+  FileUp,
+  Info,
+  Settings2,
+  Trash2,
+} from "lucide-react";
+import { useId } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +36,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,7 +59,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
-import { checkAIModelAvailability } from "@/lib/ai/ai-availability";
+
 import { db } from "@/lib/db/db";
 import type {
   Resource,
@@ -95,7 +107,7 @@ export function SettingsDialog({
   open: externalOpen,
   onOpenChange,
 }: SettingsDialogProps = {}) {
-  const [internalOpen, setInternalOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
 
   const isControlled = externalOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? externalOpen : internalOpen;
@@ -106,30 +118,15 @@ export function SettingsDialog({
       setInternalOpen(newOpen);
     }
   };
-  const [activeTab, setActiveTab] = React.useState("Preferences");
-  const [isModelAvailable, setIsModelAvailable] = React.useState(false);
-  const localAiId = React.useId();
-  const autoAiCleanId = React.useId();
+  const [activeTab, setActiveTab] = useState("Preferences");
+
+  const localAiId = useId();
+  const autoAiCleanId = useId();
 
   const { data: confirmAIClean } = useAppState("confirmAIClean");
   const { data: snapshotRetentionDays } = useAppState("snapshot:retentionDays");
   const { data: aiMode } = useAppState("ai:mode");
   const { updateState } = useUpdateState();
-
-  // Check AI model availability on component mount
-  React.useEffect(() => {
-    checkAIModelAvailability()
-      .then((availability) => {
-        setIsModelAvailable(
-          availability === "available" ||
-            availability === "downloadable" ||
-            availability === "downloading",
-        );
-      })
-      .catch(() => {
-        setIsModelAvailable(false);
-      });
-  }, []);
 
   const handleExport = async () => {
     try {
@@ -383,11 +380,22 @@ export function SettingsDialog({
                 <div className="space-y-6">
                   <div className="flex gap-4 items-center">
                     <div className="flex-1">
-                      <div className="text-sm font-medium">Tabby engine</div>
+                      <div className="text-sm font-medium flex items-center gap-1">
+                        Tabby engine
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </HoverCardTrigger>
+                          <HoverCardContent side="top" className="w-80">
+                            <p>
+                              Local inference is only supported on specific
+                              devices and chrome browsers for now.{" "}
+                            </p>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        Select how Tabby runs (
-                        {isModelAvailable ? "available" : "unavailable"} for
-                        local inference)
+                        Select how Tabby runs inference
                       </div>
                     </div>
                     <div className="flex-none self-center">
@@ -401,16 +409,10 @@ export function SettingsDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem
-                            value="only_on_device"
-                            disabled={!isModelAvailable}
-                          >
+                          <SelectItem value="only_on_device">
                             Only on device
                           </SelectItem>
-                          <SelectItem
-                            value="prefer_on_device"
-                            disabled={!isModelAvailable}
-                          >
+                          <SelectItem value="prefer_on_device">
                             Prefer on device
                           </SelectItem>
                           <SelectItem value="prefer_in_cloud">
