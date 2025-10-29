@@ -4,17 +4,16 @@
  */
 
 import { browser } from "wxt/browser";
+import { groupingSchema } from "@/lib/ai/schemas";
 import {
   AI_GROUP_PROMPT,
-  AI_GROUP_RESPONSE_SCHEMA,
   type AIGroupResponse,
   formatTabsForPrompt,
   type TabInfo,
-  validateAIGroupResponse,
 } from "@/lib/ai/tab-grouping-prompt";
 import { db } from "@/lib/db/db";
+import { createFirebaseAIModel } from "@/lib/firebase/app";
 import { getRandomTabGroupColor } from "@/lib/helpers/tab-helpers";
-import type { LanguageModel } from "@/lib/types/ai-types";
 
 /**
  * Main function to group tabs in a workspace using AI with custom instructions
@@ -51,33 +50,8 @@ export async function aiGroupTabsInWorkspaceCustom(
       return;
     }
 
-    // Check if Chrome Prompt API is available
-    if (
-      typeof (globalThis as Record<string, unknown>).LanguageModel ===
-      "undefined"
-    ) {
-      throw new Error("Chrome Prompt API not available");
-    }
-
-    const LanguageModel = (
-      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
-    ).LanguageModel;
-
-    // Check model availability
-    const availability = await LanguageModel.availability();
-    if (availability !== "available") {
-      throw new Error(`Language model not available. Status: ${availability}`);
-    }
-
-    console.log("Using Chrome's built-in LanguageModel");
-
-    // Create a session for the AI model with explicit language expectations
-    const session = await LanguageModel.create({
-      expectedInputs: [{ type: "text", languages: ["en"] }],
-      expectedOutputs: [{ type: "text", languages: ["en"] }],
-      temperature: 0.3,
-      topK: 40,
-    });
+    // Create Firebase AI model with schema enforcement
+    const model = await createFirebaseAIModel({ schema: groupingSchema });
 
     // Prepare the prompt with tab data and custom instructions
     const prompt = `${AI_GROUP_PROMPT}\n\nIMPORTANT: The user has provided specific custom instructions that MUST be followed exactly. Do NOT add, remove, or modify these instructions in any way. Follow them precisely as written:\n\nCustom Instructions: ${customPrompt}\n\n${formatTabsForPrompt(tabInfo)}`;
@@ -86,45 +60,30 @@ export async function aiGroupTabsInWorkspaceCustom(
     console.log("Custom instructions:", customPrompt);
     console.log("Sending prompt to AI model:");
     console.log(prompt);
-    console.log("Using JSON Schema constraint:");
-    console.log(JSON.stringify(AI_GROUP_RESPONSE_SCHEMA, null, 2));
     console.log("=====================");
 
-    // Use streaming for better performance
-    const stream = session.promptStreaming(prompt, {
-      responseConstraint: AI_GROUP_RESPONSE_SCHEMA,
-    });
-
-    let fullResponse = "";
-    const reader = stream.getReader();
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullResponse += value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    // Generate content with schema-enforced JSON output
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
     console.log("=== AI RESPONSE ===");
-    console.log(fullResponse);
+    console.log(responseText);
     console.log("==================");
 
-    // Try to validate the response
-    const validatedResponse = validateAIGroupResponse(fullResponse);
-    if (!validatedResponse) {
-      console.log("❌ Invalid AI response format");
-      console.log("Raw response:", fullResponse);
+    // Parse the schema-enforced JSON response
+    let parsedResponse: AIGroupResponse;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      console.error("❌ Failed to parse AI response as JSON:", error);
       return;
     }
 
     console.log("✅ Valid AI response format");
-    console.log("Groups to create:", validatedResponse.groups.length);
+    console.log("Groups to create:", parsedResponse.groups.length);
 
     // Apply the AI's grouping suggestions
-    await applyAIGrouping(workspaceId, validatedResponse);
+    await applyAIGrouping(workspaceId, parsedResponse);
 
     console.log(`✅ AI custom grouping completed for workspace ${workspaceId}`);
   } catch (error) {
@@ -180,33 +139,8 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
       return;
     }
 
-    // Check if Chrome Prompt API is available
-    if (
-      typeof (globalThis as Record<string, unknown>).LanguageModel ===
-      "undefined"
-    ) {
-      throw new Error("Chrome Prompt API not available");
-    }
-
-    const LanguageModel = (
-      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
-    ).LanguageModel;
-
-    // Check model availability
-    const availability = await LanguageModel.availability();
-    if (availability !== "available") {
-      throw new Error(`Language model not available. Status: ${availability}`);
-    }
-
-    console.log("Using Chrome's built-in LanguageModel");
-
-    // Create a session for the AI model with explicit language expectations
-    const session = await LanguageModel.create({
-      expectedInputs: [{ type: "text", languages: ["en"] }],
-      expectedOutputs: [{ type: "text", languages: ["en"] }],
-      temperature: 0.3,
-      topK: 40,
-    });
+    // Create Firebase AI model with schema enforcement
+    const model = await createFirebaseAIModel({ schema: groupingSchema });
 
     // Prepare the prompt with tab data
     const prompt = `${AI_GROUP_PROMPT}\n\n${formatTabsForPrompt(tabInfo)}`;
@@ -214,45 +148,30 @@ export async function aiGroupTabsInWorkspace(workspaceId: number) {
     console.log("=== AI GROUP DEBUG ===");
     console.log("Sending prompt to AI model:");
     console.log(prompt);
-    console.log("Using JSON Schema constraint:");
-    console.log(JSON.stringify(AI_GROUP_RESPONSE_SCHEMA, null, 2));
     console.log("=====================");
 
-    // Use streaming for better performance
-    const stream = session.promptStreaming(prompt, {
-      responseConstraint: AI_GROUP_RESPONSE_SCHEMA,
-    });
-
-    let fullResponse = "";
-    const reader = stream.getReader();
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullResponse += value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    // Generate content with schema-enforced JSON output
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
     console.log("=== AI RESPONSE ===");
-    console.log(fullResponse);
+    console.log(responseText);
     console.log("==================");
 
-    // Try to validate the response
-    const validatedResponse = validateAIGroupResponse(fullResponse);
-    if (!validatedResponse) {
-      console.log("❌ Invalid AI response format");
-      console.log("Raw response:", fullResponse);
+    // Parse the schema-enforced JSON response
+    let parsedResponse: AIGroupResponse;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      console.error("❌ Failed to parse AI response as JSON:", error);
       return;
     }
 
     console.log("✅ Valid AI response format");
-    console.log("Groups to create:", validatedResponse.groups.length);
+    console.log("Groups to create:", parsedResponse.groups.length);
 
     // Apply the AI's grouping suggestions
-    await applyAIGrouping(workspaceId, validatedResponse);
+    await applyAIGrouping(workspaceId, parsedResponse);
 
     console.log(`✅ AI grouping completed for workspace ${workspaceId}`);
   } catch (error) {

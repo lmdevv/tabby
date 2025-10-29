@@ -49,6 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { checkAIModelAvailability } from "@/lib/ai/ai-availability";
 import { db } from "@/lib/db/db";
+import type { HybridAIMode } from "@/lib/types/ai-types";
 import type {
   Resource,
   ResourceGroup,
@@ -107,13 +108,13 @@ export function SettingsDialog({
     }
   };
   const [activeTab, setActiveTab] = React.useState("Preferences");
-  const [useLocalAI, setUseLocalAI] = React.useState(true);
   const [isModelAvailable, setIsModelAvailable] = React.useState(false);
   const localAiId = React.useId();
   const autoAiCleanId = React.useId();
 
   const { data: confirmAIClean } = useAppState("confirmAIClean");
   const { data: snapshotRetentionDays } = useAppState("snapshot:retentionDays");
+  const { data: aiMode } = useAppState("ai:mode");
   const { updateState } = useUpdateState();
 
   // Check AI model availability on component mount
@@ -317,8 +318,6 @@ export function SettingsDialog({
       );
 
       console.log("All data deleted successfully");
-      // Reset local state
-      setUseLocalAI(true);
       // Optionally reload the page
       window.location.reload();
     } catch (error) {
@@ -385,18 +384,43 @@ export function SettingsDialog({
                 <div className="space-y-6">
                   <div className="flex gap-4 items-center">
                     <div className="flex-1">
-                      <div className="text-sm font-medium">Use Local AI</div>
+                      <div className="text-sm font-medium">Tabby engine</div>
                       <div className="text-sm text-muted-foreground">
-                        Enable local AI processing for enhanced privacy (
-                        {isModelAvailable ? "available" : "unavailable"})
+                        Select how Tabby runs (
+                        {isModelAvailable ? "available" : "unavailable"} for local inference)
                       </div>
                     </div>
                     <div className="flex-none self-center">
-                      <Switch
-                        id={localAiId}
-                        checked={useLocalAI}
-                        onCheckedChange={setUseLocalAI}
-                      />
+                      <Select
+                        value={(aiMode ?? "only_in_cloud").toString()}
+                        onValueChange={(value) =>
+                          updateState("ai:mode", value as HybridAIMode)
+                        }
+                      >
+                        <SelectTrigger className="w-56" id={localAiId}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            value="only_on_device"
+                            disabled={!isModelAvailable}
+                          >
+                            Only on device
+                          </SelectItem>
+                          <SelectItem
+                            value="prefer_on_device"
+                            disabled={!isModelAvailable}
+                          >
+                            Prefer on device
+                          </SelectItem>
+                          <SelectItem value="prefer_in_cloud">
+                            Prefer in cloud
+                          </SelectItem>
+                          <SelectItem value="only_in_cloud">
+                            Only in cloud
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 

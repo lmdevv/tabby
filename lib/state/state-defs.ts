@@ -3,6 +3,7 @@
  * This file defines the type-safe state schema with their default values
  */
 
+import type { HybridAIMode } from "../types/ai-types";
 import type { Theme } from "../types/types";
 
 // Define the state definition map
@@ -30,6 +31,9 @@ export const stateDefs = {
 
   // Window Navigation State
   activeWindowId: { default: "-1" as string },
+
+  // AI / Hybrid Inference Settings
+  "ai:mode": { default: "only_in_cloud" as HybridAIMode },
 } as const;
 
 // Extract the state key type from the definitions

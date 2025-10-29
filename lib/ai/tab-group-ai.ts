@@ -3,8 +3,9 @@
  * Uses Chrome's built-in AI to generate concise titles for tab groups
  */
 
+import { tabGroupSchema } from "@/lib/ai/schemas";
 import { db } from "@/lib/db/db";
-import type { LanguageModel } from "@/lib/types/ai-types";
+import { createFirebaseAIModel } from "@/lib/firebase/app";
 import type { Tab } from "@/lib/types/types";
 
 export interface TabGroupSuggestion {
@@ -49,28 +50,6 @@ function formatTabsForPrompt(tabs: Tab[]): string {
   );
 }
 
-function validateAITabGroupResponse(
-  response: string,
-): { title: string } | null {
-  try {
-    const parsed = JSON.parse(response);
-
-    // Validate the structure
-    if (
-      typeof parsed.title !== "string" ||
-      !parsed.title.trim() ||
-      parsed.title.length > 50
-    ) {
-      return null;
-    }
-
-    return parsed as { title: string };
-  } catch (error) {
-    console.error("Invalid AI tab group response:", error);
-    return null;
-  }
-}
-
 /**
  * Generate a title for a tab group using AI
  */
@@ -91,35 +70,8 @@ export async function generateTabGroupTitle(
       return null;
     }
 
-    // Check if Chrome Prompt API is available
-    if (
-      typeof (globalThis as Record<string, unknown>).LanguageModel ===
-      "undefined"
-    ) {
-      throw new Error("Chrome Prompt API not available");
-    }
-
-    const LanguageModel = (
-      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
-    ).LanguageModel;
-
-    // Check model availability
-    const availability = await LanguageModel.availability();
-    if (availability !== "available") {
-      throw new Error(`Language model not available. Status: ${availability}`);
-    }
-
-    console.log(
-      "Using Chrome's built-in LanguageModel for tab group title generation",
-    );
-
-    // Create a session for the AI model with explicit language expectations
-    const session = await LanguageModel.create({
-      expectedInputs: [{ type: "text", languages: ["en"] }],
-      expectedOutputs: [{ type: "text", languages: ["en"] }],
-      temperature: 0.3,
-      topK: 40,
-    });
+    // Create Firebase AI model with schema enforcement
+    const model = await createFirebaseAIModel({ schema: tabGroupSchema });
 
     // Prepare the prompt with tab data
     const prompt = `${AI_TAB_GROUP_PROMPT}\n\n${formatTabsForPrompt(tabs)}`;
@@ -128,45 +80,30 @@ export async function generateTabGroupTitle(
     console.log("Tabs to analyze:", tabs.length);
     console.log("Sending prompt to AI model:");
     console.log(prompt);
-    console.log("Using JSON Schema constraint:");
-    console.log(JSON.stringify(AI_TAB_GROUP_RESPONSE_SCHEMA, null, 2));
     console.log("=====================");
 
-    // Use streaming for better performance
-    const stream = session.promptStreaming(prompt, {
-      responseConstraint: AI_TAB_GROUP_RESPONSE_SCHEMA,
-    });
-
-    let fullResponse = "";
-    const reader = stream.getReader();
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullResponse += value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    // Generate content with schema-enforced JSON output
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
     console.log("=== AI RESPONSE ===");
-    console.log(fullResponse);
+    console.log(responseText);
     console.log("==================");
 
-    // Validate the response
-    const validatedResponse = validateAITabGroupResponse(fullResponse);
-    if (!validatedResponse) {
-      console.log("❌ Invalid AI response format");
-      console.log("Raw response:", fullResponse);
+    // Parse the schema-enforced JSON response
+    let parsedResponse: { title: string };
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      console.error("❌ Failed to parse AI response as JSON:", error);
       return null;
     }
 
     console.log("✅ Valid AI response format");
-    console.log("Generated title:", validatedResponse.title);
+    console.log("Generated title:", parsedResponse.title);
 
     return {
-      title: validatedResponse.title.trim(),
+      title: parsedResponse.title.trim(),
     };
   } catch (error) {
     console.error("❌ Failed to generate tab group title:", error);

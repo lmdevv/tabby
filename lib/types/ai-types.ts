@@ -265,3 +265,18 @@ declare global {
     Rewriter: Rewriter;
   }
 }
+
+// Hybrid AI Mode (used for Firebase AI Logic routing)
+export type HybridAIMode =
+  | "only_on_device"
+  | "prefer_on_device"
+  | "prefer_in_cloud"
+  | "only_in_cloud";
+
+// Firebase AI Model interface
+export interface FirebaseAIModel {
+  generateContent(prompt: string): Promise<{ response: { text(): string } }>;
+  generateContentStream(
+    prompt: string,
+  ): Promise<{ stream: AsyncIterable<{ text(): string }> }>;
+}

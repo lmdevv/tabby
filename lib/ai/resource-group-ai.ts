@@ -3,8 +3,9 @@
  * Uses Chrome's built-in AI to generate concise titles and descriptions for resource groups
  */
 
+import { resourceGroupSchema } from "@/lib/ai/schemas";
 import { db } from "@/lib/db/db";
-import type { LanguageModel } from "@/lib/types/ai-types";
+import { createFirebaseAIModel } from "@/lib/firebase/app";
 import type { Resource } from "@/lib/types/types";
 
 export interface ResourceGroupSuggestion {
@@ -67,31 +68,6 @@ function formatResourcesForPrompt(resources: Resource[]): string {
   );
 }
 
-function validateAIResourceGroupResponse(
-  response: string,
-): AIResourceGroupResponse | null {
-  try {
-    const parsed = JSON.parse(response);
-
-    // Validate the structure
-    if (
-      typeof parsed.title !== "string" ||
-      !parsed.title.trim() ||
-      parsed.title.length > 50 ||
-      typeof parsed.description !== "string" ||
-      !parsed.description.trim() ||
-      parsed.description.length > 80
-    ) {
-      return null;
-    }
-
-    return parsed as AIResourceGroupResponse;
-  } catch (error) {
-    console.error("Invalid AI resource group response:", error);
-    return null;
-  }
-}
-
 /**
  * Generate a title and description for a resource group using AI
  */
@@ -115,35 +91,8 @@ export async function generateResourceGroupTitleAndDescription(
       return null;
     }
 
-    // Check if Chrome Prompt API is available
-    if (
-      typeof (globalThis as Record<string, unknown>).LanguageModel ===
-      "undefined"
-    ) {
-      throw new Error("Chrome Prompt API not available");
-    }
-
-    const LanguageModel = (
-      globalThis as typeof globalThis & { LanguageModel: LanguageModel }
-    ).LanguageModel;
-
-    // Check model availability
-    const availability = await LanguageModel.availability();
-    if (availability !== "available") {
-      throw new Error(`Language model not available. Status: ${availability}`);
-    }
-
-    console.log(
-      "Using Chrome's built-in LanguageModel for resource group generation",
-    );
-
-    // Create a session for the AI model with explicit language expectations
-    const session = await LanguageModel.create({
-      expectedInputs: [{ type: "text", languages: ["en"] }],
-      expectedOutputs: [{ type: "text", languages: ["en"] }],
-      temperature: 0.3,
-      topK: 40,
-    });
+    // Create Firebase AI model with schema enforcement
+    const model = await createFirebaseAIModel({ schema: resourceGroupSchema });
 
     // Prepare the prompt with resource data
     const prompt = `${AI_RESOURCE_GROUP_PROMPT}\n\n${formatResourcesForPrompt(resources)}`;
@@ -152,47 +101,32 @@ export async function generateResourceGroupTitleAndDescription(
     console.log("Resources to analyze:", resources.length);
     console.log("Sending prompt to AI model:");
     console.log(prompt);
-    console.log("Using JSON Schema constraint:");
-    console.log(JSON.stringify(AI_RESOURCE_GROUP_RESPONSE_SCHEMA, null, 2));
     console.log("=====================");
 
-    // Use streaming for better performance
-    const stream = session.promptStreaming(prompt, {
-      responseConstraint: AI_RESOURCE_GROUP_RESPONSE_SCHEMA,
-    });
-
-    let fullResponse = "";
-    const reader = stream.getReader();
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullResponse += value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    // Generate content with schema-enforced JSON output
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
     console.log("=== AI RESPONSE ===");
-    console.log(fullResponse);
+    console.log(responseText);
     console.log("==================");
 
-    // Validate the response
-    const validatedResponse = validateAIResourceGroupResponse(fullResponse);
-    if (!validatedResponse) {
-      console.log("❌ Invalid AI response format");
-      console.log("Raw response:", fullResponse);
+    // Parse the schema-enforced JSON response
+    let parsedResponse: AIResourceGroupResponse;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      console.error("❌ Failed to parse AI response as JSON:", error);
       return null;
     }
 
     console.log("✅ Valid AI response format");
-    console.log("Generated title:", validatedResponse.title);
-    console.log("Generated description:", validatedResponse.description);
+    console.log("Generated title:", parsedResponse.title);
+    console.log("Generated description:", parsedResponse.description);
 
     return {
-      title: validatedResponse.title.trim(),
-      description: validatedResponse.description.trim(),
+      title: parsedResponse.title.trim(),
+      description: parsedResponse.description.trim(),
     };
   } catch (error) {
     console.error(
