@@ -2,7 +2,7 @@
   "name": "Tabby",
   "description": "Manage your tabs with Tabby",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
