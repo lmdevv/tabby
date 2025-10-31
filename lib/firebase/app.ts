@@ -1,56 +1,38 @@
 import {
-  type AI as FirebaseAI,
-  type Schema as FirebaseSchema,
+  type Schema,
   type GenerativeModel,
   GoogleAIBackend,
   getAI,
   getGenerativeModel,
   InferenceMode,
 } from "firebase/ai";
-import { type FirebaseApp, initializeApp } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { stateCache } from "@/lib/db/cache-manager";
-import { getFirebaseEnvConfig } from "./env";
 
-let firebaseAppSingleton: FirebaseApp | null = null;
-let aiClientSingleton: FirebaseAI | null = null;
+const firebaseConfig = {
+  apiKey: "AIzaSyBAXUMqvmmCz40rtii24DdxSQ3IBnjk2-E",
+  authDomain: "tabby-ed02f.firebaseapp.com",
+  projectId: "tabby-ed02f",
+  storageBucket: "tabby-ed02f.firebasestorage.app",
+  messagingSenderId: "1051399937967",
+  appId: "1:1051399937967:web:6c798b2796d26d9815195a",
+};
 
-export function getFirebaseApp(): FirebaseApp | null {
-  if (firebaseAppSingleton) return firebaseAppSingleton;
-  const config = getFirebaseEnvConfig();
-  if (!config) return null;
-  firebaseAppSingleton = initializeApp(config);
-  return firebaseAppSingleton;
-}
-
-/**
- * Returns a Firebase AI client configured with GoogleAIBackend, or null if env is missing.
- */
-export function getAIClient(): FirebaseAI | null {
-  if (aiClientSingleton) return aiClientSingleton;
-  const app = getFirebaseApp();
-  if (!app) return null;
-  aiClientSingleton = getAI(app, { backend: new GoogleAIBackend() });
-  return aiClientSingleton;
-}
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const ai = getAI(app, { backend: new GoogleAIBackend() });
 
 /**
  * Creates a Firebase AI model with hybrid inference mode and structured output configuration.
  */
 export async function createFirebaseAIModel(
   options: {
-    schema?: FirebaseSchema;
+    schema?: Schema;
     modelName?: string;
     responseMimeType?: string;
     modeOverride?: InferenceMode;
   } = {},
 ): Promise<GenerativeModel> {
-  const ai = getAIClient();
-  if (!ai) {
-    throw new Error(
-      "Firebase AI not configured; set VITE_FIREBASE_* env variables",
-    );
-  }
-
   const mode =
     options.modeOverride ??
     (stateCache.getCachedItem("ai:mode") as InferenceMode | null) ??
@@ -62,7 +44,7 @@ export async function createFirebaseAIModel(
   // Build generation config for cloud-hosted models
   const generationConfig: {
     responseMimeType: string;
-    responseSchema?: FirebaseSchema;
+    responseSchema?: Schema;
   } = {
     responseMimeType,
   };
@@ -72,7 +54,7 @@ export async function createFirebaseAIModel(
 
   // Build prompt options for on-device models
   const promptOptions: {
-    responseConstraint?: FirebaseSchema;
+    responseConstraint?: Schema;
   } = {};
   if (options.schema) {
     promptOptions.responseConstraint = options.schema;
