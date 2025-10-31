@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
@@ -46,7 +46,7 @@ export function AppContent({
   const { updateState } = useUpdateState();
 
   const showResources = (showResourcesData ?? true) as boolean;
-  const activeWindowId = activeWindowIdData as string;
+  const activeWindowId = (activeWindowIdData ?? "-1") as string;
 
   // Get tabs data directly using Dexie
   const shownTabs = useLiveQuery(() => {
@@ -123,45 +123,70 @@ export function AppContent({
       .sort((a, b) => a.windowId - b.windowId);
   }, [shownTabs, tabGroups]);
 
-  // Initialize active window to the first window if unset or invalid
-  useEffect(() => {
-    if (windowGroups.length > 0) {
-      const firstWindowId = windowGroups[0].windowId.toString();
-      const isValidActiveWindow = windowGroups.some(
-        (w) => w.windowId.toString() === activeWindowId,
-      );
-      if (activeWindowId === "-1" || !isValidActiveWindow) {
-        updateState("activeWindowId", firstWindowId);
-      }
+  const effectiveActiveWindowId = useMemo(() => {
+    if (windowGroups.length === 0) {
+      return activeWindowId;
     }
-  }, [windowGroups, activeWindowId, updateState]);
+
+    const isValidActiveWindow = windowGroups.some(
+      (w) => w.windowId.toString() === activeWindowId,
+    );
+
+    if (activeWindowId === "-1" || !isValidActiveWindow) {
+      return windowGroups[0].windowId.toString();
+    }
+
+    return activeWindowId;
+  }, [windowGroups, activeWindowId]);
 
   // Window navigation callbacks
-  const goToPrevWindow = useMemo(() => {
-    return () => {
-      const currentIndex = windowGroups.findIndex(
-        (w) => w.windowId.toString() === activeWindowId,
-      );
-      if (currentIndex === -1 || windowGroups.length === 0) return;
-      const nextIndex =
-        currentIndex === 0 ? windowGroups.length - 1 : currentIndex - 1;
-      const nextWindowId = windowGroups[nextIndex].windowId.toString();
-      updateState("activeWindowId", nextWindowId);
-    };
-  }, [windowGroups, activeWindowId, updateState]);
+  const goToPrevWindow = useCallback(() => {
+    if (windowGroups.length === 0) return;
 
-  const goToNextWindow = useMemo(() => {
-    return () => {
-      const currentIndex = windowGroups.findIndex(
-        (w) => w.windowId.toString() === activeWindowId,
-      );
-      if (currentIndex === -1 || windowGroups.length === 0) return;
-      const nextIndex =
-        currentIndex === windowGroups.length - 1 ? 0 : currentIndex + 1;
-      const nextWindowId = windowGroups[nextIndex].windowId.toString();
-      updateState("activeWindowId", nextWindowId);
-    };
-  }, [windowGroups, activeWindowId, updateState]);
+    const targetActiveWindowId = effectiveActiveWindowId;
+    if (!targetActiveWindowId) return;
+
+    const currentIndex = windowGroups.findIndex(
+      (w) => w.windowId.toString() === targetActiveWindowId,
+    );
+
+    if (currentIndex === -1) {
+      if (targetActiveWindowId !== activeWindowId) {
+        updateState("activeWindowId", targetActiveWindowId);
+      }
+      return;
+    }
+
+    const nextIndex =
+      currentIndex === 0 ? windowGroups.length - 1 : currentIndex - 1;
+
+    const nextWindowId = windowGroups[nextIndex].windowId.toString();
+    updateState("activeWindowId", nextWindowId);
+  }, [windowGroups, effectiveActiveWindowId, activeWindowId, updateState]);
+
+  const goToNextWindow = useCallback(() => {
+    if (windowGroups.length === 0) return;
+
+    const targetActiveWindowId = effectiveActiveWindowId;
+    if (!targetActiveWindowId) return;
+
+    const currentIndex = windowGroups.findIndex(
+      (w) => w.windowId.toString() === targetActiveWindowId,
+    );
+
+    if (currentIndex === -1) {
+      if (targetActiveWindowId !== activeWindowId) {
+        updateState("activeWindowId", targetActiveWindowId);
+      }
+      return;
+    }
+
+    const nextIndex =
+      currentIndex === windowGroups.length - 1 ? 0 : currentIndex + 1;
+
+    const nextWindowId = windowGroups[nextIndex].windowId.toString();
+    updateState("activeWindowId", nextWindowId);
+  }, [windowGroups, effectiveActiveWindowId, activeWindowId, updateState]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -187,7 +212,8 @@ export function AppContent({
                         </div>
                         {windowGroups.map((windowGroup) => {
                           const isActiveWindow =
-                            windowGroup.windowId.toString() === activeWindowId;
+                            windowGroup.windowId.toString() ===
+                            effectiveActiveWindowId;
                           return (
                             <div
                               key={windowGroup.windowId}
@@ -259,7 +285,8 @@ export function AppContent({
                         </div>
                         {windowGroups.map((windowGroup) => {
                           const isActiveWindow =
-                            windowGroup.windowId.toString() === activeWindowId;
+                            windowGroup.windowId.toString() ===
+                            effectiveActiveWindowId;
                           return (
                             <div
                               key={windowGroup.windowId}
