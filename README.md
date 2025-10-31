@@ -46,8 +46,9 @@ pnpm dev
 
 Load the extension in Chrome:
 
-1. Go to `chrome://extensions/`
-2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `.output/` folder
+1. Build the extension using `pnpm build`
+2. Go to `chrome://extensions/`
+3. Enable "Developer mode"
+4. Click "Load unpacked" and select the output folder inside `.output/`
 
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/)
