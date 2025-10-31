@@ -1,7 +1,7 @@
 import { browser } from "wxt/browser";
 import { db } from "@/lib/db/db";
 import { UNASSIGNED_WORKSPACE_ID } from "@/lib/types/constants";
-import type { Tab } from "@/lib/types/types";
+import type { Tab, TabGroup } from "@/lib/types/types";
 
 export async function refreshActiveTabs() {
   const liveTabs = await browser.tabs.query({});
@@ -264,4 +264,98 @@ export async function reconcileTabs() {
 
   // 8. Keep archived tabs for workspace state persistence across switches
   (reconcileTabs as unknown as { _lock?: boolean })._lock = false;
+}
+
+/**
+ * Hard refresh: Rebuilds DB state 1:1 from browser state
+ * Used on browser startup when auto-rollback is disabled
+ * This ensures DB exactly matches what browser restored
+ */
+export async function hardRefreshTabsAndGroups(): Promise<void> {
+  const now = Date.now();
+  const activeWorkspace = await db.workspaces.where("active").equals(1).first();
+  const targetWorkspaceId = activeWorkspace
+    ? activeWorkspace.id
+    : UNASSIGNED_WORKSPACE_ID;
+
+  // Query all tabs and groups from browser
+  const [liveTabs, liveGroups] = await Promise.all([
+    browser.tabs.query({}),
+    browser.tabGroups.query({}),
+  ]);
+
+  // Clear all active tabs and groups for the target workspace
+  await db.transaction("rw", db.activeTabs, db.tabGroups, async () => {
+    // Clear active tabs
+    await db.activeTabs
+      .where("workspaceId")
+      .equals(targetWorkspaceId)
+      .and((tab) => tab.tabStatus === "active")
+      .delete();
+
+    // Archive all active groups for this workspace (preserve archived ones)
+    const activeGroups = await db.tabGroups
+      .where("workspaceId")
+      .equals(targetWorkspaceId)
+      .and((g) => g.groupStatus === "active")
+      .toArray();
+
+    for (const group of activeGroups) {
+      await db.tabGroups.put({
+        ...group,
+        groupStatus: "archived" as const,
+        updatedAt: now,
+      });
+    }
+  });
+
+  // Rebuild tabs 1:1 from browser state
+  const tabsToAdd: Tab[] = liveTabs.map(
+    (t): Tab => ({
+      ...t,
+      stableId: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      tabStatus: "active",
+      workspaceId: targetWorkspaceId,
+    }),
+  );
+
+  await db.activeTabs.bulkPut(tabsToAdd);
+
+  // Rebuild groups 1:1 from browser state
+  const groupsToAdd: TabGroup[] = liveGroups.map(
+    (g): TabGroup => ({
+      ...g,
+      stableId: crypto.randomUUID(),
+      workspaceId: targetWorkspaceId,
+      groupStatus: "active",
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
+
+  // Use bulkPut instead of bulkAdd to handle potential conflicts
+  if (groupsToAdd.length > 0) {
+    try {
+      await db.tabGroups.bulkPut(groupsToAdd);
+    } catch (bulkError) {
+      // Fall back to individual puts if bulkPut fails
+      console.warn(
+        "bulkPut failed in hardRefresh, falling back to individual operations:",
+        bulkError,
+      );
+      for (const group of groupsToAdd) {
+        try {
+          await db.tabGroups.put(group);
+        } catch (err) {
+          console.error(`Failed to add group ${group.id}:`, err);
+        }
+      }
+    }
+  }
+
+  console.log(
+    `🔄 Hard refresh completed: ${tabsToAdd.length} tabs, ${groupsToAdd.length} groups synced`,
+  );
 }

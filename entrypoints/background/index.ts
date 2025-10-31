@@ -10,10 +10,14 @@ import {
 } from "@/entrypoints/background/listeners/tabGroup-listeners";
 import { registerMessageHandlers } from "@/entrypoints/background/messages";
 import {
+  hardRefreshTabsAndGroups,
   reconcileTabs,
   refreshActiveTabs,
 } from "@/entrypoints/background/operations/db-operations";
-import { initSnapshotScheduler } from "@/entrypoints/background/snapshots";
+import {
+  initSnapshotScheduler,
+  restoreSnapshot,
+} from "@/entrypoints/background/snapshots";
 import { db } from "@/lib/db/db";
 
 export default defineBackground(() => {
@@ -177,4 +181,61 @@ export default defineBackground(() => {
 
   // Register message handlers
   registerMessageHandlers(() => activeWorkspace);
+
+  //
+  // Browser Startup Handling
+  //
+  browser.runtime.onStartup.addListener(async () => {
+    console.log("🚀 Browser startup detected");
+    try {
+      // Wait a bit for workspace to be initialized
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Get active workspace
+      const workspace = await db.workspaces.where("active").equals(1).first();
+      if (!workspace) {
+        console.log(
+          "No active workspace found on startup, skipping startup handling",
+        );
+        return;
+      }
+
+      // Get startup preference (defaults to false if not set)
+      const startupState = await db.state
+        .where("key")
+        .equals("startup:autoRollback")
+        .first();
+      const autoRollback = startupState?.value === "true";
+
+      if (autoRollback) {
+        // Auto-rollback: Restore latest snapshot
+        console.log("📸 Auto-rollback enabled, restoring latest snapshot");
+        const snapshots = await db.workspaceSnapshots
+          .where("workspaceId")
+          .equals(workspace.id)
+          .reverse()
+          .sortBy("createdAt");
+
+        if (snapshots.length > 0) {
+          const latestSnapshot = snapshots[0];
+          const result = await restoreSnapshot(latestSnapshot.id, "replace");
+          if (result.success) {
+            console.log(`✅ Restored snapshot ${latestSnapshot.id} on startup`);
+          } else {
+            console.error(
+              `❌ Failed to restore snapshot on startup: ${result.error}`,
+            );
+          }
+        } else {
+          console.log("No snapshots available for auto-rollback");
+        }
+      } else {
+        // Hard refresh: Sync DB with browser state
+        console.log("🔄 Auto-rollback disabled, performing hard refresh");
+        await hardRefreshTabsAndGroups();
+      }
+    } catch (error) {
+      console.error("❌ Error handling browser startup:", error);
+    }
+  });
 });

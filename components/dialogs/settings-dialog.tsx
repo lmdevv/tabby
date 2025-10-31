@@ -127,6 +127,7 @@ export function SettingsDialog({
   const { data: snapshotRetentionDays } = useAppState("snapshot:retentionDays");
   const { data: aiMode } = useAppState("ai:mode");
   const { data: showUrls } = useAppState("showUrls");
+  const { data: startupAutoRollback } = useAppState("startup:autoRollback");
   const { updateState } = useUpdateState();
 
   const handleExport = async () => {
@@ -495,6 +496,27 @@ export function SettingsDialog({
                           <SelectItem value="0">Unlimited</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Automatically restore previous snapshot on startup
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        When enabled, Tabby will restore the latest snapshot
+                        when browser starts, regardless of browser's startup
+                        setting
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Switch
+                        checked={startupAutoRollback === true}
+                        onCheckedChange={(checked) =>
+                          updateState("startup:autoRollback", checked)
+                        }
+                      />
                     </div>
                   </div>
                 </div>

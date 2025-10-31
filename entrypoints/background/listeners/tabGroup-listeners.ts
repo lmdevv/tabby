@@ -76,12 +76,43 @@ export async function syncAllTabGroups(
 
     // Execute database operations
     await db.transaction("rw", db.tabGroups, db.activeTabs, async () => {
+      // Try bulkAdd first, fall back to individual puts on BulkError
       if (newGroups.length > 0) {
-        await db.tabGroups.bulkAdd(newGroups);
+        try {
+          await db.tabGroups.bulkAdd(newGroups);
+        } catch (bulkError) {
+          // If bulkAdd fails (e.g., due to conflicts), fall back to individual puts
+          console.warn(
+            "bulkAdd failed, falling back to individual operations:",
+            bulkError,
+          );
+          for (const group of newGroups) {
+            try {
+              await db.tabGroups.put(group);
+            } catch (err) {
+              console.error(`Failed to add group ${group.id}:`, err);
+            }
+          }
+        }
       }
 
       if (updatedGroups.length > 0) {
-        await db.tabGroups.bulkPut(updatedGroups);
+        try {
+          await db.tabGroups.bulkPut(updatedGroups);
+        } catch (bulkError) {
+          // If bulkPut fails, fall back to individual puts
+          console.warn(
+            "bulkPut failed, falling back to individual operations:",
+            bulkError,
+          );
+          for (const group of updatedGroups) {
+            try {
+              await db.tabGroups.put(group);
+            } catch (err) {
+              console.error(`Failed to update group ${group.id}:`, err);
+            }
+          }
+        }
       }
 
       if (groupsToArchive.length > 0) {
@@ -90,7 +121,22 @@ export async function syncAllTabGroups(
           groupStatus: "archived" as const,
           updatedAt: now,
         }));
-        await db.tabGroups.bulkPut(archivedGroups);
+        try {
+          await db.tabGroups.bulkPut(archivedGroups);
+        } catch (bulkError) {
+          // If bulkPut fails, fall back to individual puts
+          console.warn(
+            "bulkPut (archive) failed, falling back to individual operations:",
+            bulkError,
+          );
+          for (const group of archivedGroups) {
+            try {
+              await db.tabGroups.put(group);
+            } catch (err) {
+              console.error(`Failed to archive group ${group.id}:`, err);
+            }
+          }
+        }
 
         // Unset groupId on tabs that referenced now-archived groups
         const groupIds = groupsToArchive

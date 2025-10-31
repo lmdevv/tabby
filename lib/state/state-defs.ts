@@ -28,6 +28,9 @@ export const stateDefs = {
   // Snapshot State
   "snapshot:retentionDays": { default: 7 as number },
 
+  // Startup State
+  "startup:autoRollback": { default: false as boolean },
+
   // Window Navigation State
   activeWindowId: { default: "-1" as string },
 
