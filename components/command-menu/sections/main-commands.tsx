@@ -96,7 +96,9 @@ export function MainCommands({
     }
 
     try {
-      toast.loading("Analyzing tabs with AI...", { id: "ai-clean-analysis" });
+      toast.loading("Tabby is analyzing your tabs...", {
+        id: "ai-clean-analysis",
+      });
       const proposedTabIds = await getAIProposedTabsToClean(
         workspaceId,
         customInstructions,
