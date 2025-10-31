@@ -230,6 +230,31 @@ export function setupTabGroupListeners(
         .and((tab) => tab.groupId === group.id && tab.tabStatus === "archived")
         .toArray();
 
+      // Verify that tabs in the group actually exist in the browser
+      if (activeTabsInGroup.length > 0) {
+        const tabsToRemove: number[] = [];
+
+        // Check each tab individually
+        for (const tab of activeTabsInGroup) {
+          if (tab.id != null) {
+            try {
+              await browser.tabs.get(tab.id);
+              // Tab exists, keep it
+            } catch {
+              // Tab doesn't exist in browser, mark for removal
+              tabsToRemove.push(tab.id);
+            }
+          }
+        }
+
+        if (tabsToRemove.length > 0) {
+          console.log(
+            `🧹 Cleaning up ${tabsToRemove.length} orphaned tabs from deleted group ${group.title || group.id}`,
+          );
+          await db.activeTabs.where("id").anyOf(tabsToRemove).delete();
+        }
+      }
+
       if (activeTabsInGroup.length === 0 && archivedTabsInGroup.length > 0) {
         // No active tabs but archived tabs exist - likely workspace switching
         const archivedGroup: TabGroup = {

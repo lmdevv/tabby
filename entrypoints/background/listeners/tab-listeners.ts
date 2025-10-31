@@ -151,6 +151,16 @@ export function setupTabListeners(
     const dbTab = await db.activeTabs.get(tabId);
     if (!dbTab || dbTab.tabStatus === "archived") return;
 
+    // Verify tab still exists in browser before processing updates
+    // This prevents race conditions when tabs are being closed
+    try {
+      await browser.tabs.get(tabId);
+    } catch (_e) {
+      // Tab doesn't exist in browser, skip update
+      // The onRemoved listener will handle cleanup
+      return;
+    }
+
     const now = Date.now();
 
     // Check if groupId has changed (tab ungrouped or moved to different group)
