@@ -24,6 +24,8 @@ const keybindings: KeybindingCategory[] = [
     bindings: [
       { keys: ["j", "↓"], description: "Move to next tab/group" },
       { keys: ["k", "↑"], description: "Move to previous tab/group" },
+      { keys: ["h", "←"], description: "Move to previous window" },
+      { keys: ["l", "→"], description: "Move to next window" },
       { keys: ["gg"], description: "Go to first tab/group" },
       { keys: ["G"], description: "Go to last tab/group" },
       { keys: ["z"], description: "Center focused tab in view" },
