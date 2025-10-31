@@ -14,6 +14,7 @@ export default defineConfig({
       "open-command-menu": {
         suggested_key: {
           default: "Ctrl+Space",
+          mac: "MacCtrl+Space",
         },
         description: "Open Tabby command menu",
       },
