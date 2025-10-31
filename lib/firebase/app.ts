@@ -35,7 +35,7 @@ export async function createFirebaseAIModel(
 ): Promise<GenerativeModel> {
   const mode =
     options.modeOverride ??
-    (stateCache.getCachedItem("ai:mode") as InferenceMode | null) ??
+    (stateCache.getCachedItem("ai:mode") as InferenceMode) ??
     InferenceMode.PREFER_ON_DEVICE;
 
   const modelName = options.modelName ?? "gemini-2.0-flash-lite";
