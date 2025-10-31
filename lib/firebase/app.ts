@@ -1,10 +1,10 @@
 import {
-  type Schema,
   type GenerativeModel,
   GoogleAIBackend,
   getAI,
   getGenerativeModel,
   InferenceMode,
+  type Schema,
 } from "firebase/ai";
 import { initializeApp } from "firebase/app";
 import { stateCache } from "@/lib/db/cache-manager";
