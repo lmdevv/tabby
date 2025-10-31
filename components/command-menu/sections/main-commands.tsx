@@ -113,6 +113,8 @@ export function MainCommands({
 
       // Open the review dialog
       onOpenAICleanReview?.(proposedTabIds, customInstructions);
+
+      onClose();
     } catch (error) {
       console.error("Failed to analyze tabs for cleaning:", error);
       toast.error("Failed to analyze tabs for cleaning", {
