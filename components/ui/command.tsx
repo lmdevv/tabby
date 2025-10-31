@@ -28,7 +28,7 @@ const CommandDialog = ({
 }: React.ComponentProps<typeof Dialog>) => {
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
+      <DialogContent className="overflow-hidden p-0 shadow-lg" showCloseButton={false}>
         <DialogTitle className="sr-only">Command Menu</DialogTitle>
         <DialogDescription className="sr-only">
           Search and execute commands for tab management and workspace operations
