@@ -51,6 +51,9 @@ interface WindowComponentProps {
   isPreview?: boolean;
   // Whether this window is the active one for keyboard navigation
   isActiveWindow: boolean;
+  // Window navigation callbacks
+  onFocusPrevWindow: () => void;
+  onFocusNextWindow: () => void;
   // Callback to open keybindings dialog
   onOpenKeybindingsDialog: () => void;
 }
@@ -62,6 +65,8 @@ export function WindowComponent({
   onEditGroup,
   isPreview = false,
   isActiveWindow,
+  onFocusPrevWindow,
+  onFocusNextWindow,
   onOpenKeybindingsDialog,
 }: WindowComponentProps) {
   // Focus management for vim keybindings
@@ -508,6 +513,8 @@ export function WindowComponent({
       toggleGroupCollapse,
       scrollTabIntoView,
       isActiveWindow,
+      goToPrevWindow: onFocusPrevWindow,
+      goToNextWindow: onFocusNextWindow,
       onOpenKeybindingsDialog,
     });
 
@@ -531,6 +538,8 @@ export function WindowComponent({
     toggleShowResources,
     toggleGroupCollapse,
     isActiveWindow,
+    onFocusPrevWindow,
+    onFocusNextWindow,
     onOpenKeybindingsDialog,
   ]);
 

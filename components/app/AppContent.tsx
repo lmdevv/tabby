@@ -136,49 +136,31 @@ export function AppContent({
     }
   }, [windowGroups, activeWindowId, updateState]);
 
-  // Window switching keyboard handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if no input is focused and we have windows
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        windowGroups.length === 0
-      ) {
-        return;
-      }
-
-      if (
-        e.key === "h" ||
-        e.key === "l" ||
-        e.key === "ArrowLeft" ||
-        e.key === "ArrowRight"
-      ) {
-        e.preventDefault();
-
-        const currentIndex = windowGroups.findIndex(
-          (w) => w.windowId.toString() === activeWindowId,
-        );
-        if (currentIndex === -1) return;
-
-        let nextIndex: number;
-        if (e.key === "h" || e.key === "ArrowLeft") {
-          // Move left (wrap around)
-          nextIndex =
-            currentIndex === 0 ? windowGroups.length - 1 : currentIndex - 1;
-        } else {
-          // Move right (wrap around)
-          nextIndex =
-            currentIndex === windowGroups.length - 1 ? 0 : currentIndex + 1;
-        }
-
-        const nextWindowId = windowGroups[nextIndex].windowId.toString();
-        updateState("activeWindowId", nextWindowId);
-      }
+  // Window navigation callbacks
+  const goToPrevWindow = useMemo(() => {
+    return () => {
+      const currentIndex = windowGroups.findIndex(
+        (w) => w.windowId.toString() === activeWindowId,
+      );
+      if (currentIndex === -1 || windowGroups.length === 0) return;
+      const nextIndex =
+        currentIndex === 0 ? windowGroups.length - 1 : currentIndex - 1;
+      const nextWindowId = windowGroups[nextIndex].windowId.toString();
+      updateState("activeWindowId", nextWindowId);
     };
+  }, [windowGroups, activeWindowId, updateState]);
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+  const goToNextWindow = useMemo(() => {
+    return () => {
+      const currentIndex = windowGroups.findIndex(
+        (w) => w.windowId.toString() === activeWindowId,
+      );
+      if (currentIndex === -1 || windowGroups.length === 0) return;
+      const nextIndex =
+        currentIndex === windowGroups.length - 1 ? 0 : currentIndex + 1;
+      const nextWindowId = windowGroups[nextIndex].windowId.toString();
+      updateState("activeWindowId", nextWindowId);
+    };
   }, [windowGroups, activeWindowId, updateState]);
 
   return (
@@ -224,6 +206,8 @@ export function AppContent({
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
                                   isActiveWindow={isActiveWindow}
+                                  onFocusPrevWindow={goToPrevWindow}
+                                  onFocusNextWindow={goToNextWindow}
                                   onOpenKeybindingsDialog={
                                     onOpenKeybindingsDialog
                                   }
@@ -294,6 +278,8 @@ export function AppContent({
                                   onEditGroup={onEditGroup}
                                   isPreview={isPreview}
                                   isActiveWindow={isActiveWindow}
+                                  onFocusPrevWindow={goToPrevWindow}
+                                  onFocusNextWindow={goToNextWindow}
                                   onOpenKeybindingsDialog={
                                     onOpenKeybindingsDialog
                                   }

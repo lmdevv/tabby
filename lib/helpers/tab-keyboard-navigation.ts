@@ -41,6 +41,9 @@ export interface TabKeyboardNavigationProps {
   scrollTabIntoView: (tabId: number) => void;
   // Window activity
   isActiveWindow: boolean;
+  // Window navigation
+  goToPrevWindow: () => void;
+  goToNextWindow: () => void;
   // Open keybindings dialog
   onOpenKeybindingsDialog: () => void;
 }
@@ -70,6 +73,8 @@ export function createTabKeyboardHandler({
   toggleGroupCollapse,
   scrollTabIntoView,
   isActiveWindow,
+  goToPrevWindow,
+  goToNextWindow,
   onOpenKeybindingsDialog,
 }: TabKeyboardNavigationProps) {
   // Helper function to get only tab items for visual selection
@@ -119,6 +124,16 @@ export function createTabKeyboardHandler({
     }
 
     switch (e.key) {
+      case "h": // h - go to previous window
+      case "ArrowLeft":
+        e.preventDefault();
+        goToPrevWindow();
+        break;
+      case "l": // l - go to next window
+      case "ArrowRight":
+        e.preventDefault();
+        goToNextWindow();
+        break;
       case " ": // Space - toggle selection of focused tab
         e.preventDefault();
         if (focusedTabId) {
