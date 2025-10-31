@@ -3,38 +3,6 @@ import { db } from "@/lib/db/db";
 import { UNASSIGNED_WORKSPACE_ID } from "@/lib/types/constants";
 import type { Tab, TabGroup } from "@/lib/types/types";
 
-export async function refreshActiveTabs() {
-  const liveTabs = await browser.tabs.query({});
-  const activeWorkspace = await db.workspaces.where("active").equals(1).first();
-  const targetWorkspaceId = activeWorkspace
-    ? activeWorkspace.id
-    : UNASSIGNED_WORKSPACE_ID;
-
-  // Include all tabs, including dashboard
-  const allTabs = liveTabs;
-
-  // Clear all active tabs for the target workspace
-  await db.activeTabs
-    .where("workspaceId")
-    .equals(targetWorkspaceId)
-    .and((tab) => tab.tabStatus === "active")
-    .delete();
-
-  const now = Date.now();
-  const toAdd = allTabs.map(
-    (t): Tab => ({
-      ...t,
-      stableId: crypto.randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-      tabStatus: "active",
-      workspaceId: targetWorkspaceId,
-    }),
-  );
-
-  await db.activeTabs.bulkPut(toAdd);
-}
-
 export async function shiftIndices(
   windowId: number,
   start: number,

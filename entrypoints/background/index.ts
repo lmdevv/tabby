@@ -12,7 +12,6 @@ import { registerMessageHandlers } from "@/entrypoints/background/messages";
 import {
   hardRefreshTabsAndGroups,
   reconcileTabs,
-  refreshActiveTabs,
 } from "@/entrypoints/background/operations/db-operations";
 import {
   initSnapshotScheduler,
@@ -65,19 +64,8 @@ export default defineBackground(() => {
     console.error(e);
   }
 
-  //
-  // Tabs
-  //
-  refreshActiveTabs();
-
   // Setup tab listeners
   setupTabListeners(() => activeWorkspace);
-
-  //
-  // Tab Groups
-  //
-  // Initial sync of all existing tab groups on startup
-  syncAllTabGroups(() => activeWorkspace);
 
   // Setup tab group listeners
   setupTabGroupListeners(() => activeWorkspace);
