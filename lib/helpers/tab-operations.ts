@@ -124,13 +124,13 @@ export async function aiGroupTabsCustom(
       id: "ai-custom-grouping",
     });
     await aiGroupTabsInWorkspaceCustom(options.workspaceId, customInstructions);
-    toast.success("Tabs grouped with custom AI successfully", {
+    toast.success("Tabs grouped with Tabby successfully", {
       id: "ai-custom-grouping",
     });
     options.onClose?.();
   } catch (error) {
-    console.error("Failed to AI custom group tabs:", error);
-    toast.error("Failed to AI custom group tabs", { id: "ai-custom-grouping" });
+    console.error("Failed to group tabs:", error);
+    toast.error("Failed to group tabs", { id: "ai-custom-grouping" });
   }
 }
 

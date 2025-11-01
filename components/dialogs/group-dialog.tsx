@@ -95,7 +95,7 @@ export function GroupDialog({
         setName(suggestion.title);
       }
     } catch (error) {
-      console.error("Failed to generate with AI:", error);
+      console.error("Failed to generate with Tabby:", error);
     } finally {
       setIsGenerating(false);
     }
