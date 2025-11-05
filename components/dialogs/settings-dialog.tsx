@@ -128,6 +128,9 @@ export function SettingsDialog({
   const { data: aiMode } = useAppState("ai:mode");
   const { data: showUrls } = useAppState("showUrls");
   const { data: startupAutoRollback } = useAppState("startup:autoRollback");
+  const { data: preservePinnedTabs } = useAppState(
+    "workspace:preservePinnedTabs",
+  );
   const { updateState } = useUpdateState();
 
   const handleExport = async () => {
@@ -377,7 +380,7 @@ export function SettingsDialog({
                 </Breadcrumb>
               </div>
             </header>
-            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
+            <div className="flex flex-1 flex-col gap-6 overflow-y-auto scrollbar-none p-6">
               {activeTab === "Preferences" && (
                 <div className="space-y-6">
                   <div className="flex gap-4 items-center">
@@ -515,6 +518,25 @@ export function SettingsDialog({
                         checked={startupAutoRollback === true}
                         onCheckedChange={(checked) =>
                           updateState("startup:autoRollback", checked)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Don't switch pinned tabs
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Keep pinned tabs open when switching workspaces
+                      </div>
+                    </div>
+                    <div className="flex-none self-center">
+                      <Switch
+                        checked={preservePinnedTabs === true}
+                        onCheckedChange={(checked) =>
+                          updateState("workspace:preservePinnedTabs", checked)
                         }
                       />
                     </div>

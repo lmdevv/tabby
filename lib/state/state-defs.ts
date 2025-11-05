@@ -31,6 +31,9 @@ export const stateDefs = {
   // Startup State
   "startup:autoRollback": { default: false as boolean },
 
+  // Workspace State
+  "workspace:preservePinnedTabs": { default: false as boolean },
+
   // Window Navigation State
   activeWindowId: { default: "-1" as string },
 

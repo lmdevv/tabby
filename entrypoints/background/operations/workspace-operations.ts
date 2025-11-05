@@ -6,6 +6,7 @@ import {
   isDashboardTab,
 } from "@/entrypoints/background/utils";
 import { db } from "@/lib/db/db";
+import { getDefaultValue } from "@/lib/state/state-defs";
 import type { Tab, Workspace } from "@/lib/types/types";
 
 /**
@@ -155,6 +156,16 @@ export async function createWorkspaceFromUrls(
  */
 export async function switchWorkspaceTabs(workspaceId: number) {
   try {
+    // Get the preserve pinned tabs setting
+    const preservePinnedTabsSetting = await db.state
+      .where("key")
+      .equals("workspace:preservePinnedTabs")
+      .first();
+    const defaultValue = getDefaultValue("workspace:preservePinnedTabs");
+    const preservePinnedTabs = preservePinnedTabsSetting
+      ? Boolean(preservePinnedTabsSetting.value)
+      : defaultValue;
+
     // Get tabs for the new workspace from the database
     const workspaceTabsToOpen = await db.activeTabs
       .where("workspaceId")
@@ -204,6 +215,11 @@ export async function switchWorkspaceTabs(workspaceId: number) {
           }
           // Dashboard tabs are not added to the list of tabs to close
         } else {
+          // If preserve pinned tabs is enabled, don't close pinned tabs
+          if (preservePinnedTabs && tab.pinned) {
+            // Skip closing pinned tabs
+            continue;
+          }
           nonDashboardTabIdsToClose.push(tab.id);
         }
       }
