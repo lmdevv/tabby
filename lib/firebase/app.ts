@@ -10,12 +10,12 @@ import { initializeApp } from "firebase/app";
 import { stateCache } from "@/lib/db/cache-manager";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBAXUMqvmmCz40rtii24DdxSQ3IBnjk2-E",
-  authDomain: "tabby-ed02f.firebaseapp.com",
-  projectId: "tabby-ed02f",
-  storageBucket: "tabby-ed02f.firebasestorage.app",
-  messagingSenderId: "1051399937967",
-  appId: "1:1051399937967:web:6c798b2796d26d9815195a",
+  apiKey: "AIzaSyC5-9m_fCvRqE0n5Ci3ixXZjFkCwD47f-U",
+  authDomain: "tabby-dev-efc89.firebaseapp.com",
+  projectId: "tabby-dev-efc89",
+  storageBucket: "tabby-dev-efc89.firebasestorage.app",
+  messagingSenderId: "382763198981",
+  appId: "1:382763198981:web:bb768b13a77269eaa34a6c",
 };
 
 // Initialize Firebase
