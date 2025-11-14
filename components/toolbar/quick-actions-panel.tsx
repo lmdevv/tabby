@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { Copy, Folder, Layers, Monitor, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { CommandMenu } from "@/components/command-menu/command-menu";
 import { Button } from "@/components/ui/button";
@@ -73,9 +73,9 @@ export function QuickActionsPanel() {
     await copyMultipleTabLinks(selectedTabData);
   };
 
-  const handleAddToResourceGroup = () => {
+  const handleAddToResourceGroup = useCallback(() => {
     setCommandMenuOpen(true);
-  };
+  }, []);
 
   const handleSelectResourceGroup = async (groupId: number) => {
     if (!selectedTabData?.length) return;
@@ -93,9 +93,42 @@ export function QuickActionsPanel() {
     handleSelectionCleared();
   };
 
-  const handleAddToWorkspace = () => {
+  const handleAddToWorkspace = useCallback(() => {
     setWorkspaceCommandMenuOpen(true);
-  };
+  }, []);
+
+  // Keyboard shortcuts for quick actions
+  useEffect(() => {
+    if (currentSelectedTabsCount === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if no input is focused
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case "e":
+          e.preventDefault();
+          handleAddToResourceGroup();
+          break;
+        case "w":
+          e.preventDefault();
+          handleAddToWorkspace();
+          break;
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    currentSelectedTabsCount,
+    handleAddToResourceGroup,
+    handleAddToWorkspace,
+  ]);
 
   if (currentSelectedTabsCount === 0) return null;
 
@@ -160,7 +193,7 @@ export function QuickActionsPanel() {
                 <Folder className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add to Resource Group</TooltipContent>
+            <TooltipContent>Add to Resource Group (E)</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -174,7 +207,7 @@ export function QuickActionsPanel() {
                 <Monitor className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add to Workspace</TooltipContent>
+            <TooltipContent>Add to Workspace (W)</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

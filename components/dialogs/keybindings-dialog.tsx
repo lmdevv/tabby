@@ -68,6 +68,19 @@ const keybindings: KeybindingCategory[] = [
     ],
   },
   {
+    category: "Quick Actions",
+    bindings: [
+      {
+        keys: ["e"],
+        description: "Add selected tabs to resource group",
+      },
+      {
+        keys: ["w"],
+        description: "Add selected tabs to workspace",
+      },
+    ],
+  },
+  {
     category: "Global",
     bindings: [
       { keys: ["Ctrl", "Space"], description: "Open command menu" },
