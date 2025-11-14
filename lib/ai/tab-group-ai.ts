@@ -5,6 +5,7 @@
 
 import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { tabGroupSchema } from "@/lib/ai/schemas";
+import { encodeForPrompt } from "@/lib/ai/toon-utils";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 import type { Tab } from "@/lib/types/types";
@@ -26,13 +27,11 @@ Rules:
 Analyze the following tabs and create a title:`;
 
 function formatTabsForPrompt(tabs: Tab[]): string {
-  return JSON.stringify(
+  return encodeForPrompt(
     tabs.map((tab) => ({
       title: tab.title || "Untitled",
       url: tab.url || "",
     })),
-    null,
-    2,
   );
 }
 
@@ -77,7 +76,7 @@ export async function generateTabGroupTitle(
             .map((g) => g.title)
             .filter(Boolean),
         };
-        prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
+        prompt += `\n\nWorkspace Context: ${encodeForPrompt(contextForPrompt)}`;
       } catch (error) {
         console.warn(
           "Failed to build workspace context for tab group naming:",

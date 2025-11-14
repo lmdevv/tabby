@@ -4,6 +4,7 @@
  */
 
 import type { WorkspaceContext } from "@/lib/ai/context";
+import { encodeForPrompt } from "@/lib/ai/toon-utils";
 
 export interface TabInfo {
   id: number;
@@ -43,12 +44,12 @@ Analyze the following workspace context and create appropriate groups:`;
 export function formatWorkspaceContextForPrompt(
   context: WorkspaceContext,
 ): string {
-  return JSON.stringify(context, null, 2);
+  return encodeForPrompt(context);
 }
 
 // Legacy function for backward compatibility
 export function formatTabsForPrompt(tabs: TabInfo[]): string {
-  return JSON.stringify(tabs, null, 2);
+  return encodeForPrompt(tabs);
 }
 
 export function validateAIGroupResponse(

@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/context";
 import { cleanSchema } from "@/lib/ai/schemas";
 import { AI_CLEAN_PROMPT } from "@/lib/ai/tab-cleaning-prompt";
+import { encodeForPrompt } from "@/lib/ai/toon-utils";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 
 /**
@@ -42,7 +43,7 @@ export async function getAIProposedTabsToClean(
         tabs: context.tabs,
         ...(context.windows && { windows: context.windows }),
       };
-      return JSON.stringify(contextObj, null, 2);
+      return encodeForPrompt(contextObj);
     };
 
     // Prepare the prompt with workspace context and custom instructions

@@ -5,6 +5,7 @@
 
 import { buildWorkspaceAIContext } from "@/lib/ai/context";
 import { resourceGroupSchema } from "@/lib/ai/schemas";
+import { encodeForPrompt } from "@/lib/ai/toon-utils";
 import { db } from "@/lib/db/db";
 import { createFirebaseAIModel } from "@/lib/firebase/app";
 import type { Resource } from "@/lib/types/types";
@@ -35,15 +36,13 @@ Rules:
 Analyze the following resources and create a title and description:`;
 
 function formatResourcesForPrompt(resources: Resource[]): string {
-  return JSON.stringify(
+  return encodeForPrompt(
     resources.map((r) => ({
       title: r.title || "Untitled",
       url: r.url || "",
       description: r.description || "",
       tags: r.tags || [],
     })),
-    null,
-    2,
   );
 }
 
@@ -91,7 +90,7 @@ export async function generateResourceGroupTitleAndDescription(
             .map((g) => g.title)
             .filter(Boolean),
         };
-        prompt += `\n\nWorkspace Context: ${JSON.stringify(contextForPrompt, null, 2)}`;
+        prompt += `\n\nWorkspace Context: ${encodeForPrompt(contextForPrompt)}`;
       } catch (error) {
         console.warn(
           "Failed to build workspace context for resource grouping:",

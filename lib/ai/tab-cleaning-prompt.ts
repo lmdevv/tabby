@@ -3,6 +3,8 @@
  * This prompt is designed to work with local AI models via Chrome's Prompt API
  */
 
+import { encodeForPrompt } from "@/lib/ai/toon-utils";
+
 export interface TabInfo {
   id: number;
   title: string;
@@ -26,7 +28,7 @@ Rules:
 Analyze the following tabs and identify which ones to close:`;
 
 export function formatTabsForCleanPrompt(tabs: TabInfo[]): string {
-  return JSON.stringify(tabs, null, 2);
+  return encodeForPrompt(tabs);
 }
 
 export function validateAICleanResponse(
