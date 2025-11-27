@@ -47,6 +47,7 @@ const keybindings: KeybindingCategory[] = [
       { keys: ["x"], description: "Delete selected tabs (or focused tab)" },
       { keys: ["r"], description: "Refresh all tabs" },
       { keys: ["R"], description: "Toggle resources panel" },
+      { keys: ["P"], description: "Pin/unpin focused tab" },
     ],
   },
   {

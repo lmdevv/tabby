@@ -14,6 +14,7 @@ export interface TabKeyboardNavigationProps {
   handleDeleteTab: (id: number) => Promise<void>;
   handleActivateTab: (id: number) => Promise<void>;
   handleRefreshTabs: () => Promise<void>;
+  handlePinTab: (id: number) => Promise<void>;
   focusedTabId: number | null;
   focusedGroupId: number | null;
   clipboardTabId: number | null;
@@ -54,6 +55,7 @@ export function createTabKeyboardHandler({
   handleDeleteTab,
   handleActivateTab,
   handleRefreshTabs,
+  handlePinTab,
   focusedTabId,
   focusedGroupId,
   clipboardTabId,
@@ -257,6 +259,12 @@ export function createTabKeyboardHandler({
           // Move clipboard tab to focused position
           moveTabToPosition(clipboardTabId, focusedTabId);
           setClipboardTabId(null);
+        }
+        break;
+      case "P": // P for pin focused tab
+        e.preventDefault();
+        if (focusedTabId) {
+          handlePinTab(focusedTabId);
         }
         break;
       case "x": // x for delete tab(s)

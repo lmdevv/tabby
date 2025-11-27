@@ -143,6 +143,20 @@ export function WindowComponent({
     }
   }, []);
 
+  const handlePinTab = useCallback(
+    async (id: number) => {
+      try {
+        const tab = tabs?.find((t) => t.id === id);
+        if (tab) {
+          await browser.tabs.update(id, { pinned: !tab.pinned });
+        }
+      } catch (error) {
+        console.error("Failed to toggle pin state:", error);
+      }
+    },
+    [tabs],
+  );
+
   const handleActivateTab = useCallback(async (id: number) => {
     try {
       await browser.tabs.update(id, { active: true });
@@ -494,6 +508,7 @@ export function WindowComponent({
       handleDeleteTab,
       handleActivateTab,
       handleRefreshTabs,
+      handlePinTab,
       focusedTabId,
       focusedGroupId,
       clipboardTabId,
@@ -529,6 +544,7 @@ export function WindowComponent({
     handleDeleteTab,
     handleActivateTab,
     handleRefreshTabs,
+    handlePinTab,
     isVisualMode,
     visualStartTabId,
     selectedTabs,
