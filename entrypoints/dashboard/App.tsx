@@ -17,7 +17,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 import { db } from "@/lib/db/db";
 import { createResourceGroup } from "@/lib/helpers/resource-helpers";
-import type { Tab } from "@/lib/types/types";
+import type { Tab, Workspace } from "@/lib/types/types";
 import { hexToBrowserColor } from "@/lib/ui/tab-group-colors";
 
 export default function App() {
@@ -203,15 +203,38 @@ export default function App() {
   }, []);
 
   const handleEditWorkspaceConfirm = useCallback(
-    async (name: string) => {
-      if (workspaceDialog.workspaceId) {
-        try {
-          await db.workspaces.update(workspaceDialog.workspaceId, {
-            name,
-          });
-        } catch (error) {
-          console.error("Failed to update workspace:", error);
+    async (name: string, groupId?: number, newGroupName?: string) => {
+      const workspaceId = workspaceDialog.workspaceId;
+      if (!workspaceId) return;
+
+      try {
+        if (newGroupName) {
+          // Create new group and assign workspace to it
+          await db.transaction(
+            "rw",
+            db.workspaceGroups,
+            db.workspaces,
+            async () => {
+              const newGroupId = await db.workspaceGroups.add({
+                name: newGroupName,
+                collapsed: 1,
+              });
+              await db.workspaces.update(workspaceId, {
+                name,
+                groupId: newGroupId,
+              });
+            },
+          );
+        } else {
+          // Update workspace with existing group or no group
+          const updateData: Partial<Workspace> = { name };
+          if (groupId !== undefined) {
+            updateData.groupId = groupId;
+          }
+          await db.workspaces.update(workspaceId, updateData);
         }
+      } catch (error) {
+        console.error("Failed to update workspace:", error);
       }
     },
     [workspaceDialog.workspaceId],
