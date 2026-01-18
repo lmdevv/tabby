@@ -7,7 +7,7 @@ import {
   cleanUnusedTabsInWorkspace,
   closeTabsByIdsInWorkspace,
 } from "@/entrypoints/background/operations/cleaning-operations";
-import { reconcileTabs } from "@/entrypoints/background/operations/db-operations";
+import { hardRefreshTabsAndGroups } from "@/entrypoints/background/operations/db-operations";
 import { convertTabGroupToResource } from "@/entrypoints/background/operations/resource-operations";
 import {
   groupTabsInWorkspace,
@@ -198,7 +198,7 @@ const handlers: Partial<HandlersMap> = {
   },
 
   async refreshTabs() {
-    await reconcileTabs();
+    await hardRefreshTabsAndGroups();
     return { success: true };
   },
 
