@@ -49,6 +49,14 @@ class TabManagerDB extends Dexie {
     this.version(2).stores({
       state: "++id, &key, createdAt, updatedAt",
     });
+
+    // Version 3: Add compound indexes for efficient archived data cleanup queries
+    this.version(3).stores({
+      activeTabs:
+        "++id, windowId, workspaceId, title, index, url, groupId, updatedAt, tabStatus, stableId, [tabStatus+updatedAt]",
+      tabGroups:
+        "++id, windowId, workspaceId, title, color, collapsed, createdAt, updatedAt, stableId, groupStatus, [groupStatus+updatedAt]",
+    });
   }
 }
 

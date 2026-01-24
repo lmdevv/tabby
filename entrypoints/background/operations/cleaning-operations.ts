@@ -461,6 +461,58 @@ export async function cleanAllTabsInWorkspace(workspaceId: number) {
  * @param tabIds - Array of tab IDs to close.
  * @returns A Promise that resolves when the tabs are closed.
  */
+/**
+ * Purges archived tabs older than a threshold to free up storage.
+ * @param daysThreshold - Delete archived tabs older than this many days (default: 30)
+ * @returns The number of archived tabs deleted
+ */
+export async function purgeArchivedTabs(
+  daysThreshold: number = 30,
+): Promise<number> {
+  const cutoffTime = Date.now() - daysThreshold * 24 * 60 * 60 * 1000;
+
+  const archivedTabsToDelete = await db.activeTabs
+    .where("tabStatus")
+    .equals("archived")
+    .and((tab) => tab.updatedAt < cutoffTime)
+    .toArray();
+
+  if (archivedTabsToDelete.length === 0) return 0;
+
+  const stableIdsToDelete = archivedTabsToDelete.map((t) => t.stableId);
+  await db.activeTabs.where("stableId").anyOf(stableIdsToDelete).delete();
+
+  console.log(`🗑️ Purged ${archivedTabsToDelete.length} old archived tabs`);
+  return archivedTabsToDelete.length;
+}
+
+/**
+ * Purges archived tab groups older than a threshold to free up storage.
+ * @param daysThreshold - Delete archived groups older than this many days (default: 30)
+ * @returns The number of archived tab groups deleted
+ */
+export async function purgeArchivedTabGroups(
+  daysThreshold: number = 30,
+): Promise<number> {
+  const cutoffTime = Date.now() - daysThreshold * 24 * 60 * 60 * 1000;
+
+  const archivedGroupsToDelete = await db.tabGroups
+    .where("groupStatus")
+    .equals("archived")
+    .and((group) => group.updatedAt < cutoffTime)
+    .toArray();
+
+  if (archivedGroupsToDelete.length === 0) return 0;
+
+  const idsToDelete = archivedGroupsToDelete.map((g) => g.id);
+  await db.tabGroups.where("id").anyOf(idsToDelete).delete();
+
+  console.log(
+    `🗑️ Purged ${archivedGroupsToDelete.length} old archived tab groups`,
+  );
+  return archivedGroupsToDelete.length;
+}
+
 export async function closeTabsByIdsInWorkspace(
   workspaceId: number,
   tabIds: number[],

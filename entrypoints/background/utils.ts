@@ -77,3 +77,40 @@ export async function openUrlsInWindow(
   }
   return createdIds;
 }
+
+/**
+ * Wraps an async operation with quota error handling.
+ * If QuotaExceededError occurs, triggers cleanup and retries once.
+ */
+export async function withQuotaHandling<T>(
+  operation: () => Promise<T>,
+  cleanup?: () => Promise<void>,
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "QuotaExceededError" ||
+        error.message.includes("QuotaExceededError"))
+    ) {
+      console.warn("⚠️ Storage quota exceeded, attempting cleanup...");
+
+      // Run cleanup
+      if (cleanup) {
+        await cleanup();
+      } else {
+        // Default cleanup: purge old archived data
+        const { purgeArchivedTabs, purgeArchivedTabGroups } = await import(
+          "@/entrypoints/background/operations/cleaning-operations"
+        );
+        await purgeArchivedTabs(7); // More aggressive - 7 days
+        await purgeArchivedTabGroups(7);
+      }
+
+      // Retry the operation once
+      return await operation();
+    }
+    throw error;
+  }
+}

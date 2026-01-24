@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { sanitizeFavIconUrl } from "@/entrypoints/background/listeners/tab-listeners";
 import { db } from "@/lib/db/db";
 import { UNASSIGNED_WORKSPACE_ID } from "@/lib/types/constants";
 import type { Tab, TabGroup } from "@/lib/types/types";
@@ -126,6 +127,7 @@ export async function reconcileTabs() {
         await db.activeTabs.put({
           ...storedTab,
           ...liveTab,
+          favIconUrl: sanitizeFavIconUrl(liveTab.favIconUrl),
           updatedAt: now,
           stableId: storedTab.stableId, // Preserve stableId
         } as Tab);
@@ -156,6 +158,7 @@ export async function reconcileTabs() {
       await db.activeTabs.put({
         ...unmatchedStoredTab,
         ...liveTab,
+        favIconUrl: sanitizeFavIconUrl(liveTab.favIconUrl),
         updatedAt: now,
         stableId: unmatchedStoredTab.stableId, // Preserve stableId
       } as Tab);
@@ -172,6 +175,7 @@ export async function reconcileTabs() {
       );
       await db.activeTabs.put({
         ...liveTab,
+        favIconUrl: sanitizeFavIconUrl(liveTab.favIconUrl),
         stableId: crypto.randomUUID(),
         workspaceId: targetWorkspaceId,
         createdAt: now,
@@ -281,6 +285,7 @@ export async function hardRefreshTabsAndGroups(): Promise<void> {
   const tabsToAdd: Tab[] = liveTabs.map(
     (t): Tab => ({
       ...t,
+      favIconUrl: sanitizeFavIconUrl(t.favIconUrl),
       stableId: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,

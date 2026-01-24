@@ -10,6 +10,10 @@ import {
 } from "@/entrypoints/background/listeners/tabGroup-listeners";
 import { registerMessageHandlers } from "@/entrypoints/background/messages";
 import {
+  purgeArchivedTabGroups,
+  purgeArchivedTabs,
+} from "@/entrypoints/background/operations/cleaning-operations";
+import {
   hardRefreshTabsAndGroups,
   reconcileTabs,
 } from "@/entrypoints/background/operations/db-operations";
@@ -40,6 +44,44 @@ export default defineBackground(() => {
           active: true,
           index: 0,
         });
+      }
+
+      // One-time migration: Clean up existing large data URLs from favIconUrl
+      const migrationKey = "migration:v1-cleanup-favicons";
+      const migrationDone = await db.state
+        .where("key")
+        .equals(migrationKey)
+        .first();
+
+      if (!migrationDone) {
+        console.log("🔄 Running one-time data cleanup migration...");
+
+        // Strip data URLs from existing tabs
+        const allDbTabs = await db.activeTabs.toArray();
+        const tabsToUpdate = allDbTabs.filter((t) =>
+          t.favIconUrl?.startsWith("data:"),
+        );
+
+        for (const tab of tabsToUpdate) {
+          await db.activeTabs.update(tab.id, { favIconUrl: undefined });
+        }
+
+        // Purge old archived data aggressively
+        await purgeArchivedTabs(14);
+        await purgeArchivedTabGroups(14);
+
+        // Mark migration complete
+        const now = Date.now();
+        await db.state.add({
+          key: migrationKey,
+          value: "done",
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        console.log(
+          `✅ Migration complete: cleaned ${tabsToUpdate.length} tabs`,
+        );
       }
     } catch (err) {
       console.error("Error ensuring dashboard tab:", err);
@@ -79,6 +121,7 @@ export default defineBackground(() => {
     browser.alarms.create("reconcileTabs", { periodInMinutes: 5 });
     browser.alarms.create("validateTabs", { periodInMinutes: 5 });
     browser.alarms.create("syncTabGroups", { periodInMinutes: 5 });
+    browser.alarms.create("purgeArchivedData", { periodInMinutes: 60 }); // Run hourly
 
     browser.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === "reconcileTabs") {
@@ -92,6 +135,10 @@ export default defineBackground(() => {
       } else if (alarm.name === "syncTabGroups") {
         syncAllTabGroups(() => activeWorkspace).catch((err) =>
           console.error("Periodic tab group sync failed:", err),
+        );
+      } else if (alarm.name === "purgeArchivedData") {
+        Promise.all([purgeArchivedTabs(30), purgeArchivedTabGroups(30)]).catch(
+          (err) => console.error("Periodic archive cleanup failed:", err),
         );
       }
     });

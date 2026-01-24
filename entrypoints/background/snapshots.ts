@@ -85,7 +85,7 @@ export async function createWorkspaceSnapshot(
         snapshotId,
         url: t.url,
         title: t.title,
-        favIconUrl: t.favIconUrl,
+        // favIconUrl intentionally omitted to save storage - browser will fetch when needed
         pinned: t.pinned,
         index: t.index,
         description: t.description,

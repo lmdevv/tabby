@@ -8,6 +8,21 @@ import {
 } from "@/lib/types/constants";
 import type { Tab, Workspace } from "@/lib/types/types";
 
+/**
+ * Sanitizes favIconUrl to prevent storing large base64 data URLs.
+ * Data URLs can be 10KB+ each and cause quota issues.
+ * The browser will fetch favicons when needed for display.
+ */
+export function sanitizeFavIconUrl(
+  url: string | undefined,
+): string | undefined {
+  if (!url) return undefined;
+  // Skip data URLs (can be 10KB+ each) - browser will fetch when needed
+  if (url.startsWith("data:")) return undefined;
+  // Keep regular URLs (small, typically < 100 bytes)
+  return url;
+}
+
 // Helper function to validate and correct tab state with current browser state
 async function validateTabState(tabId: number, dbTab: Tab): Promise<Tab> {
   try {
@@ -117,6 +132,7 @@ export function setupTabListeners(
     const now = Date.now();
     const newRow: Tab = {
       ...tab,
+      favIconUrl: sanitizeFavIconUrl(tab.favIconUrl),
       stableId: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
@@ -262,6 +278,9 @@ export function setupTabListeners(
       ...dbTab,
       ...tab,
       ...changeInfo,
+      favIconUrl: sanitizeFavIconUrl(
+        tab.favIconUrl || changeInfo.favIconUrl || dbTab.favIconUrl,
+      ),
       updatedAt: now,
       // Preserve the stableId from the existing database record
       stableId: dbTab.stableId,
