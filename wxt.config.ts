@@ -9,7 +9,14 @@ export default defineConfig({
   },
   modules: ["@wxt-dev/module-react"],
   manifest: {
-    permissions: ["tabs", "storage", "tabGroups", "alarms", "nativeMessaging"],
+    permissions: [
+      "tabs",
+      "storage",
+      "tabGroups",
+      "alarms",
+      "nativeMessaging",
+      "unlimitedStorage",
+    ],
     commands: {
       "open-command-menu": {
         suggested_key: {
