@@ -4,9 +4,11 @@ import { ResourcesPanel } from "@/components/resources/resources-panel";
 import { WindowComponent } from "@/components/tabs/window-component";
 import { TopToolbar } from "@/components/toolbar/top-toolbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useGlobalKeybindings } from "@/hooks/use-global-keybindings";
 import { useAppState, useUpdateState } from "@/hooks/use-state";
 
 import { db } from "@/lib/db/db";
+import { refreshTabs } from "@/lib/helpers/tab-operations";
 import type { Tab } from "@/lib/types/types";
 
 interface WindowGroupData {
@@ -188,6 +190,17 @@ export function AppContent({
     updateState("activeWindowId", nextWindowId);
   }, [windowGroups, effectiveActiveWindowId, activeWindowId, updateState]);
 
+  // Refresh tabs handler for global keybindings
+  const handleRefreshTabs = useCallback(async () => {
+    await refreshTabs({ workspaceId: shownWorkspaceId });
+  }, [shownWorkspaceId]);
+
+  // Global keybindings that work regardless of tab state
+  useGlobalKeybindings({
+    onOpenKeybindingsDialog,
+    onRefreshTabs: handleRefreshTabs,
+  });
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <div className="flex-1 h-full">
@@ -196,58 +209,57 @@ export function AppContent({
           <div className="grid gap-4 h-full overflow-hidden grid-cols-[minmax(280px,1fr)_minmax(250px,1fr)]">
             {/* Active Tabs Panel */}
             <div className="flex flex-col min-w-0 overflow-hidden">
+              {/* Header and toolbar - always visible */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-lg">Active Tabs</h2>
+                <TopToolbar
+                  workspaceId={shownWorkspaceId}
+                  isPreview={isPreview}
+                />
+              </div>
+
+              {/* Tabs content - conditional */}
               {windowGroups.length > 0 ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-lg">Active Tabs</h2>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
-                      <div className="space-y-6 px-6 py-2 min-w-0">
-                        <div className="flex items-center justify-end mb-2">
-                          <TopToolbar
-                            workspaceId={shownWorkspaceId}
-                            isPreview={isPreview}
-                          />
-                        </div>
-                        {windowGroups.map((windowGroup) => {
-                          const isActiveWindow =
-                            windowGroup.windowId.toString() ===
-                            effectiveActiveWindowId;
-                          return (
-                            <div
-                              key={windowGroup.windowId}
-                              className="w-full"
-                              data-window-id={windowGroup.windowId}
-                            >
-                              {shownWorkspaceId && (
-                                <WindowComponent
-                                  windowId={windowGroup.windowId}
-                                  workspaceId={shownWorkspaceId}
-                                  onTabClick={
-                                    isPreview && onPreviewTabClick
-                                      ? (tab) => onPreviewTabClick(tab)
-                                      : onTabClick
-                                  }
-                                  onEditGroup={onEditGroup}
-                                  isPreview={isPreview}
-                                  isActiveWindow={isActiveWindow}
-                                  onFocusPrevWindow={goToPrevWindow}
-                                  onFocusNextWindow={goToNextWindow}
-                                  onOpenKeybindingsDialog={
-                                    onOpenKeybindingsDialog
-                                  }
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                    <div className="space-y-6 px-6 py-2 min-w-0">
+                      {windowGroups.map((windowGroup) => {
+                        const isActiveWindow =
+                          windowGroup.windowId.toString() ===
+                          effectiveActiveWindowId;
+                        return (
+                          <div
+                            key={windowGroup.windowId}
+                            className="w-full"
+                            data-window-id={windowGroup.windowId}
+                          >
+                            {shownWorkspaceId && (
+                              <WindowComponent
+                                windowId={windowGroup.windowId}
+                                workspaceId={shownWorkspaceId}
+                                onTabClick={
+                                  isPreview && onPreviewTabClick
+                                    ? (tab) => onPreviewTabClick(tab)
+                                    : onTabClick
+                                }
+                                onEditGroup={onEditGroup}
+                                isPreview={isPreview}
+                                isActiveWindow={isActiveWindow}
+                                onFocusPrevWindow={goToPrevWindow}
+                                onFocusNextWindow={goToNextWindow}
+                                onOpenKeybindingsDialog={
+                                  onOpenKeybindingsDialog
+                                }
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
               ) : (
-                <div className="flex h-full items-center justify-center">
+                <div className="flex flex-1 items-center justify-center">
                   <div className="text-center">
                     <h2 className="font-semibold text-2xl">No Tabs</h2>
                     <p className="mt-2 text-muted-foreground">
@@ -267,22 +279,23 @@ export function AppContent({
           </div>
         ) : (
           /* Single Layout - Only active tabs, centered */
-          <div className="h-full flex items-center justify-center">
-            <div className="w-full max-w-4xl">
-              {windowGroups.length > 0 ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-lg">Active Tabs</h2>
-                  </div>
+          <div className="h-full flex flex-col">
+            {/* Header and toolbar - always visible */}
+            <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto w-full">
+              <h2 className="font-semibold text-lg">Active Tabs</h2>
+              <TopToolbar
+                workspaceId={shownWorkspaceId}
+                isPreview={isPreview}
+              />
+            </div>
+
+            {/* Tabs content - conditional */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-full max-w-4xl">
+                {windowGroups.length > 0 ? (
                   <div className="flex-1 overflow-hidden">
-                    <ScrollArea className="h-[calc(100vh-140px)] scrollbar-none">
+                    <ScrollArea className="h-[calc(100vh-180px)] scrollbar-none">
                       <div className="space-y-6 px-6 py-2 min-w-0">
-                        <div className="flex items-center justify-end mb-2">
-                          <TopToolbar
-                            workspaceId={shownWorkspaceId}
-                            isPreview={isPreview}
-                          />
-                        </div>
                         {windowGroups.map((windowGroup) => {
                           const isActiveWindow =
                             windowGroup.windowId.toString() ===
@@ -318,17 +331,17 @@ export function AppContent({
                       </div>
                     </ScrollArea>
                   </div>
-                </>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <h2 className="font-semibold text-2xl">No Tabs</h2>
-                    <p className="mt-2 text-muted-foreground">
-                      Select a workspace from the sidebar to view its tabs
-                    </p>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="text-center">
+                      <h2 className="font-semibold text-2xl">No Tabs</h2>
+                      <p className="mt-2 text-muted-foreground">
+                        Select a workspace from the sidebar to view its tabs
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
